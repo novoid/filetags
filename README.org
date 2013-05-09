@@ -1,0 +1,71 @@
+## Time-stamp: <2013-05-09 16:37:45 vk>
+## -*- coding: utf-8 -*-
+## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
+
+* vktag.py
+
+This Python script adds or removes tags to file names in the following
+form:
+
+: 2013-05-09 a file name with ISO date stamp in name -- tag1.jpg
+: different file without time stamp in name -- tag2.txt
+: 2013-05-09T16.17 file name with time stamp -- tag3.csv
+: file name with several tags -- tag1 tag2.jpeg
+: another example file name with multiple example tags -- fun videos kids.mpeg
+
+The script accepts an arbitrary number of files (see your shell for
+possible length limitations).
+
+- *Target group*: users who are able to use command line tools and who
+  are using tags in file names.
+- Hosted on github: (FIXXME: add repos URL)
+
+** Why
+
+Besides the fact that I am using [[https://en.wikipedia.org/wiki/Iso_date][ISO dates and times]] in file names
+(as shown in examples above), I am using tags with file names. To
+separate tags from the file name, I am using the separator " -- "
+(space dash dash space).
+
+For people familiar with [[https://en.wikipedia.org/wiki/Regex][Regular Expressions]]:
+
+: (<ISO date/time stamp>)? <descriptive file name> -- <list of tags separated by spaces>.extension
+
+Tagging files this way requires a file renaming process. Adding (or
+removing) tag(s) to a set of file results in multiple renaming
+processes. Despite advanced renaming tools like vidir (from
+[[http://joeyh.name/code/moreutils/][moreutils]]) it's handy to have a tool that makes adding and removing
+tags as simple as possible.
+
+You may like to add this tool to your image or file manager of
+choice. I added mine to [[http://geeqie.sourceforge.net/][geeqie]] which is my favorite image viewer on
+GNU/Linux.
+
+** Usage
+
+FIXXME: usage
+
+: vktag.py --tag foo a_file_name.txt
+... adds tag "foo" such that it results in ~foo a_file_name -- foo.txt~
+
+: vktag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
+... adds tag "foo" such that it results in ...
+: "file name 1 -- foo bar.jpg" "file name 2 -- foo bar.txt" "file name 3 -- bar foo.csv"
+
+: vktag.py --remove --tag foo "foo a_file_name -- foo.txt"
+... removes tag "foo" such that it results in ~foo a_file_name.txt~
+
+* Contribute!
+
+I am looking for your ideas!
+
+If you want to contribute to this cool project, please fork and
+contribute!
+
+
+* Local Variables                                                  :noexport:
+# Local Variables:
+# mode: auto-fill
+# mode: flyspell
+# eval: (ispell-change-dictionary "en_US")
+# End:
