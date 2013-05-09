@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-09 17:11:42 vk>
+# Time-stamp: <2013-05-09 17:40:38 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -148,7 +148,15 @@ def main():
         error_exit(4, "I found option \"--interactive\" and option \"--remove\". \n" +
                    "Please choose either interactive mode OR specify tag(s) to remove together with the \"--tag\" option.")
 
-    sys.exit(0)
+
+    ## extract list of tags
+    ## FIXXME
+
+    ## extract list of files
+    ## FIXXME
+
+    ## iterate over files
+    ## FIXXME
 
 
 

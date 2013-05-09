@@ -1,8 +1,8 @@
-## Time-stamp: <2013-05-09 16:37:45 vk>
+## Time-stamp: <2013-05-09 17:42:06 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
-* vktag.py
+* filetag.py
 
 This Python script adds or removes tags to file names in the following
 form:
@@ -45,14 +45,14 @@ GNU/Linux.
 
 FIXXME: usage
 
-: vktag.py --tag foo a_file_name.txt
+: filetag.py --tag foo a_file_name.txt
 ... adds tag "foo" such that it results in ~foo a_file_name -- foo.txt~
 
-: vktag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
+: filetag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
 : "file name 1 -- foo bar.jpg" "file name 2 -- foo bar.txt" "file name 3 -- bar foo.csv"
 
-: vktag.py --remove --tag foo "foo a_file_name -- foo.txt"
+: filetag.py --remove --tag foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
 * Contribute!

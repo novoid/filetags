@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-09 17:38:22 vk>
+# Time-stamp: <2013-05-09 17:41:54 vk>
 
 ## ~/src/vktag % PYTHONPATH="~/src/vktag:" tests/unit_tests.py --verbose
 
 import unittest
 import os
-import vktag
+import filetag
 import tempfile
 import os.path
 from shutil import rmtree
