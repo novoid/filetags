@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-09 17:40:38 vk>
+# Time-stamp: <2013-05-14 18:20:58 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -22,11 +22,13 @@ import logging
 from optparse import OptionParser
 
 ## debugging:   for setting a breakpoint:  pdb.set_trace()
-#import pdb
+import pdb
 
 PROG_VERSION_NUMBER = u"0.1"
 PROG_VERSION_DATE = u"2013-05-09"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+FILENAME_TAG_SEPARATOR = u' -- '
+BETWEEN_TAG_SEPARATOR = u' '
 
 USAGE = u"\n\
     " + sys.argv[0] + u"\n\
@@ -41,7 +43,12 @@ https://github.com/novoid/FIXXME\n\
 
 
 ## file names containing tags matches following regular expression
-FILE_WITH_TAGS_REGEX = re.compile(".* -- (.*).(.*)$")
+FILE_WITH_TAGS_REGEX = re.compile("(.*)" + FILENAME_TAG_SEPARATOR + "(.*)\.(.*)$")
+FILE_WITH_TAGS_REGEX_FILENAME_INDEX = 1 ## component.group(1)
+FILE_WITH_TAGS_REGEX_TAGLIST_INDEX = 2
+FILE_WITH_TAGS_REGEX_EXTENSION_INDEX = 3
+
+FILE_WITH_EXTENSION_REGEX = re.compile("(.*)\.(.*)$")
 
 
 
@@ -92,6 +99,105 @@ def error_exit(errorcode, text):
     sys.exit(errorcode)
 
 
+def contains_tag(filename, tagname=False):
+    """
+    Returns true if tagname is a tag within filename. If tagname is
+    empty, return if filename contains any tag at all.
+
+    @param filename: an unicode string containing a file name
+    @param tagname: (optional) an unicode string containing a tag name
+    @param return: True|False
+    """
+
+    assert filename.__class__ == str or \
+        filename.__class__ == unicode
+    if tagname:
+        assert tagname.__class__ == str or \
+            tagname.__class__ == unicode
+
+    components = re.match(FILE_WITH_TAGS_REGEX, filename)
+
+    if not tagname:
+        return components!=None
+    elif not components:
+        logging.debug("file [%s] does not match FILE_WITH_TAGS_REGEX" % filename)
+        return False
+    else:
+        tags = components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
+        return tagname in tags
+
+
+def adding_tag_to_filename(filename, tagname):
+    """
+    Returns string of file name with tagname as additional tag.
+
+    @param filename: an unicode string containing a file name
+    @param tagname: an unicode string containing a tag name
+    @param return: an unicode string of filename containing tagname
+    """
+
+    assert filename.__class__ == str or \
+        filename.__class__ == unicode
+    assert tagname.__class__ == str or \
+        tagname.__class__ == unicode
+
+    if contains_tag(filename) == False:
+        logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
+
+        components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
+        old_filename = components.group(1)
+        extension = components.group(2)
+
+        return old_filename + FILENAME_TAG_SEPARATOR + tagname + u'.' + extension
+
+    elif contains_tag(filename, tagname):
+        logging.debug("adding_tag_to_filename(%s, %s): tag already found in filename" % (filename, tagname))
+
+        return filename
+
+    else:
+        logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" % \
+                          (filename, tagname))
+
+        components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
+        old_filename = components.group(1)
+        extension = components.group(2)
+
+        return old_filename + BETWEEN_TAG_SEPARATOR + tagname + u'.' + extension
+
+
+def removing_tag_from_filename(filename, tagname):
+    """
+    Returns string of file name with tagname removed as tag.
+
+    @param filename: an unicode string containing a file name
+    @param tagname: an unicode string containing a tag name
+    @param return: an unicode string of filename without tagname
+    """
+
+    if not contains_tag(filename, tagname):
+        return filename
+
+    components = re.match(FILE_WITH_TAGS_REGEX, filename)
+
+    if not components:
+        logging.debug("file [%s] does not match FILE_WITH_TAGS_REGEX" % filename)
+        return filename
+    else:
+        tags = components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
+        old_filename = components.group(FILE_WITH_TAGS_REGEX_FILENAME_INDEX)
+        extension = components.group(FILE_WITH_TAGS_REGEX_EXTENSION_INDEX)
+
+        if len(tags) < 2:
+            logging.debug("given tagname is the only tag -> remove all tags and FILENAME_TAG_SEPARATOR as well")
+            return old_filename + u'.' + extension
+
+        else:
+            ## still tags left
+            return old_filename + FILENAME_TAG_SEPARATOR + \
+                BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + \
+                u'.' + extension
+    
 
 def query_folder(folder, list_of_files_found):
     """Walk the folder and its sub-folders and collect files matching
