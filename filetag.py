@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-14 18:20:58 vk>
+# Time-stamp: <2013-05-14 22:41:20 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -31,7 +31,7 @@ FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 
 USAGE = u"\n\
-    " + sys.argv[0] + u"\n\
+    " + sys.argv[0] + u" [<options>] <list of files>\n\
 \n\
 FIXXME\n\
 https://github.com/novoid/FIXXME\n\
@@ -63,6 +63,9 @@ parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
 
 parser.add_option("-i", "--interactive", action="store_true",
                   help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
+
+parser.add_option("-s", "--dryrun", dest="dryrun", action="store_true",
+        help="enable dryrun mode: just simulate what would happen, do not modify files")
 
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                   help="enable verbose mode")
@@ -199,29 +202,52 @@ def removing_tag_from_filename(filename, tagname):
                 u'.' + extension
     
 
-def query_folder(folder, list_of_files_found):
-    """Walk the folder and its sub-folders and collect files matching
-    INCLUDE_FILES_REGEX whose folder do not match
-    EXCLUDE_FOLDERS_REGEX."""
+def extract_tags_from_argument(argument):
+    """
+    @param argument: string containing one or more tags
+    @param return: a list of unicode tags
+    """
 
-    ## http://stackoverflow.com/questions/5141437/filtering-os-walk-dirs-and-files
-
-    for root, dirs, files in os.walk(folder):
-
-        # exclude dirs
-        dirs[:] = [os.path.join(root, d) for d in dirs]
-        dirs[:] = [d for d in dirs if not re.match(EXCLUDE_FOLDERS_REGEX, d)]
-
-        # exclude/include files
-        files = [f for f in files if re.match(INCLUDE_FILES_REGEX, f)]
-        files = [os.path.join(root, f) for f in files]
-
-        for fname in files:
-            list_of_files_found.append(fname)
-
-    return list_of_files_found
+    return argument.split(unicode(BETWEEN_TAG_SEPARATOR))
 
 
+def extract_filenames_from_argument(argument):
+    """
+    @param argument: string containing one or more file names
+    @param return: a list of unicode file names
+    """
+
+    return argument
+    
+
+def handle_file(filename, tags, do_remove, dryrun):
+    """
+    @param filename: list containing one or more file names
+    @param tags: list containing one or more tags
+    @param do_remove: boolean which defines if tags should be added (False) or removed (True)
+    @param dryrun: boolean which defines if files should be changed (False) or not (True)
+    @param return: error value
+    """
+
+    if os.path.isdir(filename):
+        logging.warning("Skipping directory \"%s\" because this tool only renames file names." % filename)
+        return
+    elif not os.path.isfile(filename):
+        logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
+        return
+
+    new_filename = filename
+    for tagname in tags:
+        if do_remove:
+            new_filename = removing_tag_from_filename(new_filename, tagname)
+        else:
+            new_filename = adding_tag_to_filename(new_filename, tagname)
+
+    if dryrun:
+        logging.info("renaming: \"%s\"  >  \"%s\"" % (filename, new_filename))
+    else:
+        logging.debug("renaming \"%s\"  >  \"%s\" ..." % (filename, new_filename))
+        os.rename(filename, new_filename)
 
 
 def main():
@@ -248,23 +274,41 @@ def main():
         error_exit(3, "I found option \"--tag\" and option \"--interactive\". \n" +
                    "Please choose either tag option OR interactive mode.")
 
-    
-    ## interactive mode and remove flag is given (FIXXME: make it possible in future versions)
-    if options.interactive and options.remove:
-        error_exit(4, "I found option \"--interactive\" and option \"--remove\". \n" +
-                   "Please choose either interactive mode OR specify tag(s) to remove together with the \"--tag\" option.")
+    tags = []
 
+    if options.interactive:
 
-    ## extract list of tags
-    ## FIXXME
+        if options.remove:
+            logging.info("Interactive mode: tags get REMOVED from file names ...")
+        else:
+            logging.info("Interactive mode: tags get ADDED to file names ...")
 
-    ## extract list of files
-    ## FIXXME
+        ## interactive: ask for list of tags
+        logging.debug("interactive mode: asking for tags ...")
 
-    ## iterate over files
-    ## FIXXME
+        print "Please enter one or more tags (separated by \"" + BETWEEN_TAG_SEPARATOR + "\"):     (abort with Ctrl-C)"
+        entered_tags = sys.stdin.readline().strip()
 
+        tags = extract_tags_from_argument(entered_tags)
 
+    else:
+        ## non-interactive: extract list of tags
+        logging.debug("non-interactive mode: extracting tags from argument ...")
+
+        tags = extract_tags_from_argument(options.tags)
+
+    logging.debug("tags found: [%s]" % '], ['.join(tags))
+
+    logging.debug("extracting list of files ...")
+    logging.debug("len(args) [%s]" % str(len(args)))
+    if len(args)<1:
+        error_exit(5, "Please add at least one file name as argument")
+    files = extract_filenames_from_argument(args)
+    logging.debug("filenames found: [%s]" % '], ['.join(files))
+
+    logging.debug("iterate over files ...")
+    for filename in files:
+        handle_file(filename, tags, options.remove, options.dryrun)
 
     logging.info("successfully finished.")
 

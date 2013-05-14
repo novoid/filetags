@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-14 18:21:24 vk>
+# Time-stamp: <2013-05-14 22:49:16 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/vktag:" tests/unit_tests.py --verbose
@@ -57,13 +57,10 @@ class TestMethods(unittest.TestCase):
         pass
         
 
-class NO_TestFiles(unittest.TestCase):
+class TestFileWithoutTags(unittest.TestCase):
 
     tempdir = None
-    testfile_without_tags = 'file_without_tags.txt'
-    testfile_with_multiple_dots_and_no_tags = 'file.without.tags.txt'
-    testfile_with_tag_foo = 'filename -- foo.txt'
-    testfile_with_tag_bar = 'filename -- bar.txt'
+    testfilename = 'a test file . for you.txt'
 
     def setUp(self):
 
@@ -73,13 +70,10 @@ class NO_TestFiles(unittest.TestCase):
         print "\ntemporary directory: " + self.tempdir
 
         ## create set of test files:
-        self.create_tmp_file(self.testfile_without_tags)
-        self.create_tmp_file(self.testfile_with_multiple_dots_and_no_tags)
-        self.create_tmp_file(self.testfile_with_tag_foo)
-        self.create_tmp_file(self.testfile_with_tag_bar)
+        self.create_tmp_file(self.testfilename)
 
         ## double-check set-up:
-        self.assertTrue(self.file_exists(self.testfile_without_tags))
+        self.assertTrue(self.file_exists(self.testfilename))
 
 
     def create_tmp_file(self, name):
@@ -92,14 +86,40 @@ class NO_TestFiles(unittest.TestCase):
         return os.path.isfile(os.path.join(self.tempdir, name))
 
 
-    def test_all(self):
+    def test_add_and_remove_tags(self):
 
-        print "testing: foo bar\n"
-        self.assertEqual(3 * 4, 12)
+        ## adding a tag to a file without any tags:
+        filetag.handle_file(os.path.join(self.tempdir, self.testfilename), [u'bar'], False, False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- bar.txt'), True)
+
+        ## adding a second tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- bar.txt'),
+                            [u'foo'], do_remove=False, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- bar foo.txt'), True)
+
+        ## adding two tags:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- bar foo.txt'),
+                            [u'one', u'two'], do_remove=False, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- bar foo one two.txt'), True)
+
+        ## simulating another tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- bar foo one two.txt'),
+                            [u'one', u'two'], do_remove=False, dryrun=True)
+        self.assertEqual(self.file_exists(u'a test file . for you -- bar foo one two.txt'), True)
+
+        ## removing three tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- bar foo one two.txt'),
+                            [u'bar', u'one', u'foo'], do_remove=True, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- two.txt'), True)
+
+        ## removing last tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- two.txt'),
+                            [u'two'], do_remove=True, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you.txt'), True)
 
 
     def tearDown(self):
-        
+
         rmtree(self.tempdir)
         
 
