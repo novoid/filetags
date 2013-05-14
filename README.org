@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-09 17:42:06 vk>
+## Time-stamp: <2013-05-14 22:55:05 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -43,10 +43,11 @@ GNU/Linux.
 
 ** Usage
 
-FIXXME: usage
-
 : filetag.py --tag foo a_file_name.txt
 ... adds tag "foo" such that it results in ~foo a_file_name -- foo.txt~
+
+: filetag.py -i *.jpeg
+... interactive mode: asking for list of tags (for the JPEG files) from the user
 
 : filetag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
@@ -54,6 +55,9 @@ FIXXME: usage
 
 : filetag.py --remove --tag foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
+
+For a complete list of parameters, please try:
+: filetag.py --help
 
 * Contribute!
 
