@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-16 15:48:33 vk>
+# Time-stamp: <2013-05-16 22:56:02 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -241,7 +241,7 @@ def extract_filenames_from_argument(argument):
 
 def handle_file(filename, tags, do_remove, dryrun):
     """
-    @param filename: list containing one or more file names
+    @param filename: string containing one file name
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
@@ -263,9 +263,12 @@ def handle_file(filename, tags, do_remove, dryrun):
             new_filename = adding_tag_to_filename(new_filename, tagname)
 
     if dryrun:
-        logging.info("renaming: \"%s\"  >  \"%s\"" % (filename, new_filename))
+        logging.info(u" ")
+        logging.info(u" renaming \"%s\"" % filename)
+        logging.info(u"      ⤷   \"%s\"" % (new_filename))
     else:
-        logging.debug("renaming \"%s\"  >  \"%s\" ..." % (filename, new_filename))
+        logging.debug(u" renaming \"%s\"" % filename)
+        logging.debug(u"      ⤷   \"%s\"" % (new_filename))
         os.rename(filename, new_filename)
 
 
@@ -327,8 +330,10 @@ def main():
     logging.debug("len(args) [%s]" % str(len(args)))
     if len(args)<1:
         error_exit(5, "Please add at least one file name as argument")
+
     files = extract_filenames_from_argument(args)
-    logging.debug("filenames found: [%s]" % '], ['.join(files))
+
+    logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
 
     logging.debug("iterate over files ...")
     for filename in files:
