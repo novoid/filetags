@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-16 16:18:49 vk>
+## Time-stamp: <2013-05-16 16:27:34 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -18,13 +18,13 @@ possible length limitations).
 
 - *Target group*: users who are able to use command line tools and who
   are using tags in file names.
-- Hosted on github: (FIXXME: add repos URL)
+- Hosted on github: https://github.com/novoid/filetag
 
 ** Why
 
 Besides the fact that I am using [[https://en.wikipedia.org/wiki/Iso_date][ISO dates and times]] in file names
 (as shown in examples above), I am using tags with file names. To
-separate tags from the file name, I am using the separator " -- "
+separate tags from the file name, I am using the separator ~ -- ~
 (space dash dash space).
 
 For people familiar with [[https://en.wikipedia.org/wiki/Regex][Regular Expressions]]:
@@ -100,7 +100,7 @@ In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
 that geeqie shows the wrapper scripts as external editors to its
 image files:
 
-~add-tags.desktop~
+~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
 : [Desktop Entry]
 : Name=filetag
 : GenericName=filetag
@@ -114,7 +114,7 @@ image files:
 : MimeType=image/*;video/*;image/mpo;image/thm
 : Categories=X-Geeqie;
 
-~remove-tags.desktop~
+~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
 : [Desktop Entry]
 : Name=filetag
 : GenericName=filetag
@@ -130,10 +130,10 @@ image files:
 
 In order to be able to use the keyboard shortcuts ~t~ (adding tags)
 and ~T~ (removing tags), you can define them in geeqie: 
-1. Edit > Preferences > Preferences ... > Keyboard
-2. scroll to the bottom of the list
-3. double click in the ~KEY~-column of ~filetag~ and ~filetag-remove~
-   and choose your desired keyboard shortcut accordingly
+1. Edit > Preferences > Preferences ... > Keyboard.
+2. Scroll to the bottom of the list.
+3. Double click in the ~KEY~-column of ~filetag~ and ~filetag-remove~
+   and choose your desired keyboard shortcut accordingly.
 
 I hope this method is as handy for you as it is for me :-)
 
