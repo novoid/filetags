@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-14 22:41:20 vk>
+# Time-stamp: <2013-05-16 15:48:33 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -25,7 +25,7 @@ from optparse import OptionParser
 import pdb
 
 PROG_VERSION_NUMBER = u"0.1"
-PROG_VERSION_DATE = u"2013-05-09"
+PROG_VERSION_DATE = u"2013-05-16"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
@@ -33,12 +33,31 @@ BETWEEN_TAG_SEPARATOR = u' '
 USAGE = u"\n\
     " + sys.argv[0] + u" [<options>] <list of files>\n\
 \n\
-FIXXME\n\
-https://github.com/novoid/FIXXME\n\
+This tool adds or removes simple tags to/from file names.\n\
+\n\
+Tags within file names are placed between the actual file name and\n\
+the file extension, separated with \"" + FILENAME_TAG_SEPARATOR + "\". Multiple tags are\n\
+separated with \"" + BETWEEN_TAG_SEPARATOR + "\":\n\
+  Update for the Boss" + FILENAME_TAG_SEPARATOR + "projectA" + BETWEEN_TAG_SEPARATOR + "presentation.pptx\n\
+  2013-05-16T15.31.42 Error message" + FILENAME_TAG_SEPARATOR + "screenshot" + BETWEEN_TAG_SEPARATOR + "projectB.png\n\
+\n\
+This easy to use tag system has a drawback: for tagging a larger\n\
+set of files with the same tag, you have to rename each file\n\
+separately. With this tool, this only requires one step.\n\
+\n\
+Example usages:\n\
+  " + sys.argv[0] + u" --tags=\"presentation projectA\" *.pptx\n\
+      ... adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
+  " + sys.argv[0] + u" -i *\n\
+      ... ask for tag(s) and add them to all files in current folder\n\
+  " + sys.argv[0] + u" -r draft *report*\n\
+      ... removes the tag \"draft\" from all files containing the word \"report\"\n\
+\n\
 \n\
 :copyright: (c) 2013 by Karl Voit <tools@Karl-Voit.at>\n\
 :license: GPL v3 or any later version\n\
-:bugreports: <tools@Karl-Voit.at>\n\
+:URL: https://github.com/novoid/filetag\n\
+:bugreports: via github or <tools@Karl-Voit.at>\n\
 :version: " + PROG_VERSION_NUMBER + " from " + PROG_VERSION_DATE + "\n"
 
 
@@ -291,6 +310,11 @@ def main():
 
         tags = extract_tags_from_argument(entered_tags)
 
+        if options.remove:
+            logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
+        else:
+            logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
+            
     else:
         ## non-interactive: extract list of tags
         logging.debug("non-interactive mode: extracting tags from argument ...")
@@ -310,7 +334,7 @@ def main():
     for filename in files:
         handle_file(filename, tags, options.remove, options.dryrun)
 
-    logging.info("successfully finished.")
+    logging.debug("successfully finished.")
 
 
 if __name__ == "__main__":

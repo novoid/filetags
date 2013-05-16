@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-14 22:55:05 vk>
+## Time-stamp: <2013-05-16 16:15:37 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -44,7 +44,7 @@ GNU/Linux.
 ** Usage
 
 : filetag.py --tag foo a_file_name.txt
-... adds tag "foo" such that it results in ~foo a_file_name -- foo.txt~
+... adds tag "foo" such that it results in ~a_file_name -- foo.txt~
 
 : filetag.py -i *.jpeg
 ... interactive mode: asking for list of tags (for the JPEG files) from the user
@@ -58,6 +58,90 @@ GNU/Linux.
 
 For a complete list of parameters, please try:
 : filetag.py --help
+
+** Bonus: integrating into Geeqie (or similar file browsers)
+
+I am using [[http://geeqie.sourceforge.net/][geeqie]] for browsing/presenting image files. After I
+mark a set of images for adding one or more tags, I just have to
+press ~t~ and I get asked for the tags. After entering the tags and
+RETURN, the tags are added to the image files. With ~T~ I can remove
+tags accordingly.
+
+Using GNU/Linux, this is quite easy accomplished. The only thing that
+is not straight forward is the need for a wrapper script. The wrapper
+script does provide a shell window for entering the tags.
+
+~vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
+#+BEGIN_SRC sh
+#!/bin/sh
+
+/usr/bin/gnome-terminal \
+    --geometry=157x56+330+5  \
+    --tab-with-profile=big \
+    --hide-menubar \
+    -x /home/vk/src/filetag/filetag.py --interactive "${@}"
+
+#end
+#+END_SRC
+
+~vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh~
+looks like:
+#+BEGIN_SRC sh
+#!/bin/sh
+
+/usr/bin/gnome-terminal \
+    --geometry=157x56+330+5  \
+    --tab-with-profile=big \
+    --hide-menubar \
+    -x /home/vk/src/filetag/filetag.py --interactive --remove "${@}"
+
+#end
+#+END_SRC
+
+In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
+that geeqie shows the wrapper scripts as external editors to its
+image files:
+
+~add-tags.desktop~
+#+BEGIN_VERSE
+[Desktop Entry]
+Name=filetag
+GenericName=filetag
+Comment=
+Exec=/home/vk/src/misc/vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh %F
+Icon=
+Terminal=true
+Type=Application
+Categories=Application;Graphics;
+hidden=false
+MimeType=image/*;video/*;image/mpo;image/thm
+Categories=X-Geeqie;
+#+END_VERSE
+
+~remove-tags.desktop~
+#+BEGIN_VERSE
+[Desktop Entry]
+Name=filetag
+GenericName=filetag
+Comment=
+Exec=/home/vk/src/misc/vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh %F
+Icon=
+Terminal=true
+Type=Application
+Categories=Application;Graphics;
+hidden=false
+MimeType=image/*;video/*;image/mpo;image/thm
+Categories=X-Geeqie;
+#+END_VERSE
+
+In order to be able to use the keyboard shortcuts ~t~ (adding tags)
+and ~T~ (removing tags), you can define them in geeqie: 
+1. Edit > Preferences > Preferences ... > Keyboard
+2. scroll to the bottom of the list
+3. double click in the ~KEY~-column of ~filetag~ and ~filetag-remove~
+   and choose your desired keyboard shortcut accordingly
+
+I hope this method is as handy for you as it is for me :-)
 
 * Contribute!
 
