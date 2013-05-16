@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-16 16:15:37 vk>
+## Time-stamp: <2013-05-16 16:18:49 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -51,7 +51,9 @@ GNU/Linux.
 
 : filetag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
-: "file name 1 -- foo bar.jpg" "file name 2 -- foo bar.txt" "file name 3 -- bar foo.csv"
+: "file name 1 -- foo bar.jpg"
+: "file name 2 -- foo bar.txt"
+: "file name 3 -- bar foo.csv"
 
 : filetag.py --remove --tag foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
@@ -72,67 +74,59 @@ is not straight forward is the need for a wrapper script. The wrapper
 script does provide a shell window for entering the tags.
 
 ~vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
-#+BEGIN_SRC sh
-#!/bin/sh
-
-/usr/bin/gnome-terminal \
-    --geometry=157x56+330+5  \
-    --tab-with-profile=big \
-    --hide-menubar \
-    -x /home/vk/src/filetag/filetag.py --interactive "${@}"
-
-#end
-#+END_SRC
+: #!/bin/sh
+: 
+: /usr/bin/gnome-terminal \
+:     --geometry=157x56+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetag/filetag.py --interactive "${@}"
+: 
+: #end
 
 ~vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh~
 looks like:
-#+BEGIN_SRC sh
-#!/bin/sh
-
-/usr/bin/gnome-terminal \
-    --geometry=157x56+330+5  \
-    --tab-with-profile=big \
-    --hide-menubar \
-    -x /home/vk/src/filetag/filetag.py --interactive --remove "${@}"
-
-#end
-#+END_SRC
+: #!/bin/sh
+: 
+: /usr/bin/gnome-terminal \
+:     --geometry=157x56+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetag/filetag.py --interactive --remove "${@}"
+: 
+: #end
 
 In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
 that geeqie shows the wrapper scripts as external editors to its
 image files:
 
 ~add-tags.desktop~
-#+BEGIN_VERSE
-[Desktop Entry]
-Name=filetag
-GenericName=filetag
-Comment=
-Exec=/home/vk/src/misc/vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh %F
-Icon=
-Terminal=true
-Type=Application
-Categories=Application;Graphics;
-hidden=false
-MimeType=image/*;video/*;image/mpo;image/thm
-Categories=X-Geeqie;
-#+END_VERSE
+: [Desktop Entry]
+: Name=filetag
+: GenericName=filetag
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
 
 ~remove-tags.desktop~
-#+BEGIN_VERSE
-[Desktop Entry]
-Name=filetag
-GenericName=filetag
-Comment=
-Exec=/home/vk/src/misc/vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh %F
-Icon=
-Terminal=true
-Type=Application
-Categories=Application;Graphics;
-hidden=false
-MimeType=image/*;video/*;image/mpo;image/thm
-Categories=X-Geeqie;
-#+END_VERSE
+: [Desktop Entry]
+: Name=filetag
+: GenericName=filetag
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
 
 In order to be able to use the keyboard shortcuts ~t~ (adding tags)
 and ~T~ (removing tags), you can define them in geeqie: 
