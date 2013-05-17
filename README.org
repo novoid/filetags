@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-17 11:10:44 vk>
+## Time-stamp: <2013-05-17 12:22:24 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -143,21 +143,21 @@ You know the problem: got back from Paris and you can not show 937
 image files to your friends. It's just too much.
 
 My solution: I tag to define selections. For example, I am using
-~sel1~ for the ultimate cool photographs using ~filetag~, of course.
+~sel~ for the ultimate cool photographs using ~filetag~, of course.
 
 Within geeqie, I redefined ~S~ (usually mapped to "sort manager") to
 an external shell script (below) which creates a temporary folder
 (within ~/tmp/~), symbolic links to all photographs of the current
-folder that contain the tag ~sel1~, and start a new instance of
+folder that contain the tag ~sel~, and start a new instance of
 geeqie.
 
 In short: after returning from a trip, I mark all "cool" photographs
-within geeqie, choose ~t~ and tag them with ~sel1~ (described in
-previous section). For showing only ~sel1~ images, I just press ~S~
+within geeqie, choose ~t~ and tag them with ~sel~ (described in
+previous section). For showing only ~sel~ images, I just press ~S~
 in geeqie and instead of 937 photographs, my friends just have to
 watch the best 50 or so. :-)
 
-The script ~vksel1.sh~ looks like this:
+The script ~vksel.sh~ looks like this:
 : #!/bin/sh
 : 
 : TMPDIR="/tmp/imageselection"
@@ -170,7 +170,7 @@ The script ~vksel1.sh~ looks like this:
 :         echo
 :         echo "usage:   ${FILENAME} <directory>"
 :         echo 
-:         echo "... starts a image viewer containing files tagged with \"sel1\" in the current" 
+:         echo "... starts a image viewer containing files tagged with \"sel\" in the current" 
 :         echo "folder or the folder given as parameter 1."
 :         echo
 : }
@@ -203,19 +203,19 @@ The script ~vksel1.sh~ looks like this:
 : cd "${TMPDIR}"
 : 
 : 
-: find "${IMAGEDIR}" -name '* -- *sel1*' -print0 | xargs -0 -I {} ln -s {} . --
+: find "${IMAGEDIR}" -name '* -- *sel*' -print0 | xargs -0 -I {} ln -s {} . --
 : ${IMAGEVIEWER}
 : 
 : cd "${STARTDIR}"
 : 
 : #end
 
-Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel1.desktop~
+Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.desktop~
 : [Desktop Entry]
-: Name=show-sel1
-: GenericName=show-sel1
+: Name=show-sel
+: GenericName=show-sel
 : Comment=
-: Exec=/home/vk/bin/vksel1.sh
+: Exec=/home/vk/bin/vksel.sh
 : Icon=
 : Terminal=true
 : Type=Application
