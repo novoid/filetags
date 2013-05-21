@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-16 22:56:02 vk>
+# Time-stamp: <2013-05-21 12:00:28 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -26,7 +26,7 @@ import pdb
 
 PROG_VERSION_NUMBER = u"0.1"
 PROG_VERSION_DATE = u"2013-05-16"
-INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 
