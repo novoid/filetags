@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-21 12:00:28 vk>
+# Time-stamp: <2013-05-28 17:53:12 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -286,11 +286,6 @@ def main():
         error_exit(1, "Options \"--verbose\" and \"--quiet\" found. " +
                    "This does not make any sense, you silly fool :-)")
 
-    if not options.interactive and not options.tags:
-        error_exit(2, "No tags are given with option \"--tag\" nor option \"--interactive\" could be found. \n" +
-                   "Please specify, at least tag(s) to add/remove or specify interactive mode.")
-
-
     ## interactive mode and tags are given
     if options.interactive and options.tags:
         error_exit(3, "I found option \"--tag\" and option \"--interactive\". \n" +
@@ -298,7 +293,7 @@ def main():
 
     tags = []
 
-    if options.interactive:
+    if options.interactive or not options.tags:
 
         if options.remove:
             logging.info("Interactive mode: tags get REMOVED from file names ...")
