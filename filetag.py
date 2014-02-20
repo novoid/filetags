@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-28 17:53:12 vk>
+# Time-stamp: <2014-02-20 19:37:22 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -294,6 +294,12 @@ def main():
     tags = []
 
     if options.interactive or not options.tags:
+
+        print "                 "
+        print "    ,---------.  "
+        print "    |  ?     o | "
+        print "    `---------'  "
+        print "                 "
 
         if options.remove:
             logging.info("Interactive mode: tags get REMOVED from file names ...")
