@@ -1,4 +1,4 @@
-## Time-stamp: <2013-05-17 12:22:24 vk>
+## Time-stamp: <2014-11-08 14:10:14 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -223,6 +223,32 @@ Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.d
 : hidden=false
 : MimeType=image/*;video/*;image/mpo;image/thm
 : Categories=X-Geeqie;
+
+* Related tools and workflows
+
+This tool is part of a tool-set which I use to manage my digital files
+such as photographs. My work-flows are described in [[http://karl-voit.at/managing-digital-photographs/][this blog posting]]
+you might like to read.
+
+In short:
+
+For *tagging*, please refer to [[https://github.com/novoid/filetag][filetag]] and its documentation.
+
+See [[https://github.com/novoid/date2name][date2name]] for easily adding ISO *time-stamps or date-stamps* to
+files.
+
+For *easily naming and tagging* files within file browsers that allow
+integration of external tools, see [[https://github.com/novoid/appendfilename][appendfilename]] (once more) and
+[[https://github.com/novoid/filetag][filetag]].
+
+Moving to the archive folders is done using [[https://github.com/novoid/move2archive][move2archive]].
+
+Having tagged photographs gives you many advantages. For example, I
+automatically [[https://github.com/novoid/set_desktop_background_according_to_season][choose my *desktop background image* according to the
+current season]].
+
+Files containing an ISO time/date-stamp gets indexed by the
+filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 
 * Contribute!
 
