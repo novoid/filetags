@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2013-05-14 22:49:16 vk>
+# Time-stamp: <2014-12-20 22:08:24 vk>
 
 ## invoke tests using following command line:
-## ~/src/vktag % PYTHONPATH="~/src/vktag:" tests/unit_tests.py --verbose
+## ~/src/vktag % PYTHONPATH="~/src/filetag:" tests/unit_tests.py --verbose
 
 import unittest
 import os
@@ -51,6 +51,26 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetag.removing_tag_from_filename(u'Some file name -- bar.jpeg', u'foo'), \
                              u'Some file name -- bar.jpeg')
 
+        
+    def test_extract_tags_from_filename(self):
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name - bar.jpeg'), [])
+        self.assertEqual(filetag.extract_tags_from_filename(u'-- bar.jpeg'), [])
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name.jpeg'), [])
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name - bar.jpeg'), [])
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name -- bar.jpeg'), [u'bar'])
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name -- foo bar baz.jpeg'), \
+                         [u'foo', u'bar', u'baz'])
+        self.assertEqual(filetag.extract_tags_from_filename(u'Some file name -- foo bar baz'), \
+                         [u'foo', u'bar', u'baz'])
+
+
+    def test_add_tag_to_countdict(self):
+        self.assertEqual(filetag.add_tag_to_countdict(u'tag', {}), {u'tag':1})
+        self.assertEqual(filetag.add_tag_to_countdict(u'tag', {u'tag':0}), {u'tag':1})
+        self.assertEqual(filetag.add_tag_to_countdict(u'tag', {u'tag':1}), {u'tag':2})
+        self.assertEqual(filetag.add_tag_to_countdict(u'newtag', {u'oldtag':1}), {u'oldtag':1, u'newtag':1})
+        self.assertEqual(filetag.add_tag_to_countdict(u'newtag', {u'oldtag':2}), {u'oldtag':2, u'newtag':1})
+        
 
     def tearDown(self):
         
@@ -116,6 +136,64 @@ class TestFileWithoutTags(unittest.TestCase):
         filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- two.txt'),
                             [u'two'], do_remove=True, dryrun=False)
         self.assertEqual(self.file_exists(u'a test file . for you.txt'), True)
+
+        
+    def test_adding_a_tag_to_file_without_extension(self):
+
+        filename = u"file without extension"
+        self.create_tmp_file(filename)
+        filetag.handle_file(os.path.join(self.tempdir, filename), [u'foo'], False, False)
+        self.assertEqual(self.file_exists(filename + u' -- foo'), True)
+
+        
+    def test_list_tags_by_number(self):
+
+        ## starting with no file with tags:
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=1), {})
+
+        ## adding a file tag:
+        filetag.handle_file(os.path.join(self.tempdir, self.testfilename), [u'bar'], False, False)
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=1), {u'bar':1})
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=0), {u'bar':1})
+
+        ## adding a another file tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- bar.txt'), [u'foo'], False, False)
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=1), {u'bar':1, u'foo':1})
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=0), {u'bar':1, u'foo':1})
+
+        ## adding a another file:
+        self.create_tmp_file(u'a second file')
+        filetag.handle_file(os.path.join(self.tempdir, u'a second file'), [u'foo'], False, False)
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=1), {u'bar':1})
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=1), {u'bar':1})
+        self.assertEqual(filetag.list_tags_by_number(max_tag_count=0), {u'bar':1, u'foo':2})
+
+        
+    def test_list_tags_by_alphabet(self):
+
+        ## starting with no file with tags:
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=True), {})
+
+        ## adding a file tag:
+        filetag.handle_file(os.path.join(self.tempdir, self.testfilename), [u'similar1'], False, False)
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=True), {})
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=False), {u'similar1':1})
+
+        ## adding a file tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a test file . for you -- similar1.txt'), [u'foo'], False, False)
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=True), {})
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=False), {u'foo':1, u'similar1':1})
+
+        ## adding a another file:
+        self.create_tmp_file(u'a second file')
+        filetag.handle_file(os.path.join(self.tempdir, u'a second file'), [u'foo'], False, False)
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=True), {})
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=False), {u'foo':2, u'similar1':1})
+
+        ## adding similar tag:
+        filetag.handle_file(os.path.join(self.tempdir, u'a second file -- foo'), [u'similar2'], False, False)
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=True), {u'similar1':1, u'similar2':1})
+        self.assertEqual(filetag.list_tags_by_alphabet(only_with_similar_tags=False), {u'foo':2, u'similar1':1, u'similar2':1})
 
 
     def tearDown(self):
