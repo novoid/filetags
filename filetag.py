@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2014-12-20 22:13:46 vk>
+# Time-stamp: <2014-12-20 22:17:57 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -149,7 +149,7 @@ def contains_tag(filename, tagname=False):
     components = re.match(FILE_WITH_TAGS_REGEX, filename)
 
     if not tagname:
-        return components != None
+        return components is not None
     elif not components:
         logging.debug("file [%s] does not match FILE_WITH_TAGS_REGEX" % filename)
         return False
@@ -192,7 +192,7 @@ def adding_tag_to_filename(filename, tagname):
     assert tagname.__class__ == str or \
         tagname.__class__ == unicode
 
-    if contains_tag(filename) == False:
+    if contains_tag(filename) is False:
         logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
@@ -209,8 +209,8 @@ def adding_tag_to_filename(filename, tagname):
         return filename
 
     else:
-        logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" % \
-                          (filename, tagname))
+        logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" %
+                      (filename, tagname))
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
         if components:
@@ -323,6 +323,7 @@ def handle_file(filename, tags, do_remove, dryrun):
         logging.debug(u"      ⤷   \"%s\"" % (new_filename))
         os.rename(filename, new_filename)
 
+
 def add_tag_to_countdict(tag, tags):
     """
     Takes a tag (string) and a dict. Returns the dict with count value increased by one
@@ -342,6 +343,7 @@ def add_tag_to_countdict(tag, tags):
         tags[tag] = 1
 
     return tags
+
 
 def get_tags_from_files_and_subfolders():
     """
@@ -432,6 +434,7 @@ def list_tags_by_alphabet(only_with_similar_tags=False):
 
     return tag_dict
 
+
 def list_tags_by_number(max_tag_count=0):
     """
     Traverses the file system, extracts all tags, prints them sorted by tag usage count
@@ -452,13 +455,13 @@ def list_tags_by_number(max_tag_count=0):
         maxlength_count = 5
 
     print "\n {0:{1}} : {2:{3}}".format(u'count', maxlength_count, u'tag', maxlength_tags)
-    print " "+ '-' * (maxlength_tags + maxlength_count + 7)
+    print " " + '-' * (maxlength_tags + maxlength_count + 7)
     for tuple in sorted(tag_dict.items(), key=operator.itemgetter(1)):
         ## sort dict of (tag, count) according to count
-        if (max_tag_count>0 and tuple[1]<=max_tag_count) or max_tag_count == 0:
+        if (max_tag_count > 0 and tuple[1] <= max_tag_count) or max_tag_count == 0:
             print " {0:{1}} : {2:{3}}".format(tuple[1], maxlength_count, tuple[0], maxlength_tags)
 
-        if max_tag_count>0 and tuple[1]>max_tag_count:
+        if max_tag_count > 0 and tuple[1] > max_tag_count:
             ## remove entries that exceed max_tag_count limit:
             del tag_dict[tuple[0]]
     print ''
@@ -535,7 +538,6 @@ def main():
     if (options.list_tags_by_alphabet or options.list_tags_by_number) and (options.tags or options.interactive or options.remove):
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
 
-
     tags = []
 
     if options.list_tags_by_alphabet:
@@ -586,7 +588,7 @@ def main():
 
     logging.debug("extracting list of files ...")
     logging.debug("len(args) [%s]" % str(len(args)))
-    if len(args)<1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.tag_gardening):
+    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
     else:
 
