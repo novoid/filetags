@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2014-12-20 22:17:57 vk>
+# Time-stamp: <2014-12-27 23:20:28 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -491,23 +491,25 @@ def handle_tag_gardening():
     print "Tags which have similar other tags are probably typos or plural/singular forms of others:"
     tags_by_alphabet = list_tags_by_alphabet(only_with_similar_tags=True)
 
-    print "If tags appear in both lists from above, they most likely require your attention:"
     set_by_number = Set(tags_by_number.keys())
     set_by_alphabet = Set(tags_by_alphabet.keys())
     tags_in_both_outputs = set_by_number & set_by_alphabet  # intersection of sets
 
-    ## determine maximum length of strings for formatting:
-    maxlength_tags = max(len(s) for s in tags_in_both_outputs)
-    maxlength_count = len(str(abs(max(tag_dict.values()))))
-    if maxlength_count < 5:
-        maxlength_count = 5
+    if tags_in_both_outputs != Set([]):
+        print "If tags appear in both lists from above, they most likely require your attention:"
+        
+        ## determine maximum length of strings for formatting:
+        maxlength_tags = max(len(s) for s in tags_in_both_outputs)
+        maxlength_count = len(str(abs(max(tag_dict.values()))))
+        if maxlength_count < 5:
+            maxlength_count = 5
 
-    print("\n  {0:{1}s} : count".format(u'tag', maxlength_tags))
-    print "  " + "-" * (maxlength_tags + maxlength_count + 3)
-    for tag in sorted(tags_in_both_outputs):
-        similar_tags = u'      (similar to:  ' + ', '.join(find_similar_tags(tag, tag_dict.keys())) + u')'
-        print "  {0:{1}s} : {2:{3}}  {4}".format(tag, maxlength_tags, tags_by_number[tag], maxlength_count, similar_tags)
-    print
+        print("\n  {0:{1}s} : count".format(u'tag', maxlength_tags))
+        print "  " + "-" * (maxlength_tags + maxlength_count + 3)
+        for tag in sorted(tags_in_both_outputs):
+            similar_tags = u'      (similar to:  ' + ', '.join(find_similar_tags(tag, tag_dict.keys())) + u')'
+            print "  {0:{1}s} : {2:{3}}  {4}".format(tag, maxlength_tags, tags_by_number[tag], maxlength_count, similar_tags)
+        print
 
 
 def main():
