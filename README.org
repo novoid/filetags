@@ -1,8 +1,8 @@
-## Time-stamp: <2014-11-08 14:10:14 vk>
+## Time-stamp: <2015-01-02 14:14:25 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
-* filetag.py
+* filetags
 
 This Python script adds or removes tags to file names in the following
 form:
@@ -18,7 +18,7 @@ possible length limitations).
 
 - *Target group*: users who are able to use command line tools and who
   are using tags in file names.
-- Hosted on github: https://github.com/novoid/filetag
+- Hosted on github: https://github.com/novoid/filetags
 
 ** Why
 
@@ -43,23 +43,23 @@ GNU/Linux.
 
 ** Usage
 
-: filetag.py --tag foo a_file_name.txt
+: filetags.py --tag foo a_file_name.txt
 ... adds tag "foo" such that it results in ~a_file_name -- foo.txt~
 
-: filetag.py -i *.jpeg
+: filetags.py -i *.jpeg
 ... interactive mode: asking for list of tags (for the JPEG files) from the user
 
-: filetag.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
+: filetags.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
 : "file name 1 -- foo bar.jpg"
 : "file name 2 -- foo bar.txt"
 : "file name 3 -- bar foo.csv"
 
-: filetag.py --remove --tag foo "foo a_file_name -- foo.txt"
+: filetags.py --remove --tag foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
 For a complete list of parameters, please try:
-: filetag.py --help
+: filetags.py --help
 
 ** Bonus: integrating into Geeqie (or similar file browsers)
 
@@ -73,18 +73,18 @@ Using GNU/Linux, this is quite easy accomplished. The only thing that
 is not straight forward is the need for a wrapper script. The wrapper
 script does provide a shell window for entering the tags.
 
-~vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
+~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
 : #!/bin/sh
 : 
 : /usr/bin/gnome-terminal \
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
-:     -x /home/vk/src/filetag/filetag.py --interactive "${@}"
+:     -x /home/vk/src/filetags/filetags.py --interactive "${@}"
 : 
 : #end
 
-~vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh~
+~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
 looks like:
 : #!/bin/sh
 : 
@@ -92,7 +92,7 @@ looks like:
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
-:     -x /home/vk/src/filetag/filetag.py --interactive --remove "${@}"
+:     -x /home/vk/src/filetags/filetags.py --interactive --remove "${@}"
 : 
 : #end
 
@@ -102,10 +102,10 @@ image files:
 
 ~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
 : [Desktop Entry]
-: Name=filetag
-: GenericName=filetag
+: Name=filetags
+: GenericName=filetags
 : Comment=
-: Exec=/home/vk/src/misc/vk-filetag-interactive-adding-wrapper-with-gnome-terminal.sh %F
+: Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
 : Icon=
 : Terminal=true
 : Type=Application
@@ -116,10 +116,10 @@ image files:
 
 ~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
 : [Desktop Entry]
-: Name=filetag
-: GenericName=filetag
+: Name=filetags
+: GenericName=filetags
 : Comment=
-: Exec=/home/vk/src/misc/vk-filetag-interactive-removing-wrapper-with-gnome-terminal.sh %F
+: Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
 : Icon=
 : Terminal=true
 : Type=Application
@@ -132,7 +132,7 @@ In order to be able to use the keyboard shortcuts ~t~ (adding tags)
 and ~T~ (removing tags), you can define them in geeqie: 
 1. Edit > Preferences > Preferences ... > Keyboard.
 2. Scroll to the bottom of the list.
-3. Double click in the ~KEY~-column of ~filetag~ and ~filetag-remove~
+3. Double click in the ~KEY~-column of ~filetags~ and ~filetags-remove~
    and choose your desired keyboard shortcut accordingly.
 
 I hope this method is as handy for you as it is for me :-)
@@ -143,7 +143,7 @@ You know the problem: got back from Paris and you can not show 937
 image files to your friends. It's just too much.
 
 My solution: I tag to define selections. For example, I am using
-~sel~ for the ultimate cool photographs using ~filetag~, of course.
+~sel~ for the ultimate cool photographs using ~filetags~, of course.
 
 Within geeqie, I redefined ~S~ (usually mapped to "sort manager") to
 an external shell script (below) which creates a temporary folder
@@ -232,14 +232,14 @@ you might like to read.
 
 In short:
 
-For *tagging*, please refer to [[https://github.com/novoid/filetag][filetag]] and its documentation.
+For *tagging*, please refer to [[https://github.com/novoid/filetags][filetags]] and its documentation.
 
 See [[https://github.com/novoid/date2name][date2name]] for easily adding ISO *time-stamps or date-stamps* to
 files.
 
 For *easily naming and tagging* files within file browsers that allow
 integration of external tools, see [[https://github.com/novoid/appendfilename][appendfilename]] (once more) and
-[[https://github.com/novoid/filetag][filetag]].
+[[https://github.com/novoid/filetags][filetags]].
 
 Moving to the archive folders is done using [[https://github.com/novoid/move2archive][move2archive]].
 
