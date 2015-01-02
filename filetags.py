@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-02 16:38:23 vk>
+# Time-stamp: <2015-01-02 17:06:13 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -16,6 +16,7 @@
 import re
 import sys
 import os
+import os.path   # for directory traversal to look for .tagfiles
 import time
 import logging
 import operator  # for sorting dicts
@@ -25,8 +26,8 @@ import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
 
-PROG_VERSION_NUMBER = u"0.2"
-PROG_VERSION_DATE = u"2014-12-20"
+PROG_VERSION_NUMBER = u"0.3"
+PROG_VERSION_DATE = u"2015-01-02"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
@@ -132,10 +133,10 @@ def error_exit(errorcode, text):
 
     sys.exit(errorcode)
 
-    
+
 class SimpleCompleter(object):
     ## happily stolen from http://pymotw.com/2/readline/
-    
+
     def __init__(self, options):
         self.options = sorted(options)
         return
@@ -145,25 +146,25 @@ class SimpleCompleter(object):
         if state == 0:
             # This is the first time for this text, so build a match list.
             if text:
-                self.matches = [s 
+                self.matches = [s
                                 for s in self.options
                                 if s and s.startswith(text)]
                 logging.debug('%s matches: %s', repr(text), self.matches)
             else:
                 self.matches = self.options[:]
                 logging.debug('(empty input) matches: %s', self.matches)
-        
+
         # Return the state'th item from the match list,
         # if we have that many.
         try:
             response = self.matches[state]
         except IndexError:
             response = None
-        logging.debug('complete(%s, %s) => %s', 
+        logging.debug('complete(%s, %s) => %s',
                       repr(text), state, repr(response))
         return response
 
-    
+
 def contains_tag(filename, tagname=False):
     """
     Returns true if tagname is a tag within filename. If tagname is
@@ -531,7 +532,7 @@ def handle_tag_gardening():
 
     if tags_in_both_outputs != Set([]):
         print "If tags appear in both lists from above, they most likely require your attention:"
-        
+
         ## determine maximum length of strings for formatting:
         maxlength_tags = max(len(s) for s in tags_in_both_outputs)
         maxlength_count = len(str(abs(max(tag_dict.values()))))
@@ -545,7 +546,37 @@ def handle_tag_gardening():
             print "  {0:{1}s} : {2:{3}}  {4}".format(tag, maxlength_tags, tags_by_number[tag], maxlength_count, similar_tags)
         print
 
+
+def locate_file_in_cwd_and_parent_directories(filename):
+    """This method looks for the filename in the current folder and its
+    parent folders. It returns the file name of the first file name found.
+
+    @param filename: string of file name to look for
+    @param return: file name found
+    """
+
+    if os.path.isfile(filename):
+        logging.debug('found \"%s\" in current working directory' % filename)
+        return filename
+    else:
+        starting_dir = os.getcwdu()
+        parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
+        logging.debug('looking for \"%s\" in directory \"%s\" ...' % (filename, parent_dir))
+        while parent_dir != os.getcwdu():
+            os.chdir(parent_dir)
+            filename_to_look_for = os.path.abspath(os.path.join(os.getcwdu(), filename))
+            if os.path.isfile(filename_to_look_for):
+                logging.debug('found \"%s\" in directory \"%s\"' % (filename, parent_dir))
+                os.chdir(starting_dir)
+                return filename_to_look_for
+            parent_dir = os.path.abspath(os.path.join(os.getcwdu(), os.pardir))
+        os.chdir(starting_dir)
+        logging.debug('did NOT find \"%s\" in current directory or any parent directory')
+        return False
+
+
 def locate_and_parse_controlled_vocabulary():
+
     """This method is looking for files named
     CONTROLLED_VOCABULARY_FILENAME in the current directory and parses
     it. Each line contains a tag which gets read in for tab
@@ -555,16 +586,18 @@ def locate_and_parse_controlled_vocabulary():
 
     """
 
-    if os.path.isfile(CONTROLLED_VOCABULARY_FILENAME):
+    filename = locate_file_in_cwd_and_parent_directories(CONTROLLED_VOCABULARY_FILENAME)
+
+    if os.path.isfile(filename):
         tags = []
-        with codecs.open(CONTROLLED_VOCABULARY_FILENAME, encoding='utf-8') as filehandle:
+        with codecs.open(filename, encoding='utf-8') as filehandle:
             for line in filehandle:
                 tags.append(line.strip())
         return tags
     else:
         return False
 
-        
+
 def main():
     """Main function"""
 
@@ -614,18 +647,20 @@ def main():
         if vocabulary:
 
             assert(vocabulary.__class__ == list)
-            
+
             # Register our completer function
             readline.set_completer(SimpleCompleter(vocabulary).complete)
 
             # Use the tab key for completion
             readline.parse_and_bind('tab: complete')
-        
+
         print "                 "
-        print "    ,---------.  "
-        print "    |  ?     o | "
-        print "    `---------'  "
-        print "                 "
+        print "Please enter one or more tags (separated by \"" + BETWEEN_TAG_SEPARATOR + "\")     (abort with Ctrl-C)"
+        print "                     "
+        print "        ,---------.  "
+        print "        |  ?     o | "
+        print "        `---------'  "
+        print "                     "
 
         if options.remove:
             logging.info("Interactive mode: tags get REMOVED from file names ...")
@@ -635,7 +670,6 @@ def main():
         ## interactive: ask for list of tags
         logging.debug("interactive mode: asking for tags ...")
 
-        print "Please enter one or more tags (separated by \"" + BETWEEN_TAG_SEPARATOR + "\"):     (abort with Ctrl-C)"
         entered_tags = raw_input('Tags: ').strip()
 
         tags = extract_tags_from_argument(entered_tags)
