@@ -1,4 +1,4 @@
-## Time-stamp: <2015-01-02 14:14:25 vk>
+## Time-stamp: <2015-01-02 17:16:39 vk>
 ## -*- coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -58,8 +58,29 @@ GNU/Linux.
 : filetags.py --remove --tag foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
+: filetags.py --tag-gardening
+... prints out a summary of tags in current and sub-folders used and 
+tags that are most likely typos or abandoned
+
 For a complete list of parameters, please try:
 : filetags.py --help
+
+** Get the most out of filetags: controlled vocabulary ~.filetags~
+:PROPERTIES:
+:CREATED:  [2015-01-02 Fri 17:12]
+:END:
+
+This awesome tool is providing support for [[https://en.wikipedia.org/wiki/Controlled_vocabulary][controlled vocabularies]].
+When invoked for interactive tagging, it is looking for files named
+~.filetags~ in the current working directory and its parent
+directories as well. The first file of this name found is read in.
+Each line represents one tag. Those tags are used for *tag
+completion*.
+
+This is purely great: with tags within ~.filetag~ you don't have to
+enter the tags entrirely: just type the first characters and press TAB
+(twice to show you all possibilities). You will be amazed how
+efficiently you are going to tag things! :-)
 
 ** Bonus: integrating into Geeqie (or similar file browsers)
 
@@ -136,7 +157,6 @@ and ~T~ (removing tags), you can define them in geeqie:
    and choose your desired keyboard shortcut accordingly.
 
 I hope this method is as handy for you as it is for me :-)
-
 ** Bonus: Using tags to specify a sub-set of photographs
 
 You know the problem: got back from Paris and you can not show 937

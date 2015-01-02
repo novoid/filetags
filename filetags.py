@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-02 17:06:13 vk>
+# Time-stamp: <2015-01-02 17:11:01 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -56,6 +56,10 @@ Example usages:\n\
   " + sys.argv[0] + u" -r draft *report*\n\
       ... removes the tag \"draft\" from all files containing the word \"report\"\n\
 \n\
+\n\
+This tools is looking for (the first) text file named \".filetags\" in\n\
+current and parent directories. Each line of it is interpreted as a tag\n\
+for tag completion.\n\
 \n\
 Verbose description: http://Karl-Voit.at/managing-digital-photographs/\n\
 \n\
