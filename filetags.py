@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-02 17:11:01 vk>
+# Time-stamp: <2015-01-06 13:05:54 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -646,6 +646,8 @@ def main():
 
     elif options.interactive or not options.tags:
 
+        completionhint = u''
+
         ## look out for .filetags file and add readline support for tag completion if found with content
         vocabulary = locate_and_parse_controlled_vocabulary()
         if vocabulary:
@@ -658,8 +660,11 @@ def main():
             # Use the tab key for completion
             readline.parse_and_bind('tab: complete')
 
+            completionhint = u'; complete %s tags with TAB' % str(len(vocabulary))
+
         print "                 "
-        print "Please enter one or more tags (separated by \"" + BETWEEN_TAG_SEPARATOR + "\")     (abort with Ctrl-C)"
+        print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
+            completionhint
         print "                     "
         print "        ,---------.  "
         print "        |  ?     o | "
