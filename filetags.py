@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-06 13:08:30 vk>
+# Time-stamp: <2015-01-06 13:15:55 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -307,7 +307,10 @@ def extract_tags_from_argument(argument):
     assert argument.__class__ == str or \
         argument.__class__ == unicode
 
-    return argument.split(unicode(BETWEEN_TAG_SEPARATOR))
+    if len(argument) > 0:
+        return argument.split(unicode(BETWEEN_TAG_SEPARATOR))
+    else:
+        return False
 
 
 def extract_filenames_from_argument(argument):
@@ -328,8 +331,6 @@ def handle_file(filename, tags, do_remove, dryrun):
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
     @param return: error value
     """
-
-#    import pdb; pdb.set_trace()
 
     assert filename.__class__ == str or \
         filename.__class__ == unicode
@@ -686,6 +687,11 @@ def main():
 
         tags = extract_tags_from_argument(entered_tags)
 
+        if not tags:
+            logging.info("no tags given, exiting.")
+            sys.stdout.flush()
+            sys.exit(0)
+
         if options.remove:
             logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
         else:
@@ -696,6 +702,12 @@ def main():
         logging.debug("non-interactive mode: extracting tags from argument ...")
 
         tags = extract_tags_from_argument(options.tags)
+
+        if not tags:
+            ## FIXXME: check: can this be the case?
+            logging.info("no tags given, exiting.")
+            sys.stdout.flush()
+            sys.exit(0)
 
     logging.debug("tags found: [%s]" % '], ['.join(tags))
 
