@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-06 13:05:54 vk>
+# Time-stamp: <2015-01-06 13:08:30 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -592,12 +592,15 @@ def locate_and_parse_controlled_vocabulary():
 
     filename = locate_file_in_cwd_and_parent_directories(CONTROLLED_VOCABULARY_FILENAME)
 
-    if os.path.isfile(filename):
-        tags = []
-        with codecs.open(filename, encoding='utf-8') as filehandle:
-            for line in filehandle:
-                tags.append(line.strip())
-        return tags
+    if filename:
+      if os.path.isfile(filename):
+          tags = []
+          with codecs.open(filename, encoding='utf-8') as filehandle:
+              for line in filehandle:
+                  tags.append(line.strip())
+          return tags
+      else:
+          return False
     else:
         return False
 
