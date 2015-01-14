@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-06 13:15:55 vk>
+# Time-stamp: <2015-01-14 21:29:38 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -576,7 +576,7 @@ def locate_file_in_cwd_and_parent_directories(filename):
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwdu(), os.pardir))
         os.chdir(starting_dir)
-        logging.debug('did NOT find \"%s\" in current directory or any parent directory')
+        logging.debug('did NOT find \"%s\" in current directory or any parent directory' % filename)
         return False
 
 
