@@ -552,19 +552,20 @@ def handle_tag_gardening():
         print
 
 
-def locate_file_in_cwd_and_parent_directories(filename):
-    """This method looks for the filename in the current folder and its
+def locate_file_in_cwd_and_parent_directories(startfile, filename):
+    """This method looks for the filename in the folder of startfile and its
     parent folders. It returns the file name of the first file name found.
 
+    @param startfile: file whose path is the starting point
     @param filename: string of file name to look for
     @param return: file name found
     """
 
-    if os.path.isfile(filename):
-        logging.debug('found \"%s\" in current working directory' % filename)
+    if os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
+        logging.debug('found \"%s\" in directory of \"%s\"' % (filename, startfile))
         return filename
     else:
-        starting_dir = os.getcwdu()
+        starting_dir = os.path.dirname(os.path.abspath(startfile))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
         logging.debug('looking for \"%s\" in directory \"%s\" ...' % (filename, parent_dir))
         while parent_dir != os.getcwdu():
@@ -580,18 +581,19 @@ def locate_file_in_cwd_and_parent_directories(filename):
         return False
 
 
-def locate_and_parse_controlled_vocabulary():
+def locate_and_parse_controlled_vocabulary(file):
 
     """This method is looking for files named
-    CONTROLLED_VOCABULARY_FILENAME in the current directory and parses
+    CONTROLLED_VOCABULARY_FILENAME in the directory of file and parses
     it. Each line contains a tag which gets read in for tab
     completion.
 
+    @param file: file whose location is the starting point of the search
     @param return: either False or a list of found tag strings
 
     """
 
-    filename = locate_file_in_cwd_and_parent_directories(CONTROLLED_VOCABULARY_FILENAME)
+    filename = locate_file_in_cwd_and_parent_directories(file, CONTROLLED_VOCABULARY_FILENAME)
 
     if filename:
       if os.path.isfile(filename):
@@ -652,8 +654,11 @@ def main():
 
         completionhint = u''
 
+        if len(args) < 1:
+            error_exit(5, "Please add at least one file name as argument")
+
         ## look out for .filetags file and add readline support for tag completion if found with content
-        vocabulary = locate_and_parse_controlled_vocabulary()
+        vocabulary = locate_and_parse_controlled_vocabulary(args[0])
         if vocabulary:
 
             assert(vocabulary.__class__ == list)
@@ -666,6 +671,9 @@ def main():
 
             completionhint = u'; complete %s tags with TAB' % str(len(vocabulary))
 
+        logging.debug("len(args) [%s]" % str(len(args)))
+        logging.debug("args %s" % str(args))
+        
         print "                 "
         print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
             completionhint
