@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-14 21:29:38 vk>
+# Time-stamp: <2015-05-30 15:54:24 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -185,7 +185,7 @@ def contains_tag(filename, tagname=False):
         assert tagname.__class__ == str or \
             tagname.__class__ == unicode
 
-    components = re.match(FILE_WITH_TAGS_REGEX, filename)
+    components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(filename))
 
     if not tagname:
         return components is not None
@@ -234,13 +234,13 @@ def adding_tag_to_filename(filename, tagname):
     if contains_tag(filename) is False:
         logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
+        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
             old_filename = components.group(1)
             extension = components.group(2)
-            return old_filename + FILENAME_TAG_SEPARATOR + tagname + u'.' + extension
+            return os.path.join(os.path.dirname(filename), old_filename + FILENAME_TAG_SEPARATOR + tagname + u'.' + extension)
         else:
-            return filename + FILENAME_TAG_SEPARATOR + tagname
+            return os.path.join(os.path.dirname(filename), os.path.basename(filename) + FILENAME_TAG_SEPARATOR + tagname)
 
     elif contains_tag(filename, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): tag already found in filename" % (filename, tagname))
@@ -251,13 +251,13 @@ def adding_tag_to_filename(filename, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" %
                       (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, filename)
+        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
             old_filename = components.group(1)
             extension = components.group(2)
-            return old_filename + BETWEEN_TAG_SEPARATOR + tagname + u'.' + extension
+            return os.path.join(os.path.dirname(filename), old_filename + BETWEEN_TAG_SEPARATOR + tagname + u'.' + extension)
         else:
-            return filename + BETWEEN_TAG_SEPARATOR + tagname
+            return os.path.join(os.path.dirname(filename), filename + BETWEEN_TAG_SEPARATOR + tagname)
 
 
 def removing_tag_from_filename(filename, tagname):
@@ -673,7 +673,7 @@ def main():
 
         logging.debug("len(args) [%s]" % str(len(args)))
         logging.debug("args %s" % str(args))
-        
+
         print "                 "
         print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
             completionhint
