@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-05-30 15:54:24 vk>
+# Time-stamp: <2015-12-11 19:48:42 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -87,7 +87,7 @@ parser.add_option("-t", "--tag", "--tags", dest="tags",
 parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
                   help="remove tags from (instead of adding to) file name(s)")
 
-parser.add_option("-i", "--interactive", action="store_true",
+parser.add_option("-i", "--interactive", action="store_true", dest="interactive",
                   help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
 parser.add_option("-s", "--dryrun", dest="dryrun", action="store_true",
@@ -636,7 +636,17 @@ def main():
     if (options.list_tags_by_alphabet or options.list_tags_by_number) and (options.tags or options.interactive or options.remove):
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
 
+    logging.debug("extracting list of files ...")
+    logging.debug("len(args) [%s]" % str(len(args)))
+
+    files = extract_filenames_from_argument(args)
+
+    logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
+
     tags = []
+
+    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.tag_gardening):
+        error_exit(5, "Please add at least one file name as argument")
 
     if options.list_tags_by_alphabet:
         logging.debug("handling option list_tags_by_alphabet")
@@ -657,8 +667,21 @@ def main():
         if len(args) < 1:
             error_exit(5, "Please add at least one file name as argument")
 
+        tags_from_filenames = []
+
         ## look out for .filetags file and add readline support for tag completion if found with content
-        vocabulary = locate_and_parse_controlled_vocabulary(args[0])
+        if options.remove:
+            ## vocabulary for completing tags is current tags of files
+            for file in files:
+                ## add tags so that list contains all unique tags:
+                for newtag in extract_tags_from_filename(file):
+                    if newtag not in tags_from_filenames:
+                        tags_from_filenames.append(newtag)
+            tags_from_filenames.sort()
+            vocabulary = tags_from_filenames
+        else:
+            vocabulary = locate_and_parse_controlled_vocabulary(args[0])
+
         if vocabulary:
 
             assert(vocabulary.__class__ == list)
@@ -685,6 +708,14 @@ def main():
 
         if options.remove:
             logging.info("Interactive mode: tags get REMOVED from file names ...")
+            if len(tags_from_filenames) > 0:
+                print "\n  Possible tags to be removed:"
+                count = 1
+                list_of_tag_hints = []
+                for tag in tags_from_filenames:
+                    list_of_tag_hints.append(tag + ' (' + str(count) + ')')
+                    count += 1
+                print u'    ' + u' ⋅ '.join(list_of_tag_hints)
         else:
             logging.debug("Interactive mode: tags get ADDED to file names ...")
 
@@ -701,6 +732,20 @@ def main():
             sys.exit(0)
 
         if options.remove:
+            if len(tags) == 1 and len(tags_from_filenames) > 0:
+                ## check if user entered number shortcuts for tags to be removed:
+                potential_shortcut_string = tags
+                tags = []
+                try:
+                    shortcut_index = int(potential_shortcut_string[0])
+                    logging.debug('single entered tag is an integer')
+                    for character in list(potential_shortcut_string[0]):
+                        logging.debug('adding tag number %s' % character)
+                        tags.append(tags_from_filenames[int(character)-1])
+                except ValueError:
+                    logging.debug('single entered tag is a normal tag')
+                    tags = potential_shortcut_string
+
             logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
         else:
             logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
@@ -719,19 +764,9 @@ def main():
 
     logging.debug("tags found: [%s]" % '], ['.join(tags))
 
-    logging.debug("extracting list of files ...")
-    logging.debug("len(args) [%s]" % str(len(args)))
-    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.tag_gardening):
-        error_exit(5, "Please add at least one file name as argument")
-    else:
-
-        files = extract_filenames_from_argument(args)
-
-        logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
-
-        logging.debug("iterate over files ...")
-        for filename in files:
-            handle_file(filename, tags, options.remove, options.dryrun)
+    logging.debug("iterate over files ...")
+    for filename in files:
+        handle_file(filename, tags, options.remove, options.dryrun)
 
     logging.debug("successfully finished.")
 
