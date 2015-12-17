@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-12-11 19:48:42 vk>
+# Time-stamp: <2015-12-17 16:18:44 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -26,8 +26,8 @@ import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
 
-PROG_VERSION_NUMBER = u"0.3"
-PROG_VERSION_DATE = u"2015-01-02"
+PROG_VERSION_NUMBER = u"0.4"
+PROG_VERSION_DATE = u"2015-12-17"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
@@ -98,6 +98,9 @@ parser.add_option("--ln", "--list-tags-by-number", dest="list_tags_by_number", a
 
 parser.add_option("--la", "--list-tags-by-alphabet", dest="list_tags_by_alphabet", action="store_true",
                   help="list all file-tags sorted by their name")
+
+parser.add_option("--lu", "--list-tags-unknown-to-vocabulary", dest="list_unknown_tags", action="store_true",
+                  help="list all file-tags which are found in file names but are not part of .filetags")
 
 parser.add_option("--tag-gardening", dest="tag_gardening", action="store_true",
                   help="This is for getting an overview on tags that might require to be renamed (typos, " +
@@ -488,6 +491,19 @@ def list_tags_by_number(max_tag_count=0):
         print "\nNo file containing tags found in this folder hierarchy.\n"
         return {}
 
+    print_tag_dict(tag_dict, max_tag_count)
+
+    return tag_dict
+
+
+def print_tag_dict(tag_dict, max_tag_count=0):
+    """
+    Takes a dictionary which holds tag names and their occurrence and prints it to stdout
+
+    @param tag_dict: a dictionary holding tags and their occurrence number
+    @param max_tag_count: print only tags which occur less or equal to this number (disabled if 0)
+    """
+
     ## determine maximum length of strings for formatting:
     maxlength_tags = max(len(s) for s in tag_dict.keys())
     maxlength_count = len(str(abs(max(tag_dict.values()))))
@@ -505,6 +521,33 @@ def list_tags_by_number(max_tag_count=0):
             ## remove entries that exceed max_tag_count limit:
             del tag_dict[tuple[0]]
     print ''
+
+
+def list_unknown_tags():
+    """
+    Traverses the file system, extracts all tags, prints tags that are found in file names which are not found in the controlled vocabulary file .filetags
+
+    @param return: dict of tags (if max_tag_count is set, returned entries are set accordingly)
+    """
+
+    file_tag_dict = get_tags_from_files_and_subfolders()
+    if not file_tag_dict:
+        print "\nNo file containing tags found in this folder hierarchy.\n"
+        return {}
+
+    vocabulary = locate_and_parse_controlled_vocabulary(False)
+
+    ## filter out known tags from tag_dict
+    tag_dict = {}
+    for entry in file_tag_dict:
+        if entry not in vocabulary:
+            tag_dict[entry] = file_tag_dict[entry]
+
+    if len(tag_dict) == 0:
+        print "\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" + \
+        " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n"
+    else:
+        print_tag_dict(tag_dict)
 
     return tag_dict
 
@@ -556,16 +599,19 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     """This method looks for the filename in the folder of startfile and its
     parent folders. It returns the file name of the first file name found.
 
-    @param startfile: file whose path is the starting point
+    @param startfile: file whose path is the starting point; if False, the working path is taken
     @param filename: string of file name to look for
     @param return: file name found
     """
 
-    if os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
+    if startfile and os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
         logging.debug('found \"%s\" in directory of \"%s\"' % (filename, startfile))
         return filename
     else:
-        starting_dir = os.path.dirname(os.path.abspath(startfile))
+        if startfile:
+            starting_dir = os.path.dirname(os.path.abspath(startfile))
+        else:
+            starting_dir = os.getcwdu()
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
         logging.debug('looking for \"%s\" in directory \"%s\" ...' % (filename, parent_dir))
         while parent_dir != os.getcwdu():
@@ -645,7 +691,7 @@ def main():
 
     tags = []
 
-    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.tag_gardening):
+    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
     if options.list_tags_by_alphabet:
@@ -655,6 +701,10 @@ def main():
     elif options.list_tags_by_number:
         logging.debug("handling option list_tags_by_number")
         list_tags_by_number()
+
+    elif options.list_unknown_tags:
+        logging.debug("handling option list_unknown_tags")
+        list_unknown_tags()
 
     elif options.tag_gardening:
         logging.debug("handling option for tag gardening")
