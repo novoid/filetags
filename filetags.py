@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-12-29 11:08:34 vk>
+# Time-stamp: <2015-12-29 18:52:43 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -32,6 +32,7 @@ INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
+HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 
 USAGE = u"\n\
     " + sys.argv[0] + u" [<options>] <list of files>\n\
@@ -434,11 +435,12 @@ def find_similar_tags(tag, tags):
     return close_but_not_exact_matches
 
 
-def list_tags_by_alphabet(only_with_similar_tags=False):
+def list_tags_by_alphabet(only_with_similar_tags=False, vocabulary=False):
     """
     Traverses the file system, extracts all tags, prints them sorted by alphabet
 
     @param only_with_similar_tags: if true, print out only tags with similarity to others
+    @param vocabulary: array of tags from controlled vocabulary or False
     @param return: dict of tags (if only_with_similar_tags, tags without similar ones are omitted)
     """
 
@@ -448,11 +450,12 @@ def list_tags_by_alphabet(only_with_similar_tags=False):
         return {}
 
     ## determine maximum length of strings for formatting:
-    maxlength_tags = max(len(s) for s in tag_dict.keys())
+    maxlength_tags = max(len(s) for s in tag_dict.keys()) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
     maxlength_count = len(str(abs(max(tag_dict.values()))))
     if maxlength_count < 5:
         maxlength_count = 5
 
+    hint_for_being_in_vocabulary = ''
     print("\n  {0:{1}s} : count".format(u'tag', maxlength_tags))
     print "  " + "-" * (maxlength_tags + maxlength_count + 3)
 
@@ -467,7 +470,11 @@ def list_tags_by_alphabet(only_with_similar_tags=False):
             see_also = u'      (similar to:  ' + ', '.join(close_matches) + u')'
 
         if (only_with_similar_tags and len(close_matches) > 0) or not only_with_similar_tags:
-            print "  {0:{1}s} : {2:{3}}{4}".format(tuple[0], maxlength_tags, tuple[1], maxlength_count, see_also)
+            if vocabulary and tuple[0] in vocabulary:
+                hint_for_being_in_vocabulary = HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE
+            else:
+                hint_for_being_in_vocabulary = ''
+            print "  {0:{1}s} : {2:{3}}{4}".format(tuple[0] + hint_for_being_in_vocabulary, maxlength_tags, tuple[1], maxlength_count, see_also)
 
         if only_with_similar_tags and len(close_matches) == 0:
             ## remove entries from dict for returning only tags with similar tag entries:
@@ -478,11 +485,12 @@ def list_tags_by_alphabet(only_with_similar_tags=False):
     return tag_dict
 
 
-def list_tags_by_number(max_tag_count=0):
+def list_tags_by_number(max_tag_count=0, vocabulary=False):
     """
     Traverses the file system, extracts all tags, prints them sorted by tag usage count
 
     @param max_tag_count: print only tags which occur less or equal to this number (disabled if 0)
+    @param vocabulary: array of tags from controlled vocabulary or False
     @param return: dict of tags (if max_tag_count is set, returned entries are set accordingly)
     """
 
@@ -491,31 +499,39 @@ def list_tags_by_number(max_tag_count=0):
         print "\nNo file containing tags found in this folder hierarchy.\n"
         return {}
 
-    print_tag_dict(tag_dict, max_tag_count)
+    print_tag_dict(tag_dict, max_tag_count, vocabulary)
 
     return tag_dict
 
 
-def print_tag_dict(tag_dict, max_tag_count=0):
+def print_tag_dict(tag_dict, max_tag_count=0, vocabulary=False):
     """
     Takes a dictionary which holds tag names and their occurrence and prints it to stdout
 
     @param tag_dict: a dictionary holding tags and their occurrence number
+    @param vocabulary: array of tags from controlled vocabulary or False
     @param max_tag_count: print only tags which occur less or equal to this number (disabled if 0)
     """
 
     ## determine maximum length of strings for formatting:
-    maxlength_tags = max(len(s) for s in tag_dict.keys())
+    maxlength_tags = max(len(s) for s in tag_dict.keys()) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
     maxlength_count = len(str(abs(max(tag_dict.values()))))
     if maxlength_count < 5:
         maxlength_count = 5
 
+    hint_for_being_in_vocabulary = ''
+    if vocabulary:
+        print u"\n  (Tags marked with an asterisk apprear in your vocabulary.)"
     print "\n {0:{1}} : {2:{3}}".format(u'count', maxlength_count, u'tag', maxlength_tags)
     print " " + '-' * (maxlength_tags + maxlength_count + 7)
     for tuple in sorted(tag_dict.items(), key=operator.itemgetter(1)):
         ## sort dict of (tag, count) according to count
         if (max_tag_count > 0 and tuple[1] <= max_tag_count) or max_tag_count == 0:
-            print " {0:{1}} : {2:{3}}".format(tuple[1], maxlength_count, tuple[0], maxlength_tags)
+            if vocabulary and tuple[0] in vocabulary:
+                hint_for_being_in_vocabulary = HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE
+            else:
+                hint_for_being_in_vocabulary = ''
+            print " {0:{1}} : {2:{3}}".format(tuple[1], maxlength_count, tuple[0] + hint_for_being_in_vocabulary, maxlength_tags)
 
         if max_tag_count > 0 and tuple[1] > max_tag_count:
             ## remove entries that exceed max_tag_count limit:
@@ -547,12 +563,12 @@ def list_unknown_tags():
         print "\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" + \
         " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n"
     else:
-        print_tag_dict(tag_dict)
+        print_tag_dict(tag_dict, vocabulary)
 
     return tag_dict
 
 
-def handle_tag_gardening():
+def handle_tag_gardening(vocabulary):
     """
     This method is quite handy to find tags that might contain typos or do not
     differ much from other tags. You might want to rename them accordinly.
@@ -560,6 +576,7 @@ def handle_tag_gardening():
     FIXXME: this is *not* performance optimized since it traverses the file
     system multiple times!
 
+    @param vocabulary: array containing the controlled vocabulary (or False)
     @param return: -
     """
 
@@ -569,20 +586,21 @@ def handle_tag_gardening():
         return
 
     print "\nTags that appear only once are most probably typos or you have forgotten them:"
-    tags_by_number = list_tags_by_number(max_tag_count=1)
+    tags_by_number = list_tags_by_number(max_tag_count=1, vocabulary=vocabulary)
 
     print "Tags which have similar other tags are probably typos or plural/singular forms of others:"
-    tags_by_alphabet = list_tags_by_alphabet(only_with_similar_tags=True)
+    tags_by_alphabet = list_tags_by_alphabet(only_with_similar_tags=True, vocabulary=vocabulary)
 
     set_by_number = Set(tags_by_number.keys())
     set_by_alphabet = Set(tags_by_alphabet.keys())
     tags_in_both_outputs = set_by_number & set_by_alphabet  # intersection of sets
+    hint_for_being_in_vocabulary = ''
 
     if tags_in_both_outputs != Set([]):
         print "If tags appear in both lists from above, they most likely require your attention:"
 
         ## determine maximum length of strings for formatting:
-        maxlength_tags = max(len(s) for s in tags_in_both_outputs)
+        maxlength_tags = max(len(s) for s in tags_in_both_outputs) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
         maxlength_count = len(str(abs(max(tag_dict.values()))))
         if maxlength_count < 5:
             maxlength_count = 5
@@ -590,8 +608,13 @@ def handle_tag_gardening():
         print("\n  {0:{1}s} : count".format(u'tag', maxlength_tags))
         print "  " + "-" * (maxlength_tags + maxlength_count + 3)
         for tag in sorted(tags_in_both_outputs):
+            if vocabulary and tag in vocabulary:
+                hint_for_being_in_vocabulary = HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE
+            else:
+                hint_for_being_in_vocabulary = ''
+
             similar_tags = u'      (similar to:  ' + ', '.join(find_similar_tags(tag, tag_dict.keys())) + u')'
-            print "  {0:{1}s} : {2:{3}}  {4}".format(tag, maxlength_tags, tags_by_number[tag], maxlength_count, similar_tags)
+            print "  {0:{1}} : {2:{3}}  {4}".format(tag + hint_for_being_in_vocabulary, maxlength_tags, tags_by_number[tag], maxlength_count, similar_tags)
         print
 
 
@@ -690,6 +713,7 @@ def main():
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
 
     tags = []
+    vocabulary = locate_and_parse_controlled_vocabulary(os.getcwdu())
 
     if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
@@ -708,7 +732,7 @@ def main():
 
     elif options.tag_gardening:
         logging.debug("handling option for tag gardening")
-        handle_tag_gardening()
+        handle_tag_gardening(vocabulary)
 
     elif options.interactive or not options.tags:
 
