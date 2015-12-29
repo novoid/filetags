@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-12-17 16:18:44 vk>
+# Time-stamp: <2015-12-29 11:08:34 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -235,7 +235,7 @@ def adding_tag_to_filename(filename, tagname):
         tagname.__class__ == unicode
 
     if contains_tag(filename) is False:
-        logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
+        logging.debug(u"adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
@@ -816,6 +816,8 @@ def main():
 
     logging.debug("iterate over files ...")
     for filename in files:
+        if filename.__class__ == str:
+            filename = unicode(filename, "UTF-8")
         handle_file(filename, tags, options.remove, options.dryrun)
 
     logging.debug("successfully finished.")
