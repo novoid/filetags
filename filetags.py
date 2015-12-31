@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-12-29 18:52:43 vk>
+# Time-stamp: <2015-12-31 14:28:55 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -348,6 +348,8 @@ def handle_file(filename, tags, do_remove, dryrun):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % filename)
         return
     elif not os.path.isfile(filename):
+        logging.debug("file type error in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" % (os.getcwdu(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
+        import pdb; pdb.set_trace()
         logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
         return
 
@@ -627,14 +629,22 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     @param return: file name found
     """
 
-    if startfile and os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
+    if startfile and os.path.isfile(startfile) and os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
         logging.debug('found \"%s\" in directory of \"%s\"' % (filename, startfile))
         return filename
+    elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
+        logging.debug('found \"%s\" in directory \"%s\"' % (filename, startfile))
+        return filename
     else:
-        if startfile:
+        if os.path.isfile(startfile):
             starting_dir = os.path.dirname(os.path.abspath(startfile))
+            logging.debug('startfile [%s] found, using it as starting_dir [%s]' % (str(startfile), starting_dir))
+        elif os.path.isdir(startfile):
+            starting_dir = startfile
+            logging.debug('startfile [%s] is a directory, using it as starting_dir [%s]' % (str(startfile), starting_dir))
         else:
             starting_dir = os.getcwdu()
+            logging.debug('no startfile found; using cwd as starting_dir [%s]' % (starting_dir))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
         logging.debug('looking for \"%s\" in directory \"%s\" ...' % (filename, parent_dir))
         while parent_dir != os.getcwdu():
