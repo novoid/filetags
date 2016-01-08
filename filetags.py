@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-08 17:57:17 vk>
+# Time-stamp: <2016-01-08 17:59:28 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -26,8 +26,8 @@ import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
 
-PROG_VERSION_NUMBER = u"0.4"
-PROG_VERSION_DATE = u"2015-12-17"
+PROG_VERSION_NUMBER = u"0.5"
+PROG_VERSION_DATE = u"2016-01-08"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
