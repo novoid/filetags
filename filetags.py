@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-08 17:04:44 vk>
+# Time-stamp: <2016-01-08 17:57:17 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -666,31 +666,32 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
         return False
 
 
-def locate_and_parse_controlled_vocabulary(file):
+def locate_and_parse_controlled_vocabulary(startfile):
 
     """This method is looking for files named
-    CONTROLLED_VOCABULARY_FILENAME in the directory of file and parses
+    CONTROLLED_VOCABULARY_FILENAME in the directory of startfile and parses
     it. Each line contains a tag which gets read in for tab
     completion.
 
-    @param file: file whose location is the starting point of the search
+    @param startfile: file whose location is the starting point of the search
     @param return: either False or a list of found tag strings
 
     """
 
-    filename = locate_file_in_cwd_and_parent_directories(file, CONTROLLED_VOCABULARY_FILENAME)
+    filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
 
     if filename:
-      if os.path.isfile(filename):
-          tags = []
-          with codecs.open(filename, encoding='utf-8') as filehandle:
-              for line in filehandle:
-                  tags.append(line.strip())
-          return tags
-      else:
-          return False
+        if os.path.isfile(filename):
+            tags = []
+            with codecs.open(filename, encoding='utf-8') as filehandle:
+                for line in filehandle:
+                    tags.append(line.strip())
+            return tags
+        else:
+            return False
     else:
         return False
+
 
 def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
     """A list of tags from the list are printed to stdout. Each tag
@@ -703,9 +704,15 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
     """
 
     if tags_get_added:
-        hint_string = u"Previously used tags in this directory:"
+        if len(tag_list) < 9:
+            hint_string = u"Previously used tags in this directory:"
+        else:
+            hint_string = u"Top nine previously used tags in this directory:"
     else:
-        hint_string = u"Possible tags to be removed:"
+        if len(tag_list) < 9:
+            hint_string = u"Possible tags to be removed:"
+        else:
+            hint_string = u"Top nine possible tags to be removed:"
     print "\n  " + hint_string
 
     count = 1
@@ -716,9 +723,10 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
     print u'    ' + u' ⋅ '.join(list_of_tag_hints)
     print u'' ## newline at end
 
+
 def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
     """
-    Returns tags if the only tag is not a shortcut (entered as integer). 
+    Returns tags if the only tag is not a shortcut (entered as integer).
     Returns a list of corresponding tags if it's an integer.
 
     @param tags: list of entered tags from the user
@@ -745,7 +753,25 @@ def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
         tags = potential_shortcut_string
 
     return tags
-    
+
+
+def get_upto_nine_keys_of_dict_with_highest_value(mydict):
+    """
+    Takes a dict, sorts it according to their values, and returns up to nine
+    values with the highest values.
+
+    Example1: { "key2":45; "key1": 33} -> [ "key1", "key2" ]
+
+    @param mydict: dictionary holding keys and values
+    @param return: list of up to top nine keys according to the rank of their values
+    """
+
+    assert mydict.__class__ == dict
+
+    complete_list = sorted(mydict, key=mydict.get, reverse=True)
+    return sorted(complete_list[:9])
+
+
 def main():
     """Main function"""
 
@@ -810,8 +836,8 @@ def main():
         if len(args) < 1:
             error_exit(5, "Please add at least one file name as argument")
 
-        tags_from_filenames_of_arguments = []
-        tags_from_filenames_of_same_dir = []
+        tags_from_filenames_of_arguments_dict = {}
+        upto9_tags_from_filenames_of_same_dir_list = []
 
         ## look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
@@ -819,13 +845,14 @@ def main():
             for file in files:
                 ## add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(file):
-                    if newtag not in tags_from_filenames_of_arguments:
-                        tags_from_filenames_of_arguments.append(newtag)
-            tags_from_filenames_of_arguments.sort()
-            vocabulary = sorted(tags_from_filenames_of_arguments)
+                    add_tag_to_countdict(newtag, tags_from_filenames_of_arguments_dict)
+
+            vocabulary = sorted(tags_from_filenames_of_arguments_dict.keys())
+            upto9_tags_from_filenames_of_arguments_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_from_filenames_of_arguments_dict))
         else:
             if files:
-                tags_from_filenames_of_same_dir = sorted(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0]))).keys())
+
+                upto9_tags_from_filenames_of_same_dir_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
             vocabulary = sorted(locate_and_parse_controlled_vocabulary(args[0]))
 
         if vocabulary:
@@ -854,12 +881,12 @@ def main():
 
         if options.remove:
             logging.info("Interactive mode: tags get REMOVED from file names ...")
-            if len(tags_from_filenames_of_arguments) > 0:
-                print_tag_shortcut_with_numbers(tags_from_filenames_of_arguments, tags_get_added=False)
+            if len(upto9_tags_from_filenames_of_arguments_list) > 0:
+                print_tag_shortcut_with_numbers(upto9_tags_from_filenames_of_arguments_list, tags_get_added=False)
         else:
             logging.debug("Interactive mode: tags get ADDED to file names ...")
-            if tags_from_filenames_of_same_dir:
-                print_tag_shortcut_with_numbers(tags_from_filenames_of_same_dir, tags_get_added=True)
+            if upto9_tags_from_filenames_of_same_dir_list:
+                print_tag_shortcut_with_numbers(upto9_tags_from_filenames_of_same_dir_list, tags_get_added=True)
 
 
         ## interactive: ask for list of tags
@@ -875,15 +902,15 @@ def main():
             sys.exit(0)
 
         if options.remove:
-            if len(tags) == 1 and len(tags_from_filenames_of_arguments) > 0:
+            if len(tags) == 1 and len(upto9_tags_from_filenames_of_arguments_list) > 0:
                 ## check if user entered number shortcuts for tags to be removed:
-                tags = check_for_possible_shortcuts_in_entered_tags(tags, tags_from_filenames_of_arguments)
+                tags = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_arguments_list)
 
             logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
         else:
-            if len(tags) == 1 and tags_from_filenames_of_same_dir:
+            if len(tags) == 1 and upto9_tags_from_filenames_of_same_dir_list:
                 ## check if user entered number shortcuts for tags to be removed:
-                tags = check_for_possible_shortcuts_in_entered_tags(tags, tags_from_filenames_of_same_dir)
+                tags = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_same_dir_list)
             logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
 
     else:
