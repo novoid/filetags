@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-10 18:16:24 vk>
+# Time-stamp: <2016-01-10 18:35:09 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -351,7 +351,6 @@ def handle_file(filename, tags, do_remove, dryrun):
         return
     elif not os.path.isfile(filename):
         logging.debug("file type error in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" % (os.getcwdu(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
-        import pdb; pdb.set_trace()
         logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
         return
 
