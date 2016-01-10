@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-10 18:12:20 vk>
+# Time-stamp: <2016-01-10 18:16:24 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -335,7 +335,7 @@ def handle_file(filename, tags, do_remove, dryrun):
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
-    @param return: error value
+    @param return: error value or new filename
     """
 
     assert filename.__class__ == str or \
@@ -382,6 +382,8 @@ def handle_file(filename, tags, do_remove, dryrun):
         logging.debug(u" renaming \"%s\"" % filename)
         logging.debug(u"      ⤷   \"%s\"" % (new_filename))
         os.rename(filename, new_filename)
+
+    return new_filename
 
 
 def add_tag_to_countdict(tag, tags):
