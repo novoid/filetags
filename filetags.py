@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-08 17:59:28 vk>
+# Time-stamp: <2016-01-10 18:12:20 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -33,6 +33,8 @@ FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
+UNIQUE_LABELS = [u'labelgray', u'labelgreen', u'labelyellow', u'labelred', u'labelblue']
+
 
 USAGE = u"\n\
     " + sys.argv[0] + u" [<options>] <list of files>\n\
@@ -354,6 +356,18 @@ def handle_file(filename, tags, do_remove, dryrun):
         return
 
     new_filename = filename
+
+    ## if tag within UNIQUE_LABELS found, and new UNIQUE_LABEL is given, remove old label:
+    ## e.g.: UNIQUE_LABELS = (u'yes', u'no') -> if 'no' should be added, remove existing label 'yes' (and vice versa)
+    ## FIXXME: this is an undocumented feature -> please add proper documentation
+    if not do_remove:
+        unique_labels_in_old_filename = set(extract_tags_from_filename(filename)).intersection(UNIQUE_LABELS)
+        unique_label_to_add = set(tags).intersection(UNIQUE_LABELS)
+        if unique_label_to_add and unique_labels_in_old_filename:
+            logging.debug("found unique label %s which require old unique label to be removed: %s" % (str(unique_label_to_add), str(unique_labels_in_old_filename)))
+            for tagname in unique_labels_in_old_filename:
+                new_filename = removing_tag_from_filename(new_filename, tagname)
+
     for tagname in tags:
         if do_remove:
             new_filename = removing_tag_from_filename(new_filename, tagname)
