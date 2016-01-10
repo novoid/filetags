@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-10 18:35:09 vk>
+# Time-stamp: <2016-01-10 19:18:10 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -434,6 +434,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwdu(), starttags=False, r
 
     return tags
 
+
 def find_similar_tags(tag, tags):
     """
     Returns a list of entries of tags that are similar to tag (but not same as tag)
@@ -450,7 +451,7 @@ def find_similar_tags(tag, tags):
     similar_tags = difflib.get_close_matches(tag, tags, n=999, cutoff=0.7)
     close_but_not_exact_matches = []
 
-    ## omit exact matches
+    ## omit exact matches   FIXXME: this can be done in one eloquent line -> refactor
     for match in similar_tags:
         if match != tag:
             close_but_not_exact_matches.append(match)
@@ -744,9 +745,9 @@ def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
     Returns tags if the only tag is not a shortcut (entered as integer).
     Returns a list of corresponding tags if it's an integer.
 
-    @param tags: list of entered tags from the user
-    @param list_of_shortcut_tags: list of possible shortcut tags
-    @param return: list of tags which were meant by the user
+    @param tags: list of entered tags from the user, e.g., [u'23']
+    @param list_of_shortcut_tags: list of possible shortcut tags, e.g., [u'bar', u'folder1', u'baz']
+    @param return: list of tags which were meant by the user, e.g., [u'bar', u'baz']
     """
 
     assert tags.__class__ == list
@@ -762,7 +763,7 @@ def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
             try:
                 tags.append(list_of_shortcut_tags[int(character)-1])
             except IndexError:
-                error_exit(9, u'Index number exceeds list: Entered shortcut \"' + character + '\" was not provided by list: ' + str(list_of_shortcut_tags))
+                return potential_shortcut_string
     except ValueError:
         logging.debug('single entered tag is a normal tag')
         tags = potential_shortcut_string
@@ -775,7 +776,7 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict):
     Takes a dict, sorts it according to their values, and returns up to nine
     values with the highest values.
 
-    Example1: { "key2":45; "key1": 33} -> [ "key1", "key2" ]
+    Example1: { "key2":45, "key1": 33} -> [ "key1", "key2" ]
 
     @param mydict: dictionary holding keys and values
     @param return: list of up to top nine keys according to the rank of their values

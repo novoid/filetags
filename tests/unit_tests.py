@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2015-01-02 14:17:50 vk>
+# Time-stamp: <2016-01-10 19:23:23 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -68,6 +68,26 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.add_tag_to_countdict(u'newtag', {u'oldtag': 1}), {u'oldtag': 1, u'newtag': 1})
         self.assertEqual(filetags.add_tag_to_countdict(u'newtag', {u'oldtag': 2}), {u'oldtag': 2, u'newtag': 1})
 
+    def test_find_similar_tags(self):
+
+        self.assertEqual(filetags.find_similar_tags(u'xxx', [u'foobar', u'bar', u'baz', u'Frankenstein', u'parabol', u'Bah', u'paR', u'por', u'Schneewittchen']), [])
+
+        self.assertEqual(filetags.find_similar_tags(u'Simpson', [u'foobar', u'Simson', u'simpson', u'Frankenstein', u'sumpson', u'Simpso', u'impson', u'mpson', u'Schneewittchen']), \
+                                                    [u'impson', u'Simson', u'Simpso', u'simpson', u'mpson', u'sumpson'])
+
+    def test_check_for_possible_shortcuts_in_entered_tags(self):
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'bar'], [u'Frankenstein', u'Schneewittchen']), [u'bar'])
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'34'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'baz', u'bar'])
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'12'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'Frankenstein', u'Schneewittchen'])
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'39'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'39'])
+
+    def test_get_upto_nine_keys_of_dict_with_highest_value(self):
+
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key2":45, "key1": 33}), [ "key1", "key2" ])
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159, "key7": 0, "key8": 999, "key9": 42, "key10": 4242}), \
+                         [ "key1", "key10", "key2", "key3", "key4", "key5", "key6", "key8", "key9"])
+
     def tearDown(self):
 
         pass
@@ -83,7 +103,7 @@ class TestFileWithoutTags(unittest.TestCase):
         ## create temporary directory:
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
-        print "\ntemporary directory: " + self.tempdir
+        print "\nTestFileWithoutTags: temporary directory: " + self.tempdir
 
         ## create set of test files:
         self.create_tmp_file(self.testfilename)
@@ -129,6 +149,27 @@ class TestFileWithoutTags(unittest.TestCase):
         filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- two.txt'),
                             [u'two'], do_remove=True, dryrun=False)
         self.assertEqual(self.file_exists(u'a test file . for you.txt'), True)
+
+    def test_unique_labels(self):
+
+        ## adding a unique label to a file without any tags:
+        new_filename = filetags.handle_file(os.path.join(self.tempdir, self.testfilename), [u'labelgreen'], False, False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- labelgreen.txt'), True)
+
+        ## adding a second unique label - first one should be gone:
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelgreen.txt'),
+                            [u'labelyellow'], do_remove=False, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- labelyellow.txt'), True)
+
+        ## adding non-unique tags:
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelyellow.txt'),
+                            [u'one', u'two'], do_remove=False, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- labelyellow one two.txt'), True)
+
+        ## removing unique label:
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelyellow one two.txt'),
+                            [u'labelyellow', u'one'], do_remove=True, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- two.txt'), True)
 
     def test_adding_a_tag_to_file_without_extension(self):
 
@@ -184,6 +225,59 @@ class TestFileWithoutTags(unittest.TestCase):
         filetags.handle_file(os.path.join(self.tempdir, u'a second file -- foo'), [u'similar2'], False, False)
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {u'similar1': 1, u'similar2': 1})
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False), {u'foo': 2, u'similar1': 1, u'similar2': 1})
+
+    def tearDown(self):
+
+        rmtree(self.tempdir)
+
+
+class TestHierarchyWithFilesAndFolders(unittest.TestCase):
+
+    tempdir = None
+
+    def setUp(self):
+
+        ## create temporary directory:
+        self.tempdir = tempfile.mkdtemp()
+        os.chdir(self.tempdir)
+        print "\nTestHierarchyWithFilesAndFolders: temporary directory: " + self.tempdir
+
+        ## initial tests without files:
+        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, False, False), {})
+
+        ## create set of test files:
+        self.create_tmp_file("foo1 -- bar.txt")
+        self.create_tmp_file("foo2 -- bar baz.txt")
+        self.create_tmp_file("foo3 -- bar baz labelgreen.txt")
+
+    def create_tmp_file(self, name):
+
+        open(os.path.join(self.tempdir, name), 'w')
+
+    def file_exists(self, name):
+
+        return os.path.isfile(os.path.join(self.tempdir, name))
+
+    def test_vocabulary_in_real_world_example(self):
+
+        print "FIXXME: test_vocabulary_in_real_world_example needs vocabulary + tests"
+
+    def test_get_tags_from_files_and_subfolders(self):
+
+        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, False, False), {u'baz': 2, u'bar': 3, u'labelgreen': 1})
+
+    def test_list_unknown_tags(self):
+
+        print "FIXXME: test_list_unknown_tags() not implemented yet"
+
+    def test_handle_tag_gardening(self):
+
+        print "FIXXME: test_handle_tag_gardening() not implemented yet"
+
+    def test_locate_and_parse_controlled_vocabulary(self):
+
+        print "FIXXME: test_locate_and_parse_controlled_vocabulary() not implemented yet"
+
 
     def tearDown(self):
 
