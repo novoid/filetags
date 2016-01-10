@@ -807,7 +807,7 @@ def main():
 
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
 
-    tags = []
+    tags_from_userinput = []
     vocabulary = locate_and_parse_controlled_vocabulary(os.getcwdu())
 
     if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
@@ -894,44 +894,44 @@ def main():
 
         entered_tags = raw_input('Tags: ').strip()
 
-        tags = extract_tags_from_argument(entered_tags)
+        tags_from_userinput = extract_tags_from_argument(entered_tags)
 
-        if not tags:
+        if not tags_from_userinput:
             logging.info("no tags given, exiting.")
             sys.stdout.flush()
             sys.exit(0)
 
         if options.remove:
-            if len(tags) == 1 and len(upto9_tags_from_filenames_of_arguments_list) > 0:
+            if len(tags_from_userinput) == 1 and len(upto9_tags_from_filenames_of_arguments_list) > 0:
                 ## check if user entered number shortcuts for tags to be removed:
-                tags = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_arguments_list)
+                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_arguments_list)
 
-            logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
+            logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
         else:
-            if len(tags) == 1 and upto9_tags_from_filenames_of_same_dir_list:
+            if len(tags_from_userinput) == 1 and upto9_tags_from_filenames_of_same_dir_list:
                 ## check if user entered number shortcuts for tags to be removed:
-                tags = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_same_dir_list)
-            logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags)))
+                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_from_filenames_of_same_dir_list)
+            logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
     else:
         ## non-interactive: extract list of tags
         logging.debug("non-interactive mode: extracting tags from argument ...")
 
-        tags = extract_tags_from_argument(options.tags)
+        tags_from_userinput = extract_tags_from_argument(options.tags)
 
-        if not tags:
+        if not tags_from_userinput:
             ## FIXXME: check: can this be the case?
             logging.info("no tags given, exiting.")
             sys.stdout.flush()
             sys.exit(0)
 
-    logging.debug("tags found: [%s]" % '], ['.join(tags))
+    logging.debug("tags found: [%s]" % '], ['.join(tags_from_userinput))
 
     logging.debug("iterate over files ...")
     for filename in files:
         if filename.__class__ == str:
             filename = unicode(filename, "UTF-8")
-        handle_file(filename, tags, options.remove, options.dryrun)
+        handle_file(filename, tags_from_userinput, options.remove, options.dryrun)
 
     logging.debug("successfully finished.")
 
