@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-10 19:18:10 vk>
+# Time-stamp: <2016-02-13 11:43:06 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -26,7 +26,7 @@ import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
 
-PROG_VERSION_NUMBER = u"0.5"
+PROG_VERSION_NUMBER = u"0.6beta"
 PROG_VERSION_DATE = u"2016-01-08"
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
@@ -920,7 +920,7 @@ def main():
         if options.remove:
             if len(tags_from_userinput) == 1 and len(upto9_tags_from_filenames_of_arguments_list) > 0:
                 ## check if user entered number shortcuts for tags to be removed:
-                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags, upto9_tags_from_filenames_of_arguments_list)
+                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_from_filenames_of_arguments_list)
 
             logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
         else:
