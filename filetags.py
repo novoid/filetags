@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-02-13 11:43:06 vk>
+# Time-stamp: <2016-02-25 09:54:29 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -378,9 +378,12 @@ def handle_file(filename, tags, do_remove, dryrun):
         logging.info(u" renaming \"%s\"" % filename)
         logging.info(u"      ⤷   \"%s\"" % (new_filename))
     else:
-        logging.debug(u" renaming \"%s\"" % filename)
-        logging.debug(u"      ⤷   \"%s\"" % (new_filename))
-        os.rename(filename, new_filename)
+        if filename != new_filename:
+            if not options.quiet:
+                print u"   %s  ⤷  %s" % (filename, new_filename)
+            logging.debug(u" renaming \"%s\"" % filename)
+            logging.debug(u"      ⤷   \"%s\"" % (new_filename))
+            os.rename(filename, new_filename)
 
     return new_filename
 
