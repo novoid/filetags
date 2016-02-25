@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-02-25 09:54:29 vk>
+# Time-stamp: <2016-02-25 10:02:44 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -85,7 +85,7 @@ FILE_WITH_EXTENSION_REGEX = re.compile("(.*)\.(.*)$")
 parser = OptionParser(usage=USAGE)
 
 parser.add_option("-t", "--tag", "--tags", dest="tags",
-                  help="one or more tags (separated by spaces) to add/remove")
+                  help="one or more tags (in quotes, separated by spaces) to add/remove")
 
 parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
                   help="remove tags from (instead of adding to) file name(s)")
