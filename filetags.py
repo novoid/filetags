@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-02-25 10:02:44 vk>
+# Time-stamp: <2016-03-11 16:13:21 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -380,7 +380,7 @@ def handle_file(filename, tags, do_remove, dryrun):
     else:
         if filename != new_filename:
             if not options.quiet:
-                print u"   %s  ⤷  %s" % (filename, new_filename)
+                print u"   %s   →   %s" % (filename, new_filename)
             logging.debug(u" renaming \"%s\"" % filename)
             logging.debug(u"      ⤷   \"%s\"" % (new_filename))
             os.rename(filename, new_filename)
@@ -427,13 +427,16 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwdu(), starttags=False, r
 
     assert not recursive ## FIXXME: not implemented yet
 
+    logging.debug('get_tags_from_files_and_subfolders called with startdir [%s], starttags [%s], recursive[%s]' % (startdir, str(starttags), str(recursive)))
     for root, dirs, files in os.walk(startdir):
+        logging.debug('get_tags_from_files_and_subfolders: root [%s]' % root)
         for filename in files:
             for tag in extract_tags_from_filename(filename):
                 tags = add_tag_to_countdict(tag, tags)
         for dirname in dirs:
             for tag in extract_tags_from_filename(dirname):
                 tags = add_tag_to_countdict(tag, tags)
+        break  # do not loop
 
     return tags
 
@@ -655,28 +658,28 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     """
 
     if startfile and os.path.isfile(startfile) and os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
-        logging.debug('found \"%s\" in directory of \"%s\"' % (filename, startfile))
+        logging.debug('found \"%s\" in directory of \"%s\" ..' % (filename, startfile))
         return filename
     elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
-        logging.debug('found \"%s\" in directory \"%s\"' % (filename, startfile))
+        logging.debug('found \"%s\" in directory \"%s\" ...' % (filename, startfile))
         return filename
     else:
         if os.path.isfile(startfile):
             starting_dir = os.path.dirname(os.path.abspath(startfile))
-            logging.debug('startfile [%s] found, using it as starting_dir [%s]' % (str(startfile), starting_dir))
+            logging.debug('startfile [%s] found, using it as starting_dir [%s] ....' % (str(startfile), starting_dir))
         elif os.path.isdir(startfile):
             starting_dir = startfile
-            logging.debug('startfile [%s] is a directory, using it as starting_dir [%s]' % (str(startfile), starting_dir))
+            logging.debug('startfile [%s] is a directory, using it as starting_dir [%s] .....' % (str(startfile), starting_dir))
         else:
             starting_dir = os.getcwdu()
-            logging.debug('no startfile found; using cwd as starting_dir [%s]' % (starting_dir))
+            logging.debug('no startfile found; using cwd as starting_dir [%s] ......' % (starting_dir))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
-        logging.debug('looking for \"%s\" in directory \"%s\" ...' % (filename, parent_dir))
+        logging.debug('looking for \"%s\" in directory \"%s\" .......' % (filename, parent_dir))
         while parent_dir != os.getcwdu():
             os.chdir(parent_dir)
             filename_to_look_for = os.path.abspath(os.path.join(os.getcwdu(), filename))
             if os.path.isfile(filename_to_look_for):
-                logging.debug('found \"%s\" in directory \"%s\"' % (filename, parent_dir))
+                logging.debug('found \"%s\" in directory \"%s\" ........' % (filename, parent_dir))
                 os.chdir(starting_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwdu(), os.pardir))
@@ -701,14 +704,19 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     if filename:
         if os.path.isfile(filename):
+            logging.debug('locate_and_parse_controlled_vocabulary: found controlled vocabulary in folder of startfile')
             tags = []
             with codecs.open(filename, encoding='utf-8') as filehandle:
+                logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' % filename)
                 for line in filehandle:
                     tags.append(line.strip())
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' % len(tags))
             return tags
         else:
+            logging.debug('locate_and_parse_controlled_vocabulary: could not find controlled vocabulary in folder of startfile')
             return False
     else:
+        logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary in folder of startfile')
         return False
 
 
@@ -828,6 +836,7 @@ def main():
 
     tags_from_userinput = []
     vocabulary = locate_and_parse_controlled_vocabulary(os.getcwdu())
+    logging.debug('finished locating of controlled vocabulary')
 
     if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
@@ -866,13 +875,17 @@ def main():
                 for newtag in extract_tags_from_filename(file):
                     add_tag_to_countdict(newtag, tags_from_filenames_of_arguments_dict)
 
+            logging.debug('generating vocabulary ...')
             vocabulary = sorted(tags_from_filenames_of_arguments_dict.keys())
             upto9_tags_from_filenames_of_arguments_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_from_filenames_of_arguments_dict))
         else:
             if files:
 
+                logging.debug('deriving upto9_tags_from_filenames_of_same_dir_list ...')
                 upto9_tags_from_filenames_of_same_dir_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
+                logging.debug('derived upto9_tags_from_filenames_of_same_dir_list')
             vocabulary = sorted(locate_and_parse_controlled_vocabulary(args[0]))
+            logging.debug('derived vocabulary with %i entries' % len(vocabulary))
 
         if vocabulary:
 
