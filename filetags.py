@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-05-06 10:58:49 vk>
+# Time-stamp: <2016-05-06 12:03:14 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -756,7 +756,7 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
     for tag in tag_list:
         list_of_tag_hints.append(tag + ' (' + str(count) + ')')
         count += 1
-    try
+    try:
         print u'    ' + u' ⋅ '.join(list_of_tag_hints)
     except UnicodeEncodeError:
         print u'    ' + u' - '.join(list_of_tag_hints)
