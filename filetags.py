@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-05-05 21:12:09 vk>
+# Time-stamp: <2016-05-06 10:24:08 vk>
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -723,10 +723,10 @@ def locate_and_parse_controlled_vocabulary(startfile):
             return tags
         else:
             logging.debug('locate_and_parse_controlled_vocabulary: could not find controlled vocabulary in folder of startfile')
-            return False
+            return []
     else:
         logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary in folder of startfile')
-        return False
+        return []
 
 
 def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
@@ -896,7 +896,7 @@ def main():
             vocabulary = sorted(locate_and_parse_controlled_vocabulary(args[0]))
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))
 
-        if vocabulary:
+        if vocabulary and len(vocabulary) > 0:
 
             assert(vocabulary.__class__ == list)
 
