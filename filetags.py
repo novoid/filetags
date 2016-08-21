@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-05-06 12:03:14 vk>
+PROG_VERSION = u"Time-stamp: <2016-08-21 13:01:14 vk>"
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -26,8 +26,7 @@ import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
 
-PROG_VERSION_NUMBER = u"0.6beta"
-PROG_VERSION_DATE = u"2016-01-08"
+PROG_VERSION_DATE = PROG_VERSION[13:23]
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
@@ -70,7 +69,7 @@ Verbose description: http://Karl-Voit.at/managing-digital-photographs/\n\
 :license: GPL v3 or any later version\n\
 :URL: https://github.com/novoid/filetag\n\
 :bugreports: via github or <tools@Karl-Voit.at>\n\
-:version: " + PROG_VERSION_NUMBER + " from " + PROG_VERSION_DATE + "\n"
+:version: " + PROG_VERSION_DATE + "\n"
 
 
 ## file names containing tags matches following regular expression
@@ -815,8 +814,7 @@ def main():
     """Main function"""
 
     if options.version:
-        print os.path.basename(sys.argv[0]) + " version " + PROG_VERSION_NUMBER + \
-            " from " + PROG_VERSION_DATE
+        print os.path.basename(sys.argv[0]) + " version " + PROG_VERSION_DATE
         sys.exit(0)
 
     handle_logging()
