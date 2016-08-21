@@ -81,6 +81,8 @@ FILE_WITH_TAGS_REGEX_TAGLIST_INDEX = 2
 FILE_WITH_TAGS_REGEX_EXTENSION_INDEX = 4
 
 FILE_WITH_EXTENSION_REGEX = re.compile("(.*)\.(.*)$")
+FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
+FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 
 parser = OptionParser(usage=USAGE)
@@ -243,8 +245,8 @@ def adding_tag_to_filename(filename, tagname):
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
-            old_filename = components.group(1)
-            extension = components.group(2)
+            old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
             return os.path.join(os.path.dirname(filename), old_filename + FILENAME_TAG_SEPARATOR + tagname + u'.' + extension)
         else:
             return os.path.join(os.path.dirname(filename), os.path.basename(filename) + FILENAME_TAG_SEPARATOR + tagname)
@@ -260,8 +262,8 @@ def adding_tag_to_filename(filename, tagname):
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
-            old_filename = components.group(1)
-            extension = components.group(2)
+            old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
             return os.path.join(os.path.dirname(filename), old_filename + BETWEEN_TAG_SEPARATOR + tagname + u'.' + extension)
         else:
             return os.path.join(os.path.dirname(filename), filename + BETWEEN_TAG_SEPARATOR + tagname)
