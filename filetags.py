@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-21 14:42:02 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-21 20:25:02 vk>"
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -32,6 +32,8 @@ FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
+TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
+
 unique_tags = [[u'teststring1', u'teststring2']] ## list of list which contains tags that are mutually exclusive
 ## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
 ##       You might delete them if you don't use my unit test suite.
@@ -92,6 +94,12 @@ parser.add_option("-t", "--tag", "--tags", dest="tags",
 
 parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
                   help="remove tags from (instead of adding to) file name(s)")
+
+parser.add_option("-f", "--filter", dest="tagfilter", action="store_true",
+                  help="filter according to tags")
+
+parser.add_option("--imageviewer", dest="imageviewer",
+                  help="command to view images (for --filter; default: geeqie)")
 
 parser.add_option("-i", "--interactive", action="store_true", dest="interactive",
                   help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
@@ -295,16 +303,18 @@ def removing_tag_from_filename(filename, tagname):
         tags = components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
         old_filename = components.group(FILE_WITH_TAGS_REGEX_FILENAME_INDEX)
         extension = components.group(FILE_WITH_TAGS_REGEX_EXTENSION_INDEX)
+        if not extension:
+            extension = u''
+        else:
+            extension = u'.' + extension
 
         if len(tags) < 2:
             logging.debug("given tagname is the only tag -> remove all tags and FILENAME_TAG_SEPARATOR as well")
-            return old_filename + u'.' + extension
-
+            return old_filename + extension
         else:
             ## still tags left
             return old_filename + FILENAME_TAG_SEPARATOR + \
-                BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + \
-                u'.' + extension
+                BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + extension
 
 
 def extract_tags_from_argument(argument):
@@ -334,6 +344,7 @@ def extract_filenames_from_argument(argument):
 def get_unique_tags_from_filename(filename):
     """
     Extracts tags that occur in the array of arrays "unique_tags".
+
     @param filename: string containing one file name
     @param return: list of found tags
     """
@@ -360,7 +371,7 @@ def item_contained_in_list_of_lists(item, list_of_lists):
             return item, current_list
     return None, None
 
-def handle_file(filename, tags, do_remove, dryrun):
+def handle_file(filename, tags, do_remove, do_filter, dryrun):
     """
     @param filename: string containing one file name
     @param tags: list containing one or more tags
@@ -374,6 +385,8 @@ def handle_file(filename, tags, do_remove, dryrun):
     assert tags.__class__ == list
     if do_remove:
         assert do_remove.__class__ == bool
+    if do_filter:
+        assert do_filter.__class__ == bool
     if dryrun:
         assert dryrun.__class__ == bool
 
@@ -385,52 +398,64 @@ def handle_file(filename, tags, do_remove, dryrun):
         logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
         return
 
-    new_filename = filename
+    if do_filter:
 
-    for tagname in tags:
-        if do_remove:
-            new_filename = removing_tag_from_filename(new_filename, tagname)
-        else:
-            ## FIXXME: not performance optimized for large number of unique tags in many lists:
-            tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
-
-            if tagname != tag_in_unique_tags:
-                new_filename = adding_tag_to_filename(new_filename, tagname)
-            else:
-                ## if tag within unique_tags found, and new unique tag is given, remove old tag:
-                ## e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
-                ## If user enters contradicting tags, only the last one will be applied.
-                ## FIXXME: this is an undocumented feature -> please add proper documentation
-
-                current_filename_tags = extract_tags_from_filename(new_filename)
-                conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
-                logging.debug("found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
-                for conflicting_tag in conflicting_tags:
-                    new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
-                new_filename = adding_tag_to_filename(new_filename, tagname)
-
-    if dryrun:
-        logging.info(u" ")
-        logging.info(u" renaming \"%s\"" % filename)
         try:
-            logging.info(u"      ⤷   \"%s\"" % (new_filename))
+            print u" link   %s   →   %s" % (filename, TAGFILTER_DIRECTORY)
         except UnicodeEncodeError:
-            logging.info(u"      >   \"%s\"" % (new_filename))
-    else:
-        if filename != new_filename:
-            if not options.quiet:
-                try:
-                    print u"   %s   →   %s" % (filename, new_filename)
-                except UnicodeEncodeError:
-                    print u"   %s   >   %s" % (filename, new_filename)
-            logging.debug(u" renaming \"%s\"" % filename)
-            try:
-                logging.debug(u"      ⤷   \"%s\"" % (new_filename))
-            except UnicodeEncodeError:
-                logging.debug(u"      >   \"%s\"" % (new_filename))
-            os.rename(filename, new_filename)
+            print u" link   %s   >   %s" % (filename, TAGFILTER_DIRECTORY)
+        if not dryrun:
+            os.symlink(os.path.join(os.getcwdu(), filename),
+                       os.path.join(TAGFILTER_DIRECTORY, filename))
 
-    return new_filename
+
+    else: ## add or remove tags:
+        new_filename = filename
+
+        for tagname in tags:
+            if do_remove:
+                new_filename = removing_tag_from_filename(new_filename, tagname)
+            else:
+                ## FIXXME: not performance optimized for large number of unique tags in many lists:
+                tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
+
+                if tagname != tag_in_unique_tags:
+                    new_filename = adding_tag_to_filename(new_filename, tagname)
+                else:
+                    ## if tag within unique_tags found, and new unique tag is given, remove old tag:
+                    ## e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
+                    ## If user enters contradicting tags, only the last one will be applied.
+                    ## FIXXME: this is an undocumented feature -> please add proper documentation
+
+                    current_filename_tags = extract_tags_from_filename(new_filename)
+                    conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
+                    logging.debug("found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
+                    for conflicting_tag in conflicting_tags:
+                        new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
+                    new_filename = adding_tag_to_filename(new_filename, tagname)
+
+        if dryrun:
+            logging.info(u" ")
+            logging.info(u" renaming \"%s\"" % filename)
+            try:
+                logging.info(u"      ⤷   \"%s\"" % (new_filename))
+            except UnicodeEncodeError:
+                logging.info(u"      >   \"%s\"" % (new_filename))
+        else:
+            if filename != new_filename:
+                if not options.quiet:
+                    try:
+                        print u"   %s   →   %s" % (filename, new_filename)
+                    except UnicodeEncodeError:
+                        print u"   %s   >   %s" % (filename, new_filename)
+                logging.debug(u" renaming \"%s\"" % filename)
+                try:
+                    logging.debug(u"      ⤷   \"%s\"" % (new_filename))
+                except UnicodeEncodeError:
+                    logging.debug(u"      >   \"%s\"" % (new_filename))
+                os.rename(filename, new_filename)
+
+        return new_filename
 
 
 def add_tag_to_countdict(tag, tags):
@@ -776,7 +801,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
         return []
 
 
-def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
+def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_linked=False):
     """A list of tags from the list are printed to stdout. Each tag
     gets a number associated which corresponds to the position in the
     list (although starting with 1).
@@ -791,6 +816,11 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True):
             hint_string = u"Previously used tags in this directory:"
         else:
             hint_string = u"Top nine previously used tags in this directory:"
+    elif tags_get_linked:
+        if len(tag_list) < 9:
+            hint_string = u"Used tags in this directory:"
+        else:
+            hint_string = u"Top nine used tags in this directory:"
     else:
         if len(tag_list) < 9:
             hint_string = u"Possible tags to be removed:"
@@ -858,6 +888,105 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict):
     return sorted(complete_list[:9])
 
 
+def ask_for_tags(vocabulary, upto9_tags_for_shortcuts):
+    """
+    Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
+    the user to enter tags. Aborts program if no tags were entered. Returns list of
+    entered tags.
+
+    @param vocabulary: array containing the controlled vocabulary
+    @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
+    @param return: list of up to top nine keys according to the rank of their values
+    """
+
+    if vocabulary and len(vocabulary) > 0:
+
+        assert(vocabulary.__class__ == list)
+
+        # Register our completer function
+        readline.set_completer(SimpleCompleter(vocabulary).complete)
+
+        # Use the tab key for completion
+        readline.parse_and_bind('tab: complete')
+
+        completionhint = u'; complete %s tags with TAB' % str(len(vocabulary))
+
+    logging.debug("len(args) [%s]" % str(len(args)))
+    logging.debug("args %s" % str(args))
+
+    print "                 "
+    print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
+        completionhint
+    print "                     "
+    print "        ,---------.  "
+    print "        |  ?     o | "
+    print "        `---------'  "
+    print "                     "
+
+    if len(upto9_tags_for_shortcuts) > 0:
+        print_tag_shortcut_with_numbers(upto9_tags_for_shortcuts,
+                                        tags_get_added=(not options.remove and not options.tagfilter), tags_get_linked=options.tagfilter)
+
+    logging.debug("interactive mode: asking for tags ...")
+    entered_tags = raw_input('Tags: ').strip()
+    tags_from_userinput = extract_tags_from_argument(entered_tags)
+
+    if not tags_from_userinput:
+        logging.info("no tags given, exiting.")
+        sys.stdout.flush()
+        sys.exit(0)
+    else:
+        if len(tags_from_userinput) == 1 and len(upto9_tags_for_shortcuts) > 0:
+            ## check if user entered number shortcuts for tags to be removed:
+            tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_for_shortcuts)
+        return tags_from_userinput
+
+def get_files_of_directory(directory):
+    """
+    Lists the files of the given directory and returns a list of its files.
+
+    @param directory: string of an existing directory
+    @param return: list of file names of given directory
+    """
+
+    files = []
+    for (dirpath, dirnames, filenames) in os.walk(directory):
+        files.extend(filenames)
+        break
+    return files
+
+def filter_files_matching_tags(allfiles, tags):
+    """
+    Returns a list of file names that contain one or more given tags.
+
+    @param allfiles: array of file names
+    @param tags: array of tags
+    @param return: list of file names that contain at least one tag of tags
+    """
+
+    return [x for x in allfiles if set(tags).intersection(set(extract_tags_from_filename(x)))]
+
+def assert_empty_tagfilter_directory():
+    """
+    Creates non-existent tagfilter directory or deletes and re-creates it.
+    """
+
+    ## make sure that temp dir is here:
+    if not os.path.isdir(TAGFILTER_DIRECTORY):
+        logging.debug('creating non-existent tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
+        if not options.dryrun:
+            os.makedirs(TAGFILTER_DIRECTORY)
+    else:
+        logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(TAGFILTER_DIRECTORY))
+        if not options.dryrun:
+            import shutil    # for removing directories with shutil.rmtree()
+            shutil.rmtree(TAGFILTER_DIRECTORY)
+            logging.debug('re-creating tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
+            os.makedirs(TAGFILTER_DIRECTORY)
+    if not options.dryrun:
+        assert(os.path.isdir(TAGFILTER_DIRECTORY))
+
+
 def main():
     """Main function"""
 
@@ -894,7 +1023,7 @@ def main():
 
     tags_from_userinput = []
 
-    if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
+    if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
     if options.list_tags_by_alphabet:
@@ -917,11 +1046,11 @@ def main():
 
         completionhint = u''
 
-        if len(args) < 1:
+        if len(args) < 1 and not options.tagfilter:
             error_exit(5, "Please add at least one file name as argument")
 
-        tags_from_filenames_of_arguments_dict = {}
-        upto9_tags_from_filenames_of_same_dir_list = []
+        tags_for_vocabulary = {}
+        upto9_tags_for_shortcuts = []
 
         ## look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
@@ -929,77 +1058,30 @@ def main():
             for file in files:
                 ## add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(file):
-                    add_tag_to_countdict(newtag, tags_from_filenames_of_arguments_dict)
+                    add_tag_to_countdict(newtag, tags_for_vocabulary)
+            vocabulary = sorted(tags_for_vocabulary.keys())
+            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
+
+        elif options.tagfilter:
+            for tag in get_tags_from_files_and_subfolders(startdir=os.getcwdu(), recursive=False):
+                add_tag_to_countdict(tag, tags_for_vocabulary)
 
             logging.debug('generating vocabulary ...')
-            vocabulary = sorted(tags_from_filenames_of_arguments_dict.keys())
-            upto9_tags_from_filenames_of_arguments_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_from_filenames_of_arguments_dict))
+            vocabulary = sorted(tags_for_vocabulary.keys())
+            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
+
         else:
             if files:
 
-                logging.debug('deriving upto9_tags_from_filenames_of_same_dir_list ...')
-                upto9_tags_from_filenames_of_same_dir_list = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
-                logging.debug('derived upto9_tags_from_filenames_of_same_dir_list')
+                logging.debug('deriving upto9_tags_for_shortcuts ...')
+                upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
+                logging.debug('derived upto9_tags_for_shortcuts')
             vocabulary = sorted(locate_and_parse_controlled_vocabulary(args[0]))
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))
 
-        if vocabulary and len(vocabulary) > 0:
-
-            assert(vocabulary.__class__ == list)
-
-            # Register our completer function
-            readline.set_completer(SimpleCompleter(vocabulary).complete)
-
-            # Use the tab key for completion
-            readline.parse_and_bind('tab: complete')
-
-            completionhint = u'; complete %s tags with TAB' % str(len(vocabulary))
-
-        logging.debug("len(args) [%s]" % str(len(args)))
-        logging.debug("args %s" % str(args))
-
-        print "                 "
-        print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
-            completionhint
-        print "                     "
-        print "        ,---------.  "
-        print "        |  ?     o | "
-        print "        `---------'  "
-        print "                     "
-
-        if options.remove:
-            logging.info("Interactive mode: tags get REMOVED from file names ...")
-            if len(upto9_tags_from_filenames_of_arguments_list) > 0:
-                print_tag_shortcut_with_numbers(upto9_tags_from_filenames_of_arguments_list, tags_get_added=False)
-        else:
-            logging.debug("Interactive mode: tags get ADDED to file names ...")
-            if upto9_tags_from_filenames_of_same_dir_list:
-                print_tag_shortcut_with_numbers(upto9_tags_from_filenames_of_same_dir_list, tags_get_added=True)
-
-
-        ## interactive: ask for list of tags
-        logging.debug("interactive mode: asking for tags ...")
-
-        entered_tags = raw_input('Tags: ').strip()
-
-        tags_from_userinput = extract_tags_from_argument(entered_tags)
-
-        if not tags_from_userinput:
-            logging.info("no tags given, exiting.")
-            sys.stdout.flush()
-            sys.exit(0)
-
-        if options.remove:
-            if len(tags_from_userinput) == 1 and len(upto9_tags_from_filenames_of_arguments_list) > 0:
-                ## check if user entered number shortcuts for tags to be removed:
-                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_from_filenames_of_arguments_list)
-
-            logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
-        else:
-            if len(tags_from_userinput) == 1 and upto9_tags_from_filenames_of_same_dir_list:
-                ## check if user entered number shortcuts for tags to be removed:
-                tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_from_filenames_of_same_dir_list)
-            logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
+        ## ==================== Interactive asking user for tags ============================= ##
+        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts)
+        ## ==================== Interactive asking user for tags ============================= ##
 
     else:
         ## non-interactive: extract list of tags
@@ -1014,12 +1096,27 @@ def main():
             sys.exit(0)
 
     logging.debug("tags found: [%s]" % '], ['.join(tags_from_userinput))
+    if options.remove:
+        logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
+    elif options.tagfilter:
+        logging.info("filtering items with tags \"%s\" in directory \"%s\" ..." %
+                     (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)) , str(TAGFILTER_DIRECTORY)))
+    else:
+        logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
+
+    if options.tagfilter and not files:
+        assert_empty_tagfilter_directory()
+        files = filter_files_matching_tags(get_files_of_directory(os.getcwdu()), tags_from_userinput)
 
     logging.debug("iterate over files ...")
     for filename in files:
         if filename.__class__ == str:
             filename = unicode(filename, "UTF-8")
-        handle_file(filename, tags_from_userinput, options.remove, options.dryrun)
+        handle_file(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
+
+    if options.tagfilter:
+        from subprocess import call
+        call(["geeqie", TAGFILTER_DIRECTORY])
 
     logging.debug("successfully finished.")
 
