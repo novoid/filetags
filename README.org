@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-21 14:48:37 vk>
+## Time-stamp: <2016-08-21 16:45:22 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -7,11 +7,17 @@
 This Python script adds or removes tags to file names in the following
 form:
 
-: 2013-05-09 a file name with ISO date stamp in name -- tag1.jpg
-: different file without time stamp in name -- tag2.txt
-: 2013-05-09T16.17 file name with time stamp -- tag3.csv
-: file name with several tags -- tag1 tag2.jpeg
-: another example file name with multiple example tags -- fun videos kids.mpeg
+#+BEGIN_QUOTE
+file without time stamp in name -- *tag2*.txt
+
+file name with several tags -- *tag1 tag2*.jpeg
+
+another example file name with multiple example tags -- *fun videos kids*.mpeg
+
+2013-05-09 a file name with ISO date stamp in name -- *tag1*.jpg
+
+2013-05-09T16.17 file name with time stamp -- *tag3*.csv
+#+END_QUOTE
 
 The script accepts an arbitrary number of files (see your shell for
 possible length limitations).
@@ -29,7 +35,7 @@ separate tags from the file name, I am using the separator ~ -- ~
 
 For people familiar with [[https://en.wikipedia.org/wiki/Regex][Regular Expressions]]:
 
-: (<ISO date/time stamp>)? <descriptive file name> -- <list of tags separated by spaces>.extension
+: (<ISO date/time stamp>)? <descriptive file name> -- <list of tags separated by spaces>.<file extension>
 
 Tagging files this way requires a file renaming process. Adding (or
 removing) tag(s) to a set of file results in multiple renaming
@@ -163,81 +169,6 @@ replaces any season-tag with the new one. So if you tag the file ...
 
 ... without having to manually remove the tag ~summer~.
 
-** Bonus: integrating into Geeqie (or similar file browsers)
-
-I am using [[http://geeqie.sourceforge.net/][geeqie]] for browsing/presenting image files. After I
-mark a set of images for adding one or more tags, I just have to
-press ~t~ and I get asked for the tags. After entering the tags and
-RETURN, the tags are added to the image files. With ~T~ I can remove
-tags accordingly.
-
-Using GNU/Linux, this is quite easy accomplished. The only thing that
-is not straight forward is the need for a wrapper script. The wrapper
-script does provide a shell window for entering the tags.
-
-~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
-: #!/bin/sh
-:
-: /usr/bin/gnome-terminal \
-:     --geometry=73x5+330+5  \
-:     --tab-with-profile=big \
-:     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags.py --interactive "${@}"
-:
-: #end
-
-~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
-looks like:
-: #!/bin/sh
-:
-: /usr/bin/gnome-terminal \
-:     --geometry=73x5+330+5  \
-:     --tab-with-profile=big \
-:     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags.py --interactive --remove "${@}"
-:
-: #end
-
-In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
-that geeqie shows the wrapper scripts as external editors to its
-image files:
-
-~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
-: [Desktop Entry]
-: Name=filetags
-: GenericName=filetags
-: Comment=
-: Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
-: Icon=
-: Terminal=true
-: Type=Application
-: Categories=Application;Graphics;
-: hidden=false
-: MimeType=image/*;video/*;image/mpo;image/thm
-: Categories=X-Geeqie;
-
-~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
-: [Desktop Entry]
-: Name=filetags
-: GenericName=filetags
-: Comment=
-: Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
-: Icon=
-: Terminal=true
-: Type=Application
-: Categories=Application;Graphics;
-: hidden=false
-: MimeType=image/*;video/*;image/mpo;image/thm
-: Categories=X-Geeqie;
-
-In order to be able to use the keyboard shortcuts ~t~ (adding tags)
-and ~T~ (removing tags), you can define them in geeqie:
-1. Edit > Preferences > Preferences ... > Keyboard.
-2. Scroll to the bottom of the list.
-3. Double click in the ~KEY~-column of ~filetags~ and ~filetags-remove~
-   and choose your desired keyboard shortcut accordingly.
-
-I hope this method is as handy for you as it is for me :-)
 ** Bonus: Using tags to specify a sub-set of photographs
 
 You know the problem: got back from Paris and you can not show 937
@@ -324,6 +255,115 @@ Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.d
 : hidden=false
 : MimeType=image/*;video/*;image/mpo;image/thm
 : Categories=X-Geeqie;
+
+* Integration Into Common Tools
+
+** Integrating into Geeqie
+
+I am using [[http://geeqie.sourceforge.net/][geeqie]] for browsing/presenting image files. After I
+mark a set of images for adding one or more tags, I just have to
+press ~t~ and I get asked for the tags. After entering the tags and
+RETURN, the tags are added to the image files. With ~T~ I can remove
+tags accordingly.
+
+Using GNU/Linux, this is quite easy accomplished. The only thing that
+is not straight forward is the need for a wrapper script. The wrapper
+script does provide a shell window for entering the tags.
+
+~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
+: #!/bin/sh
+:
+: /usr/bin/gnome-terminal \
+:     --geometry=73x5+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetags/filetags.py --interactive "${@}"
+:
+: #end
+
+~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
+looks like:
+: #!/bin/sh
+:
+: /usr/bin/gnome-terminal \
+:     --geometry=73x5+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetags/filetags.py --interactive --remove "${@}"
+:
+: #end
+
+In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
+that geeqie shows the wrapper scripts as external editors to its
+image files:
+
+~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
+: [Desktop Entry]
+: Name=filetags
+: GenericName=filetags
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
+
+~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
+: [Desktop Entry]
+: Name=filetags
+: GenericName=filetags
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
+
+In order to be able to use the keyboard shortcuts ~t~ (adding tags)
+and ~T~ (removing tags), you can define them in geeqie:
+1. Edit > Preferences > Preferences ... > Keyboard.
+2. Scroll to the bottom of the list.
+3. Double click in the ~KEY~-column of ~filetags~ and ~filetags-remove~
+   and choose your desired keyboard shortcut accordingly.
+
+I hope this method is as handy for you as it is for me :-)
+
+** Integration into Thunar
+
+[[https://en.wikipedia.org/wiki/Thunar][Thunar]] is a popular GNU/Linux file browser for the xfce environment.
+
+Unfortunately, it is rather complicated to add custom commands to
+Thunar. I found [[https://askubuntu.com/questions/403922/keyboard-shortcut-for-thunar-custom-actions][a good description]] which you might want to follow.
+
+To my disappoinment, even this manual confguration is not stable
+somehow. From time to time, the IDs of ~$HOME/.config/Thunar/uca.xml~
+and ~$HOME/.config/Thunar/accels.scm~ differ.
+
+For people using Org-mode, I automated the updating process (not the
+initial adding process) to match IDs again:
+
+Script for checking "tag": do it ~tag-ID~ and path in ~accels.scm~ match?
+: #+BEGIN_SRC sh :var myname="tag"
+: ID=`egrep -A 2 "<name>$myname" $HOME/.config/Thunar/uca.xml | grep unique-id | sed 's#.*<unique-id>##' | sed 's#<.*$##'`
+: echo "$myname-ID of uca.xml: $ID"
+: echo "In accels.scm: "`grep -i "$ID" $HOME/.config/Thunar/accels.scm`
+: #+END_SRC
+
+If they don't match, following script re-writes ~accels.scm~ with the current ID:
+: #+BEGIN_SRC sh :var myname="tag" :var myshortcut="<Alt>t"
+: ID=`egrep -A 2 "<name>$myname" $HOME/.config/Thunar/uca.xml | grep unique-id | sed 's#.*<unique-id>##' | sed 's#<.*$##'`
+: echo "appending $myname-ID of uca.xml to accels.scm: $ID"
+: mv $HOME/.config/Thunar/accels.scm $HOME/.config/Thunar/accels.scm.OLD
+: grep -v "\"$myshortcut\"" $HOME/.config/Thunar/accels.scm.OLD > $HOME/.config/Thunar/accels.scm
+: rm $HOME/.config/Thunar/accels.scm.OLD
+: echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
+: #+END_SRC
 
 * Related tools and workflows
 
