@@ -1,5 +1,5 @@
-## Time-stamp: <2015-01-02 17:16:39 vk>
-## -*- coding: utf-8 -*-
+## Time-stamp: <2016-08-21 11:59:42 vk>
+## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
 * filetags
@@ -59,7 +59,7 @@ GNU/Linux.
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
 : filetags.py --tag-gardening
-... prints out a summary of tags in current and sub-folders used and 
+... prints out a summary of tags in current and sub-folders used and
 tags that are most likely typos or abandoned
 
 For a complete list of parameters, please try:
@@ -96,25 +96,25 @@ script does provide a shell window for entering the tags.
 
 ~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
 : #!/bin/sh
-: 
+:
 : /usr/bin/gnome-terminal \
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
 :     -x /home/vk/src/filetags/filetags.py --interactive "${@}"
-: 
+:
 : #end
 
 ~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
 looks like:
 : #!/bin/sh
-: 
+:
 : /usr/bin/gnome-terminal \
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
 :     -x /home/vk/src/filetags/filetags.py --interactive --remove "${@}"
-: 
+:
 : #end
 
 In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
@@ -150,7 +150,7 @@ image files:
 : Categories=X-Geeqie;
 
 In order to be able to use the keyboard shortcuts ~t~ (adding tags)
-and ~T~ (removing tags), you can define them in geeqie: 
+and ~T~ (removing tags), you can define them in geeqie:
 1. Edit > Preferences > Preferences ... > Keyboard.
 2. Scroll to the bottom of the list.
 3. Double click in the ~KEY~-column of ~filetags~ and ~filetags-remove~
@@ -179,33 +179,33 @@ watch the best 50 or so. :-)
 
 The script ~vksel.sh~ looks like this:
 : #!/bin/sh
-: 
+:
 : TMPDIR="/tmp/imageselection"
 : IMAGEDIR="${1}"
 : IMAGEVIEWER="geeqie"
 : FILENAME=$(basename $0)
-: 
+:
 : print_usage()
 : {
 :         echo
 :         echo "usage:   ${FILENAME} <directory>"
-:         echo 
-:         echo "... starts a image viewer containing files tagged with \"sel\" in the current" 
+:         echo
+:         echo "... starts a image viewer containing files tagged with \"sel\" in the current"
 :         echo "folder or the folder given as parameter 1."
 :         echo
 : }
-: 
+:
 : STARTDIR=`pwd`
-: 
+:
 : if [ "x${IMAGEDIR}" = "x-h" -o "x${IMAGEDIR}" = "x--help" ]; then
 :     print_usage
 :     exit 0
 : fi
-: 
+:
 : if [ "x${IMAGEDIR}" = "x" ]; then
 :     IMAGEDIR="${STARTDIR}"
 : fi
-: 
+:
 : if [ ! -d ${IMAGEIDIR} ]; then
 :     echo
 :     echo "  Please specify a folder containing the <directory>."
@@ -213,21 +213,21 @@ The script ~vksel.sh~ looks like this:
 :     print_usage
 :     exit 1
 : fi
-: 
-: 
+:
+:
 : ## remove (old) TMPDIR if exists:
 : test -d "${TMPDIR}" && rm -rf "${TMPDIR}"
-: 
+:
 : ## create fresh TMPDIR
 : mkdir "${TMPDIR}"
 : cd "${TMPDIR}"
-: 
-: 
+:
+:
 : find "${IMAGEDIR}" -name '* -- *sel*' -print0 | xargs -0 -I {} ln -s {} . --
 : ${IMAGEVIEWER}
-: 
+:
 : cd "${STARTDIR}"
-: 
+:
 : #end
 
 Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.desktop~
