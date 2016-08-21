@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-21 11:59:42 vk>
+## Time-stamp: <2016-08-21 14:39:11 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -77,10 +77,23 @@ directories as well. The first file of this name found is read in.
 Each line represents one tag. Those tags are used for *tag
 completion*.
 
-This is purely great: with tags within ~.filetag~ you don't have to
+This is purely great: with tags within ~.filetags~ you don't have to
 enter the tags entrirely: just type the first characters and press TAB
 (twice to show you all possibilities). You will be amazed how
 efficiently you are going to tag things! :-)
+
+If you enter multiple tags in the same line in ~.filetags~, they are
+interpreted as *mutually exclusive tags*. For example, if your
+~.filetags~ contains the line ~winter spring summer autumn~, filetags
+replaces any season-tag with the new one. So if you tag the file ...
+
+: example file -- summer anothertag.txt
+
+... with the tag ~winter~, it gets modified to ...
+
+: example file -- winter anothertag.txt
+
+... without having to manually remove the tag ~summer~.
 
 ** Bonus: integrating into Geeqie (or similar file browsers)
 

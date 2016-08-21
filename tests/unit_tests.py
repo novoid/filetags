@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-01-10 19:23:23 vk>
+# Time-stamp: <2016-08-21 14:40:29 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -150,25 +150,27 @@ class TestFileWithoutTags(unittest.TestCase):
                             [u'two'], do_remove=True, dryrun=False)
         self.assertEqual(self.file_exists(u'a test file . for you.txt'), True)
 
-    def test_unique_labels(self):
+    def test_unique_tags(self):
 
-        ## adding a unique label to a file without any tags:
-        new_filename = filetags.handle_file(os.path.join(self.tempdir, self.testfilename), [u'labelgreen'], False, False)
-        self.assertEqual(self.file_exists(u'a test file . for you -- labelgreen.txt'), True)
+        ## Note: default unique_tags is a hard-coded list of u'teststring1' and u'teststring2'
 
-        ## adding a second unique label - first one should be gone:
-        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelgreen.txt'),
-                            [u'labelyellow'], do_remove=False, dryrun=False)
-        self.assertEqual(self.file_exists(u'a test file . for you -- labelyellow.txt'), True)
+        ## adding a unique tag to a file without any tags:
+        new_filename = filetags.handle_file(os.path.join(self.tempdir, self.testfilename), [u'teststring1'], False, False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- teststring1.txt'), True)
+
+        ## adding a second unique tag - first one should be gone:
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- teststring1.txt'),
+                            [u'teststring2'], do_remove=False, dryrun=False)
+        self.assertEqual(self.file_exists(u'a test file . for you -- teststring2.txt'), True)
 
         ## adding non-unique tags:
-        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelyellow.txt'),
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- teststring2.txt'),
                             [u'one', u'two'], do_remove=False, dryrun=False)
-        self.assertEqual(self.file_exists(u'a test file . for you -- labelyellow one two.txt'), True)
+        self.assertEqual(self.file_exists(u'a test file . for you -- teststring2 one two.txt'), True)
 
-        ## removing unique label:
-        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- labelyellow one two.txt'),
-                            [u'labelyellow', u'one'], do_remove=True, dryrun=False)
+        ## removing unique tag:
+        filetags.handle_file(os.path.join(self.tempdir, u'a test file . for you -- teststring2 one two.txt'),
+                            [u'teststring2', u'one'], do_remove=True, dryrun=False)
         self.assertEqual(self.file_exists(u'a test file . for you -- two.txt'), True)
 
     def test_adding_a_tag_to_file_without_extension(self):
@@ -248,7 +250,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         ## create set of test files:
         self.create_tmp_file("foo1 -- bar.txt")
         self.create_tmp_file("foo2 -- bar baz.txt")
-        self.create_tmp_file("foo3 -- bar baz labelgreen.txt")
+        self.create_tmp_file("foo3 -- bar baz teststring1.txt")
 
     def create_tmp_file(self, name):
 
@@ -264,7 +266,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     def test_get_tags_from_files_and_subfolders(self):
 
-        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, False, False), {u'baz': 2, u'bar': 3, u'labelgreen': 1})
+        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, False, False), {u'baz': 2, u'bar': 3, u'teststring1': 1})
 
     def test_list_unknown_tags(self):
 

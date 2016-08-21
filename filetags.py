@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-21 13:01:14 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-21 14:42:02 vk>"
 
 ## TODO:
 ## * fix parts marked with «FIXXME»
@@ -32,7 +32,9 @@ FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
-UNIQUE_LABELS = [u'labelgray', u'labelgreen', u'labelyellow', u'labelred', u'labelblue']
+unique_tags = [[u'teststring1', u'teststring2']] ## list of list which contains tags that are mutually exclusive
+## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
+##       You might delete them if you don't use my unit test suite.
 
 
 USAGE = u"\n\
@@ -327,6 +329,34 @@ def extract_filenames_from_argument(argument):
     ## FIXXME: works at my computer without need to convertion but add check later on
     return argument
 
+def get_unique_tags_from_filename(filename):
+    """
+    Extracts tags that occur in the array of arrays "unique_tags".
+    @param filename: string containing one file name
+    @param return: list of found tags
+    """
+
+    filetags = extract_tags_from_filename(filename)
+    result = []
+    for tag in filetags:
+        for taggroup in unique_tags:
+            if tag in taggroup:
+               result.append(tag)
+    return result
+
+def item_contained_in_list_of_lists(item, list_of_lists):
+    """
+    Returns true if item is member of at least one list in list_of_lists.
+
+    @param item: item too look for in list_of_lists
+    @param list_of_lists: list containing a list of items
+    @param return: (item, list) or None
+    """
+
+    for current_list in list_of_lists:
+        if item in current_list:
+            return item, current_list
+    return None, None
 
 def handle_file(filename, tags, do_remove, dryrun):
     """
@@ -355,22 +385,27 @@ def handle_file(filename, tags, do_remove, dryrun):
 
     new_filename = filename
 
-    ## if tag within UNIQUE_LABELS found, and new UNIQUE_LABEL is given, remove old label:
-    ## e.g.: UNIQUE_LABELS = (u'yes', u'no') -> if 'no' should be added, remove existing label 'yes' (and vice versa)
-    ## FIXXME: this is an undocumented feature -> please add proper documentation
-    if not do_remove:
-        unique_labels_in_old_filename = set(extract_tags_from_filename(filename)).intersection(UNIQUE_LABELS)
-        unique_label_to_add = set(tags).intersection(UNIQUE_LABELS)
-        if unique_label_to_add and unique_labels_in_old_filename:
-            logging.debug("found unique label %s which require old unique label to be removed: %s" % (str(unique_label_to_add), str(unique_labels_in_old_filename)))
-            for tagname in unique_labels_in_old_filename:
-                new_filename = removing_tag_from_filename(new_filename, tagname)
-
     for tagname in tags:
         if do_remove:
             new_filename = removing_tag_from_filename(new_filename, tagname)
         else:
-            new_filename = adding_tag_to_filename(new_filename, tagname)
+            ## FIXXME: not performance optimized for large number of unique tags in many lists:
+            tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
+
+            if tagname != tag_in_unique_tags:
+                new_filename = adding_tag_to_filename(new_filename, tagname)
+            else:
+                ## if tag within unique_tags found, and new unique tag is given, remove old tag:
+                ## e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
+                ## If user enters contradicting tags, only the last one will be applied.
+                ## FIXXME: this is an undocumented feature -> please add proper documentation
+
+                current_filename_tags = extract_tags_from_filename(new_filename)
+                conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
+                logging.debug("found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
+                for conflicting_tag in conflicting_tags:
+                    new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
+                new_filename = adding_tag_to_filename(new_filename, tagname)
 
     if dryrun:
         logging.info(u" ")
@@ -709,6 +744,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
     """
 
     filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
+    global unique_tags
 
     if filename:
         if os.path.isfile(filename):
@@ -716,9 +752,19 @@ def locate_and_parse_controlled_vocabulary(startfile):
             tags = []
             with codecs.open(filename, encoding='utf-8') as filehandle:
                 logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' % filename)
-                for line in filehandle:
-                    tags.append(line.strip())
+                for rawline in filehandle:
+                    line = rawline.strip()
+                    if BETWEEN_TAG_SEPARATOR in line:
+                        ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
+                        logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' % (line))
+                        unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
+                        for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                            ## *also* append unique tags to general tag list:
+                            tags.append(tag)
+                    else:
+                        tags.append(line)
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' % len(tags))
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' % len(unique_tags))
             return tags
         else:
             logging.debug('locate_and_parse_controlled_vocabulary: could not find controlled vocabulary in folder of startfile')
@@ -845,8 +891,6 @@ def main():
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
 
     tags_from_userinput = []
-    vocabulary = locate_and_parse_controlled_vocabulary(os.getcwdu())
-    logging.debug('finished locating of controlled vocabulary')
 
     if len(args) < 1 and not (options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
