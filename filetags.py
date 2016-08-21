@@ -1,9 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-21 20:25:02 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-21 22:03:15 vk>"
 
 ## TODO:
-## * fix parts marked with «FIXXME»
+## - fix parts marked with «FIXXME»
+## - move from optparse to argparse
+## - tagfilter: --copy :: copy files instead of creating symlinks
+## - tagfilter: all toggle-cmd line args as special tags: --copy and so forth
+##   - e.g., when user enters tag "--copy" when interactively reading tags, handle it like options.copy
+##   - overwriting cmd-line arguments (if contradictory)
+##   - allow combination of cmd-line tags and interactive tags
+##     - they get combined
+## - $HOME/.config/ with default options (e.g., geeqie)
+## - tagfilter: additional parameter to move matching files to a temporary subfolder
+##   - renaming/deleting of symlinks does not modify original files
+## - tagfilter: --recursive :: recursively going into subdirectories and
+##      collecting items (into one target directory)
+## - tagfilter: --notag :: do not ask for tags, use all items that got no tag
+##      at all
+## - tagfilter: --ignoredirs :: do not symlink/copy directories
+## - tagfilter: --emptytmpdir :: empty temporary directory after the image viewer exits
+## - use "open" to open first(?) file
 
 
 ## ===================================================================== ##
@@ -33,6 +50,7 @@ BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
+DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
 
 unique_tags = [[u'teststring1', u'teststring2']] ## list of list which contains tags that are mutually exclusive
 ## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
@@ -925,7 +943,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts):
 
     if len(upto9_tags_for_shortcuts) > 0:
         print_tag_shortcut_with_numbers(upto9_tags_for_shortcuts,
-                                        tags_get_added=(not options.remove and not options.tagfilter), tags_get_linked=options.tagfilter)
+                                        tags_get_added=(not options.remove and not options.tagfilter),
+                                        tags_get_linked=options.tagfilter)
 
     logging.debug("interactive mode: asking for tags ...")
     entered_tags = raw_input('Tags: ').strip()
@@ -1055,9 +1074,9 @@ def main():
         ## look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
             ## vocabulary for completing tags is current tags of files
-            for file in files:
+            for currentfile in files:
                 ## add tags so that list contains all unique tags:
-                for newtag in extract_tags_from_filename(file):
+                for newtag in extract_tags_from_filename(currentfile):
                     add_tag_to_countdict(newtag, tags_for_vocabulary)
             vocabulary = sorted(tags_for_vocabulary.keys())
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
@@ -1116,7 +1135,9 @@ def main():
 
     if options.tagfilter:
         from subprocess import call
-        call(["geeqie", TAGFILTER_DIRECTORY])
+        import platform
+        if platform.system() == 'Linux':
+            call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
 
     logging.debug("successfully finished.")
 
