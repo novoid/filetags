@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-21 22:03:15 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-22 14:07:18 karl.voit>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -42,6 +42,7 @@ from sets import Set  # to find out union/intersection of tag sets
 import readline  # for raw_input() reading from stdin
 import codecs    # for handling Unicode content in .tagfiles
 from optparse import OptionParser
+import math      # (integer) calculations
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -51,6 +52,13 @@ CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
+
+try:
+    TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
+except ValueError:
+    TTY_HEIGHT, TTY_WIDTH = 80, 80
+
+max_file_length = 0 ## will be set after iterating over source files182
 
 unique_tags = [[u'teststring1', u'teststring2']] ## list of list which contains tags that are mutually exclusive
 ## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
@@ -389,6 +397,52 @@ def item_contained_in_list_of_lists(item, list_of_lists):
             return item, current_list
     return None, None
 
+def print_item_transition(source, destination, transition):
+    """
+    Returns true if item is member of at least one list in list_of_lists.
+
+    @param source: string of item before transition
+    @param destination: string of item after transition or target
+    @param transision: string which determines type of transision: ("add", "delete", "link")
+    @param return: N/A
+    """
+
+    transition_description = u''
+    if transition == 'add':
+        transition_description = u'renaming'
+    elif transition == 'delete':
+        transition_description = u'renaming'
+    elif transition == 'link':
+        transition_description = u'linking'
+    else:
+        print "ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\""
+
+    if 15 + len(transition_description) + (2 * max_file_length) < TTY_WIDTH:
+        ## probably enough space: screen output with one item per line
+
+        source_width = max_file_length
+        #logging.debug('source-width is ' + str(source_width))
+        #logging.debug('source is "' + str(source) + '"')
+
+        try:
+            arrow_left = u'――'
+            arrow_right = u'―→'
+            print u"  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width)
+        except UnicodeEncodeError:
+            arrow_left = u'--'
+            arrow_right = u'->'
+            print u"  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width)
+
+    else:
+        ## for narrow screens (and long file names): split up item source/destination in two lines
+
+        print u" {0:<{width}s}  \"{1:s}\"".format(transition_description, source, width=len(transition_description))
+        try:
+            print u" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ', destination, width=len(transition_description))
+        except UnicodeEncodeError:
+            print u" {0:<{width}s}     `-> \"{1:s}\"".format(' ', destination, width=len(transition_description))
+
+
 def handle_file(filename, tags, do_remove, do_filter, dryrun):
     """
     @param filename: string containing one file name
@@ -417,11 +471,7 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
         return
 
     if do_filter:
-
-        try:
-            print u" link   %s   →   %s" % (filename, TAGFILTER_DIRECTORY)
-        except UnicodeEncodeError:
-            print u" link   %s   >   %s" % (filename, TAGFILTER_DIRECTORY)
+        print_item_transition(filename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
             os.symlink(os.path.join(os.getcwdu(), filename),
                        os.path.join(TAGFILTER_DIRECTORY, filename))
@@ -452,25 +502,18 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
                         new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
                     new_filename = adding_tag_to_filename(new_filename, tagname)
 
+        if do_remove:
+            transition = 'delete'
+        else:
+            transition = 'add'
+
         if dryrun:
             logging.info(u" ")
-            logging.info(u" renaming \"%s\"" % filename)
-            try:
-                logging.info(u"      ⤷   \"%s\"" % (new_filename))
-            except UnicodeEncodeError:
-                logging.info(u"      >   \"%s\"" % (new_filename))
+            print_item_transition(filename, new_filename, transition=transition)
         else:
             if filename != new_filename:
                 if not options.quiet:
-                    try:
-                        print u"   %s   →   %s" % (filename, new_filename)
-                    except UnicodeEncodeError:
-                        print u"   %s   >   %s" % (filename, new_filename)
-                logging.debug(u" renaming \"%s\"" % filename)
-                try:
-                    logging.debug(u"      ⤷   \"%s\"" % (new_filename))
-                except UnicodeEncodeError:
-                    logging.debug(u"      >   \"%s\"" % (new_filename))
+                    print_item_transition(filename, new_filename, transition=transition)
                 os.rename(filename, new_filename)
 
         return new_filename
@@ -990,7 +1033,6 @@ def assert_empty_tagfilter_directory():
     Creates non-existent tagfilter directory or deletes and re-creates it.
     """
 
-    ## make sure that temp dir is here:
     if not os.path.isdir(TAGFILTER_DIRECTORY):
         logging.debug('creating non-existent tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
         if not options.dryrun:
@@ -1039,7 +1081,7 @@ def main():
     files = extract_filenames_from_argument(args)
 
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
-
+    logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
 
     if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
@@ -1118,7 +1160,7 @@ def main():
     if options.remove:
         logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
     elif options.tagfilter:
-        logging.info("filtering items with tags \"%s\" in directory \"%s\" ..." %
+        logging.info("filtering items with tag(s) \"%s\" and linking to directory \"%s\" ..." %
                      (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)) , str(TAGFILTER_DIRECTORY)))
     else:
         logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
@@ -1128,6 +1170,13 @@ def main():
         files = filter_files_matching_tags(get_files_of_directory(os.getcwdu()), tags_from_userinput)
 
     logging.debug("iterate over files ...")
+
+    global max_file_length
+    for filename in files:
+        if len(filename) > max_file_length:
+            max_file_length = len(filename)
+    logging.debug('determined maximum file name length with %i' % max_file_length)
+
     for filename in files:
         if filename.__class__ == str:
             filename = unicode(filename, "UTF-8")
@@ -1136,8 +1185,13 @@ def main():
     if options.tagfilter:
         from subprocess import call
         import platform
-        if platform.system() == 'Linux':
+        current_platform = platform.system()
+        logging.debug('platform.system() is: [' + current_platform + ']')
+        if current_platform == 'Linux':
             call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
+        else:
+            logging.info('No (default) image viewer defined for platform \"' + current_platform + '\".')
+            logging.info('Please visit ' + TAGFILTER_DIRECTORY + ' to view filtered items.')
 
     logging.debug("successfully finished.")
 
