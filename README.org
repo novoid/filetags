@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-23 20:34:26 vk>
+## Time-stamp: <2016-08-23 21:28:24 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -151,7 +151,7 @@ tags that are most likely typos or abandoned
 - [[https://twitter.com/n0v0id/status/675388298735575041][2015-12-11]]: shortcut numbers for removing tags
 - [[https://twitter.com/n0v0id/status/685507528856367104][2016-01-08]]: shortcut numbers for top nine tags for adding tags
 - [[https://twitter.com/n0v0id/status/767343476665159680][2016-08-21]]: mutually exclusive tags
-- [[2016-08-23]]: installable via ~pip install filetags~
+- [[https://twitter.com/n0v0id/status/768167397895180289][2016-08-23]]: installable via ~pip install filetags~
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
