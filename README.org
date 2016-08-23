@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-21 16:45:22 vk>
+## Time-stamp: <2016-08-23 20:34:26 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -46,6 +46,10 @@ tags as simple as possible.
 You may like to add this tool to your image or file manager of
 choice. I added mine to [[http://geeqie.sourceforge.net/][geeqie]] which is my favorite image viewer on
 GNU/Linux.
+
+** Installation
+
+Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[https://pip.pypa.io/en/stable/][pip]]: ~pip install filetags~
 
 ** Usage
 

@@ -1,3 +1,4 @@
 *.pyc
 tests/testfiles/
 manualtests
+/setup.py
