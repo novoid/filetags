@@ -3,3 +3,4 @@ tests/testfiles/
 manualtests
 /setup.py
 /MANIFEST
+.gitignore
