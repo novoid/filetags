@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-22 14:07:18 karl.voit>"
+PROG_VERSION = u"Time-stamp: <2016-08-23 20:32:04 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
+## - error handling if dependency libraries are not installed/found
+## - $HOME/.config/ with default options (e.g., geeqie)
+##   - using clint/resource
+##   - if not found, write default config with defaults (and comments)
 ## - move from optparse to argparse
 ## - tagfilter: --copy :: copy files instead of creating symlinks
 ## - tagfilter: all toggle-cmd line args as special tags: --copy and so forth
@@ -11,7 +15,6 @@ PROG_VERSION = u"Time-stamp: <2016-08-22 14:07:18 karl.voit>"
 ##   - overwriting cmd-line arguments (if contradictory)
 ##   - allow combination of cmd-line tags and interactive tags
 ##     - they get combined
-## - $HOME/.config/ with default options (e.g., geeqie)
 ## - tagfilter: additional parameter to move matching files to a temporary subfolder
 ##   - renaming/deleting of symlinks does not modify original files
 ## - tagfilter: --recursive :: recursively going into subdirectories and
@@ -28,21 +31,27 @@ PROG_VERSION = u"Time-stamp: <2016-08-22 14:07:18 karl.voit>"
 ##  know, what you are doing :-)                                         ##
 ## ===================================================================== ##
 
-## NOTE: in case of issues, check iCalendar files using: http://icalvalid.cloudapp.net/
+import importlib
+
+def save_import(library):
+    try:
+        globals()[library] = importlib.import_module(library)
+    except ImportError:
+        print "Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\"."
+        sys.exit(2)
 
 import re
 import sys
 import os
-import os.path   # for directory traversal to look for .tagfiles
-import time
-import logging
-import operator  # for sorting dicts
-import difflib   # for good enough matching words
-from sets import Set  # to find out union/intersection of tag sets
-import readline  # for raw_input() reading from stdin
-import codecs    # for handling Unicode content in .tagfiles
-from optparse import OptionParser
-import math      # (integer) calculations
+save_import('optparse')  # for handling command line arguments
+save_import('time')
+save_import('logging')
+save_import('operator')  # for sorting dicts
+save_import('difflib')   # for good enough matching words
+save_import('readline')  # for raw_input() reading from stdin
+save_import('codecs')    # for handling Unicode content in .tagfiles
+save_import('math')      # (integer) calculations
+save_import('clint')     # for config file handling
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -113,7 +122,7 @@ FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
 FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 
-parser = OptionParser(usage=USAGE)
+parser = optparse.OptionParser(usage=USAGE)
 
 parser.add_option("-t", "--tag", "--tags", dest="tags",
                   help="one or more tags (in quotes, separated by spaces) to add/remove")
@@ -682,7 +691,7 @@ def print_tag_dict(tag_dict, max_tag_count=0, vocabulary=False):
 
     hint_for_being_in_vocabulary = ''
     if vocabulary:
-        print u"\n  (Tags marked with an asterisk apprear in your vocabulary.)"
+        print u"\n  (Tags marked with an asterisk appear in your vocabulary.)"
     print "\n {0:{1}} : {2:{3}}".format(u'count', maxlength_count, u'tag', maxlength_tags)
     print " " + '-' * (maxlength_tags + maxlength_count + 7)
     for tuple in sorted(tag_dict.items(), key=operator.itemgetter(1)):
@@ -752,12 +761,12 @@ def handle_tag_gardening(vocabulary):
     print "Tags which have similar other tags are probably typos or plural/singular forms of others:"
     tags_by_alphabet = list_tags_by_alphabet(only_with_similar_tags=True, vocabulary=vocabulary)
 
-    set_by_number = Set(tags_by_number.keys())
-    set_by_alphabet = Set(tags_by_alphabet.keys())
-    tags_in_both_outputs = set_by_number & set_by_alphabet  # intersection of sets
+    set_by_number = set(tags_by_number.keys())
+    set_by_alphabet = set(tags_by_alphabet.keys())
+    tags_in_both_outputs = set_by_number.intersection(set_by_alphabet)
     hint_for_being_in_vocabulary = ''
 
-    if tags_in_both_outputs != Set([]):
+    if tags_in_both_outputs != set([]):
         print "If tags appear in both lists from above, they most likely require your attention:"
 
         ## determine maximum length of strings for formatting:
@@ -831,7 +840,11 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     """
 
-    filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
+    if startfile:
+        filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
+    else:
+        filename = locate_file_in_cwd_and_parent_directories(os.getcwdu(), CONTROLLED_VOCABULARY_FILENAME)
+
     global unique_tags
 
     if filename:
@@ -852,7 +865,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
                     else:
                         tags.append(line)
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' % len(tags))
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' % len(unique_tags))
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' % (len(unique_tags) - 1))
             return tags
         else:
             logging.debug('locate_and_parse_controlled_vocabulary: could not find controlled vocabulary in folder of startfile')
@@ -1040,13 +1053,17 @@ def assert_empty_tagfilter_directory():
     else:
         logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(TAGFILTER_DIRECTORY))
         if not options.dryrun:
-            import shutil    # for removing directories with shutil.rmtree()
+            save_import('shutil') # for removing directories with shutil.rmtree()
             shutil.rmtree(TAGFILTER_DIRECTORY)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
             os.makedirs(TAGFILTER_DIRECTORY)
     if not options.dryrun:
         assert(os.path.isdir(TAGFILTER_DIRECTORY))
 
+def successful_exit():
+    sys.stdout.flush()
+    sys.exit(0)
+    logging.debug("successfully finished.")
 
 def main():
     """Main function"""
@@ -1083,6 +1100,7 @@ def main():
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
     logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
+    vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
     if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
@@ -1090,18 +1108,22 @@ def main():
     if options.list_tags_by_alphabet:
         logging.debug("handling option list_tags_by_alphabet")
         list_tags_by_alphabet()
+        successful_exit()
 
     elif options.list_tags_by_number:
         logging.debug("handling option list_tags_by_number")
         list_tags_by_number()
+        successful_exit()
 
     elif options.list_unknown_tags:
         logging.debug("handling option list_unknown_tags")
         list_unknown_tags()
+        successful_exit()
 
     elif options.tag_gardening:
         logging.debug("handling option for tag gardening")
         handle_tag_gardening(vocabulary)
+        successful_exit()
 
     elif options.interactive or not options.tags:
 
@@ -1137,8 +1159,7 @@ def main():
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
                 upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
                 logging.debug('derived upto9_tags_for_shortcuts')
-            vocabulary = sorted(locate_and_parse_controlled_vocabulary(args[0]))
-            logging.debug('derived vocabulary with %i entries' % len(vocabulary))
+            logging.debug('derived vocabulary with %i entries' % len(vocabulary)) ## using default vocabulary which was generate above
 
         ## ==================== Interactive asking user for tags ============================= ##
         tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts)
@@ -1183,17 +1204,17 @@ def main():
         handle_file(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
 
     if options.tagfilter:
-        from subprocess import call
-        import platform
+        save_import('subprocess')
+        save_import('platform')
         current_platform = platform.system()
         logging.debug('platform.system() is: [' + current_platform + ']')
         if current_platform == 'Linux':
-            call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
+            subprocess.call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
         else:
             logging.info('No (default) image viewer defined for platform \"' + current_platform + '\".')
             logging.info('Please visit ' + TAGFILTER_DIRECTORY + ' to view filtered items.')
 
-    logging.debug("successfully finished.")
+    successful_exit()
 
 
 if __name__ == "__main__":
