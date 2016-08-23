@@ -139,6 +139,16 @@ Options:
 ... prints out a summary of tags in current and sub-folders used and
 tags that are most likely typos or abandoned
 
+** Changelog
+
+- [[https://twitter.com/n0v0id/status/335043859404951554][2013-05-16]]: first version on GitHub
+- [[https://twitter.com/n0v0id/status/546449664179195904][2014-12-21]]: ~--list-tags-by-number~, ~--list-tags-by-alphabet~, and ~--tag-gardening~
+- [[https://twitter.com/n0v0id/status/551050830678605824][2015-01-02]]: tab completion for interactive tag input
+- [[https://twitter.com/n0v0id/status/675388298735575041][2015-12-11]]: shortcut numbers for removing tags
+- [[https://twitter.com/n0v0id/status/685507528856367104][2016-01-08]]: shortcut numbers for top nine tags for adding tags
+- [[https://twitter.com/n0v0id/status/767343476665159680][2016-08-21]]: mutually exclusive tags
+- [[2016-08-23]]: installable via ~pip install filetags~
+
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
 :CREATED:  [2015-01-02 Fri 17:12]
