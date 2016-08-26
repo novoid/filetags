@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-23 20:32:04 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-26 07:41:33 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -131,7 +131,7 @@ parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
                   help="remove tags from (instead of adding to) file name(s)")
 
 parser.add_option("-f", "--filter", dest="tagfilter", action="store_true",
-                  help="filter according to tags")
+                  help="filter out all items that contain all given tags")
 
 parser.add_option("--imageviewer", dest="imageviewer",
                   help="command to view images (for --filter; default: geeqie)")
@@ -1032,14 +1032,14 @@ def get_files_of_directory(directory):
 
 def filter_files_matching_tags(allfiles, tags):
     """
-    Returns a list of file names that contain one or more given tags.
+    Returns a list of file names that contain all given tags.
 
     @param allfiles: array of file names
     @param tags: array of tags
-    @param return: list of file names that contain at least one tag of tags
+    @param return: list of file names that contain all tags
     """
 
-    return [x for x in allfiles if set(tags).intersection(set(extract_tags_from_filename(x)))]
+    return [x for x in allfiles if set(extract_tags_from_filename(x)).issuperset(set(tags))]
 
 def assert_empty_tagfilter_directory():
     """
