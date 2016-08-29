@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-23 21:28:24 vk>
+## Time-stamp: <2016-08-29 18:09:06 karl.voit>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -405,13 +405,16 @@ current season]].
 Files containing an ISO time/date-stamp gets indexed by the
 filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 
-* Contribute!
+* How to Thank Me
 
-I am looking for your ideas!
+I'm glad you like my tools. If you want to support me:
 
-If you want to contribute to this cool project, please fork and
-contribute!
-
+- Send old-fashioned *postcard* per snailmail - I love personal feedback!
+  - see [[http://tinyurl.com/j6w8hyo][my address]]
+- Send feature wishes or improvements as an issue on GitHub
+- Create issues on GitHub for bugs
+- Contribute merge requests for bug fixes
+- Check out my other cool [[https://github.com/novoid][projects on GitHub]]
 
 * Local Variables                                                  :noexport:
 # Local Variables:
