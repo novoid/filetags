@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-08-26 07:41:33 vk>"
+PROG_VERSION = u"Time-stamp: <2016-08-29 10:35:58 karl.voit>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -973,6 +973,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts):
     @param return: list of up to top nine keys according to the rank of their values
     """
 
+    completionhint = u''
     if vocabulary and len(vocabulary) > 0:
 
         assert(vocabulary.__class__ == list)
@@ -1061,9 +1062,9 @@ def assert_empty_tagfilter_directory():
         assert(os.path.isdir(TAGFILTER_DIRECTORY))
 
 def successful_exit():
+    logging.debug("successfully finished.")
     sys.stdout.flush()
     sys.exit(0)
-    logging.debug("successfully finished.")
 
 def main():
     """Main function"""
