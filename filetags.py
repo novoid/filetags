@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-10-15 17:03:08 vk>"
+PROG_VERSION = u"Time-stamp: <2016-10-16 12:50:23 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -955,7 +955,7 @@ def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
     return tags
 
 
-def get_upto_nine_keys_of_dict_with_highest_value(mydict):
+def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[]):
     """
     Takes a dict, sorts it according to their values, and returns up to nine
     values with the highest values.
@@ -963,12 +963,17 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict):
     Example1: { "key2":45, "key1": 33} -> [ "key1", "key2" ]
 
     @param mydict: dictionary holding keys and values
+    @param list_of_tags_to_omit: list of strings that should not be part of the returned list
     @param return: list of up to top nine keys according to the rank of their values
     """
 
     assert mydict.__class__ == dict
 
     complete_list = sorted(mydict, key=mydict.get, reverse=True)
+
+    if list_of_tags_to_omit:
+        complete_list = sorted(list(set(complete_list) - set(list_of_tags_to_omit)))
+
     return sorted(complete_list[:9])
 
 
@@ -1075,6 +1080,21 @@ def assert_empty_tagfilter_directory():
         assert(os.path.isdir(TAGFILTER_DIRECTORY))
 
 
+def get_common_tags_from_files(files):
+    """
+    Returns a list of tags that are common (intersection) for all files.
+
+    @param files: array of file names
+    @param return: list of tags
+    """
+
+    list_of_tags_per_file = []
+    for currentfile in files:
+        list_of_tags_per_file.append(set(extract_tags_from_filename(currentfile)))
+
+    return list(set.intersection(*list_of_tags_per_file))
+
+
 def successful_exit():
     logging.debug("successfully finished.")
     sys.stdout.flush()
@@ -1156,11 +1176,11 @@ def main():
         tags_for_vocabulary = {}
         upto9_tags_for_shortcuts = []
 
-        ## look out for .filetags file and add readline support for tag completion if found with content
+        # look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
-            ## vocabulary for completing tags is current tags of files
+            # vocabulary for completing tags is current tags of files
             for currentfile in files:
-                ## add tags so that list contains all unique tags:
+                # add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(currentfile):
                     add_tag_to_countdict(newtag, tags_for_vocabulary)
             vocabulary = sorted(tags_for_vocabulary.keys())
@@ -1177,23 +1197,28 @@ def main():
         else:
             if files:
 
+                # remove given (common) tags from the vocabulary:
+                tags_intersection_of_files = get_common_tags_from_files(files)
+                logging.debug("found common tags: tags_intersection_of_files[%s]" % '], ['.join(tags_intersection_of_files))
+                vocabulary = list(set(vocabulary) - set(tags_intersection_of_files))
+
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
-                upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0])))))
+                upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0]))), tags_intersection_of_files))
                 logging.debug('derived upto9_tags_for_shortcuts')
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
-        ## ==================== Interactive asking user for tags ============================= ##
+        # ==================== Interactive asking user for tags ============================= ##
         tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts)
-        ## ==================== Interactive asking user for tags ============================= ##
+        # ==================== Interactive asking user for tags ============================= ##
 
     else:
-        ## non-interactive: extract list of tags
+        # non-interactive: extract list of tags
         logging.debug("non-interactive mode: extracting tags from argument ...")
 
         tags_from_userinput = extract_tags_from_argument(options.tags)
 
         if not tags_from_userinput:
-            ## FIXXME: check: can this be the case?
+            # FIXXME: check: can this be the case?
             logging.info("no tags given, exiting.")
             sys.stdout.flush()
             sys.exit(0)

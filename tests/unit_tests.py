@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-10-15 16:43:20 vk>
+# Time-stamp: <2016-10-16 12:48:52 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -87,6 +87,26 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key2":45, "key1": 33}), [ "key1", "key2" ])
         self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159, "key7": 0, "key8": 999, "key9": 42, "key10": 4242}), \
                          [ "key1", "key10", "key2", "key3", "key4", "key5", "key6", "key8", "key9"])
+
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159, "key7": 0, "key8": 999, "key9": 42, "key10": 4242, "key11": 1234, "key12": 1234, "key13": 1234, "key14": 1234}, list_of_tags_to_omit=['key2', 'key3', 'key7', 'key4']), \
+                         [ "key1", "key10", "key11", "key12", "key13", "key14", "key5", "key6", "key8"])
+
+
+    def test_get_common_tags_from_files(self):
+
+        self.assertEqual(filetags.get_common_tags_from_files(['file1.txt']), [])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt']), ['foo'])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo bar.txt']), ['foo', 'bar'])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt', 'file2.txt']), [])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt', 'file2 -- foo bar.txt']), ['foo'])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- baz foo.txt',
+                                                              'file2 -- foo bar.txt'
+                                                              'file3 -- foo bar baz.txt'
+                                                              'file4 -- foo bar jodel.txt']), ['foo'])
+        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt',
+                                                              'file2 -- common foo bar.txt'
+                                                              'file3 -- common foo bar baz.txt'
+                                                              'file4 -- common foo bar jodel.txt']), [u'foo', u'common'])
 
     def tearDown(self):
 
