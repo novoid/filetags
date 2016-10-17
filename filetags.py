@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-10-16 12:50:23 vk>"
+PROG_VERSION = u"Time-stamp: <2016-10-17 13:36:59 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -971,8 +971,10 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
 
     complete_list = sorted(mydict, key=mydict.get, reverse=True)
 
+    logging.debug("get_upto_nine_keys_of_dict_with_highest_value: complete_list: " + ", ".join(complete_list))
     if list_of_tags_to_omit:
-        complete_list = sorted(list(set(complete_list) - set(list_of_tags_to_omit)))
+        logging.debug("get_upto_nine_keys_of_dict_with_highest_value: omitting tags: " + ", ".join(list_of_tags_to_omit))
+        complete_list = [x for x in complete_list if x not in list_of_tags_to_omit]
 
     return sorted(complete_list[:9])
 
