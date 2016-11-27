@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-10-17 13:36:59 vk>"
+PROG_VERSION = u"Time-stamp: <2016-11-27 12:21:13 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -979,7 +979,29 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
     return sorted(complete_list[:9])
 
 
-def ask_for_tags(vocabulary, upto9_tags_for_shortcuts):
+def _get_tag_visual(tags_for_visual=None):
+    """
+    Returns a visual representation of a tag. If the optional tags_for_visual
+    is given, write the list of those tags into to the tag as well.
+
+    @param tags_for_visual: list of strings with tags
+    @param return: string with a multi-line representation of a visual tag
+    """
+
+    if not tags_for_visual:
+        tags = " ? "
+    else:
+        tags = BETWEEN_TAG_SEPARATOR.join(sorted(tags_for_visual))
+
+    length = len(tags)
+    visual = "         .---" + '-' * length + "--, \n" + \
+             "        | o  " + tags + "  | \n" + \
+             "         `---" + '-' * length + "--' "
+
+    return visual
+
+
+def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
     the user to enter tags. Aborts program if no tags were entered. Returns list of
@@ -1010,9 +1032,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts):
     print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
         completionhint
     print "                     "
-    print "        ,---------.  "
-    print "        |  ?     o | "
-    print "        `---------'  "
+    print _get_tag_visual(tags_for_visual)
     print "                     "
 
     if len(upto9_tags_for_shortcuts) > 0:
@@ -1172,6 +1192,8 @@ def main():
 
     elif options.interactive or not options.tags:
 
+        tags_for_visual = None
+
         if len(args) < 1 and not options.tagfilter:
             error_exit(5, "Please add at least one file name as argument")
 
@@ -1201,6 +1223,7 @@ def main():
 
                 # remove given (common) tags from the vocabulary:
                 tags_intersection_of_files = get_common_tags_from_files(files)
+                tags_for_visual = tags_intersection_of_files
                 logging.debug("found common tags: tags_intersection_of_files[%s]" % '], ['.join(tags_intersection_of_files))
                 vocabulary = list(set(vocabulary) - set(tags_intersection_of_files))
 
@@ -1210,7 +1233,7 @@ def main():
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
         # ==================== Interactive asking user for tags ============================= ##
-        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts)
+        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual)
         # ==================== Interactive asking user for tags ============================= ##
 
     else:
