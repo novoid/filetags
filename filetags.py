@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2016-11-27 12:21:13 vk>"
+PROG_VERSION = u"Time-stamp: <2017-02-06 18:41:53 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -137,7 +137,7 @@ parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
                   help="remove tags from (instead of adding to) file name(s)")
 
 parser.add_option("-f", "--filter", dest="tagfilter", action="store_true",
-                  help="filter out all items that contain all given tags")
+                  help="ask for list of tags and generate a directory that contains links to all files that contain all given tags and start the imageviewer")
 
 parser.add_option("--imageviewer", dest="imageviewer",
                   help="command to view images (for --filter; default: geeqie)")
