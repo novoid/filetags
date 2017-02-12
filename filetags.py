@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-02-06 18:41:53 vk>"
+PROG_VERSION = u"Time-stamp: <2017-02-12 17:33:32 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
