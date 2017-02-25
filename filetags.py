@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-02-25 11:17:56 vk>"
+PROG_VERSION = u"Time-stamp: <2017-02-25 12:13:22 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -925,34 +925,54 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_link
     print u''  # newline at end
 
 
-def check_for_possible_shortcuts_in_entered_tags(tags, list_of_shortcut_tags):
+def check_for_possible_shortcuts_in_entered_tags(usertags, list_of_shortcut_tags):
     """
     Returns tags if the only tag is not a shortcut (entered as integer).
     Returns a list of corresponding tags if it's an integer.
 
-    @param tags: list of entered tags from the user, e.g., [u'23']
+    @param usertags: list of entered tags from the user, e.g., [u'23']
     @param list_of_shortcut_tags: list of possible shortcut tags, e.g., [u'bar', u'folder1', u'baz']
     @param return: list of tags which were meant by the user, e.g., [u'bar', u'baz']
     """
 
-    assert tags.__class__ == list
+    assert usertags.__class__ == list
     assert list_of_shortcut_tags.__class__ == list
 
-    potential_shortcut_string = tags
-    tags = []
-    try:
-        logging.debug('single entered tag is an integer; stepping through the integers')
-        for character in list(potential_shortcut_string[0]):
-            logging.debug('adding tag number %s' % character)
-            try:
-                tags.append(list_of_shortcut_tags[int(character) - 1])
-            except IndexError:
-                return potential_shortcut_string
-    except ValueError:
-        logging.debug('single entered tag is a normal tag')
-        tags = potential_shortcut_string
+    foundtags = []  # collect all found tags which are about to return from this function
 
-    return tags
+    for currenttag in usertags:
+        try:
+            logging.debug('tag is an integer; stepping through the integers')
+            found_shortcut_tags_within_currenttag = []  # collects the shortcut tags of a (single) currenttag
+            for character in list(currenttag):
+                # step through the characters and find out if it consists of valid indexes of the list_of_shortcut_tags:
+                if currenttag in foundtags:
+                    # we already started to step through currenttag, character by character, and found out (via
+                    # IndexError) that the whole currenttag is a valid tag and added it already to the tags-list.
+                    # Continue with the next tag from the user instead of continue to step through the characters:
+                    continue
+                try:
+                    # try to append the index element to the list of found shortcut tags so far (and risk an IndexError):
+                    found_shortcut_tags_within_currenttag.append(list_of_shortcut_tags[int(character) - 1])
+                except IndexError:
+                    # IndexError tells us that the currenttag contains a character which is not a valid index of
+                    # list_of_shortcut_tags. Therefore, the whole currenttag is a valid tag and not a set of
+                    # indexes for shortcuts:
+                    foundtags.append(currenttag)
+                    continue
+            if not currenttag in foundtags:
+                # Stepping through all characters without IndexErrors
+                # showed us that all characters were valid indexes for
+                # shortcuts and therefore extending those shortcut tags to
+                # the list of found tags:
+                logging.debug('adding shortcut tags of number(s) %s' % currenttag)
+                foundtags.extend(found_shortcut_tags_within_currenttag)
+        except ValueError:
+            # ValueError tells us that one character is not an integer. Therefore, the whole currenttag is a valid tag:
+            logging.debug('whole tag is a normal tag')
+            foundtags.append(currenttag)
+
+    return foundtags
 
 
 def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[]):
@@ -1050,7 +1070,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
         sys.stdout.flush()
         sys.exit(0)
     else:
-        if len(tags_from_userinput) == 1 and len(upto9_tags_for_shortcuts) > 0:
+        if len(upto9_tags_for_shortcuts) > 0:
             ## check if user entered number shortcuts for tags to be removed:
             tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_for_shortcuts)
         return tags_from_userinput

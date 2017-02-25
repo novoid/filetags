@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2017-02-25 11:17:22 vk>
+# Time-stamp: <2017-02-25 12:12:48 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -77,10 +77,30 @@ class TestMethods(unittest.TestCase):
 
     def test_check_for_possible_shortcuts_in_entered_tags(self):
 
-        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'bar'], [u'Frankenstein', u'Schneewittchen']), [u'bar'])
-        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'34'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'baz', u'bar'])
-        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'12'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'Frankenstein', u'Schneewittchen'])
-        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'39'], [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']), [u'39'])
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'bar'],
+                                                                               [u'Frankenstein', u'Schneewittchen']),
+                         [u'bar'])
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'34'],
+                                                                               [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']),
+                         [u'baz', u'bar'])
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'12'],
+                                                                               [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']),
+                         [u'Frankenstein', u'Schneewittchen'])
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'59'],
+                                                                               [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']),
+                         [u'59'])
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'baz', u'12', u'88'],
+                                                                               [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']),
+                         [u'baz', u'Frankenstein', u'Schneewittchen', u'88'])
+
+        self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags([u'19', u'88', u'baz'],
+                                                                               [u'Frankenstein', u'Schneewittchen', u'baz', u'bar']),
+                         [u'19', u'88', u'baz'])
+
 
     def test_get_upto_nine_keys_of_dict_with_highest_value(self):
 
