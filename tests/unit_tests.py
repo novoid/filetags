@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: <2016-10-16 12:48:52 vk>
+# Time-stamp: <2017-02-25 11:17:22 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -85,11 +85,20 @@ class TestMethods(unittest.TestCase):
     def test_get_upto_nine_keys_of_dict_with_highest_value(self):
 
         self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key2":45, "key1": 33}), [ "key1", "key2" ])
-        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159, "key7": 0, "key8": 999, "key9": 42, "key10": 4242}), \
-                         [ "key1", "key10", "key2", "key3", "key4", "key5", "key6", "key8", "key9"])
 
-        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({ "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159, "key7": 0, "key8": 999, "key9": 42, "key10": 4242, "key11": 1234, "key12": 1234, "key13": 1234, "key14": 1234}, list_of_tags_to_omit=['key2', 'key3', 'key7', 'key4']), \
-                         [ "key1", "key10", "key11", "key12", "key13", "key14", "key5", "key6", "key8"])
+        mydict = { "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159,
+                   "key7": 0, "key8": 999, "key9": 42, "key10": 4242}
+        myresult = [ "key1", "key10", "key2", "key3", "key4", "key5", "key6", "key8", "key9"]
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value(mydict), myresult)
+
+        mydict = { "key1":45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159,
+                   "key7": 0, "key8": 999, "key9": 42, "key10": 4242, "key11": 1234,
+                   "key12": 1234, "key13": 1234, "key14": 1234}
+        list_of_tags_to_omit = ['key11', 'key3', 'key7', 'key14']
+        myresult = [ "key1", "key10", "key12", "key13", "key2", "key5", "key6", "key8", "key9"]
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value(mydict,
+                                                                                list_of_tags_to_omit=list_of_tags_to_omit),
+                         myresult)
 
 
     def test_get_common_tags_from_files(self):

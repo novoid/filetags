@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-02-12 17:33:32 vk>"
+PROG_VERSION = u"Time-stamp: <2017-02-25 11:17:56 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -961,6 +961,7 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
     values with the highest values.
 
     Example1: { "key2":45, "key1": 33} -> [ "key1", "key2" ]
+    Example2: { "key2":45, "key1": 33, "key3": 99} list_of_tags_to_omit=["key3"] -> [ "key1", "key2" ]
 
     @param mydict: dictionary holding keys and values
     @param list_of_tags_to_omit: list of strings that should not be part of the returned list
