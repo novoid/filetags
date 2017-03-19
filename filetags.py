@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-02-25 12:13:22 vk>"
+PROG_VERSION = u"Time-stamp: <2017-03-19 11:18:34 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -58,7 +58,7 @@ save_import('math')      # (integer) calculations
 save_import('clint')     # for config file handling
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
-INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+# unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = u' -- '
 BETWEEN_TAG_SEPARATOR = u' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
