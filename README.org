@@ -1,4 +1,4 @@
-## Time-stamp: <2017-04-09 10:53:24 vk>
+## Time-stamp: <2017-04-09 11:13:03 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -219,10 +219,40 @@ tags that are most likely typos or abandoned
 - [[https://twitter.com/n0v0id/status/335043859404951554][2013-05-16]]: first version on GitHub
 - [[https://twitter.com/n0v0id/status/546449664179195904][2014-12-21]]: ~--list-tags-by-number~, ~--list-tags-by-alphabet~, and ~--tag-gardening~
 - [[https://twitter.com/n0v0id/status/551050830678605824][2015-01-02]]: tab completion for interactive tag input
+  - Example: entering =myt= + pressing =TAB= completes the entered
+    string to =mytag= if =mytag= is found in the vocabulary or
+    existing file tags
 - [[https://twitter.com/n0v0id/status/675388298735575041][2015-12-11]]: shortcut numbers for removing tags
 - [[https://twitter.com/n0v0id/status/685507528856367104][2016-01-08]]: shortcut numbers for top nine tags for adding tags
-- [[https://twitter.com/n0v0id/status/767343476665159680][2016-08-21]]: mutually exclusive tags
+  - Example: when filetags shows you =Top nine previously used tags in
+    this directory:= with =mytag(1) anothertag(2) oncemore(3)=, you
+    don't have to type in the tag names but use the numbers instead.
+    Combinations of numbers are fine as well.
+- [[https://twitter.com/n0v0id/status/767343476665159680][2016-08-21]]: mutually exclusive tags: see chapter below
 - [[https://twitter.com/n0v0id/status/768167397895180289][2016-08-23]]: installable via ~pip install filetags~
+- 2016-08-26: =--filter= option requires /all/ tags to be matching
+- 2016-10-15: added tag gardening: vocabulary tags not used + tags not
+  in vocabulary
+- 2016-10-16: interactively adding tags: omit already assigned tags in
+  shortcuts and vocabulary
+- 2016-11-27: added existing shared tags to visual tags
+- 2017-02-06: better help text for =--filter= option
+- 2017-02-25: shortcut tags can be mixed with non-shortcut tags
+  - Example: =mytag 49 anothertag= does add tags =mytag= and
+    =anothertag= and the shortcut tags =4= and =9=
+- 2017-04-09:
+  - interactively removing tags via =-tagname=:
+    - Example: the tag input =tagname -removeme= adds the tag
+      =tagname= and removes the tag =removeme= from the filename(s)
+  - try to find alternative filename if file not found
+    - Example: if you try to tag file =My file name.pdf= which is not
+      found, filetags tries to look for a different (unique and
+      existing) filename that shares the same start of the file name
+      such as =My file name -- mytag.pdf=. Very handy!
+    - This happens a lof when you are interactively adding multiple
+      tags one by one by simply re-executing the previous command
+      line: the file name changes in between because of the previous
+      tag(s) being added.
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
