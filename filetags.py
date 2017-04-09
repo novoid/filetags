@@ -1,10 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-03-19 11:18:34 vk>"
+PROG_VERSION = u"Time-stamp: <2017-04-09 09:56:18 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
-## - error handling if dependency libraries are not installed/found
 ## - $HOME/.config/ with default options (e.g., geeqie)
 ##   - using clint/resource
 ##   - if not found, write default config with defaults (and comments)
@@ -43,6 +42,7 @@ def save_import(library):
     except ImportError:
         print "Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\"."
         sys.exit(2)
+
 
 import re
 import sys
@@ -200,7 +200,7 @@ def error_exit(errorcode, text):
 
 
 class SimpleCompleter(object):
-    ## happily stolen from http://pymotw.com/2/readline/
+    # happily stolen from http://pymotw.com/2/readline/
 
     def __init__(self, options):
         self.options = sorted(options)
@@ -462,6 +462,49 @@ def print_item_transition(source, destination, transition):
             print u" {0:<{width}s}     `-> \"{1:s}\"".format(' ', destination, width=len(transition_description))
 
 
+def find_unique_alternative_to_file(filename):
+    """
+    @param filename: string containing one file name which does not exist
+    @param return: False or filename that starts with same substring within this directory
+    """
+
+    logging.debug("file type error for file [%s] in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" %
+                  (filename, os.getcwdu(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
+    logging.debug("trying to find a unique file starting with the same characters ...")
+
+    path = os.path.dirname(filename)
+    if len(path) < 1:
+        path = os.getcwdu()
+
+    # get existing filenames of the directory of filename:
+    existingfilenames = []
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        existingfilenames.extend(filenames)
+        break
+
+    # reduce filename one character by character from the end and see if any
+    # existing filename starts with this substring:
+    matchingfilenames = []
+    filenamesubstring = filename  # start with the whole filename to match cases where filename is a complete substring
+    for i in range(len(filename)):
+        for existingfilename in existingfilenames:
+            # logging.debug('Checking substring [%s] with existing filename [%s]' % (filenamesubstring, existingfilename))
+            if existingfilename.startswith(filenamesubstring):
+                matchingfilenames.append(existingfilename)
+        if matchingfilenames:
+            logging.debug('For substring [%s] I found existing filenames: %s' % (filenamesubstring, str(matchingfilenames)))
+            if len(matchingfilenames) > 1:
+                logging.debug('Can not use an alternative filename since it is not unique')
+            break
+        filenamesubstring = filename[:-(i + 1)]  # get rid of the last character of filename, one by one
+
+    # see if the list of matchingfilenames is unique (contains one entry)
+    if len(matchingfilenames) == 1:
+        return matchingfilenames[0]
+    else:
+        return False
+
+
 def handle_file(filename, tags, do_remove, do_filter, dryrun):
     """
     @param filename: string containing one file name
@@ -485,9 +528,18 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % filename)
         return
     elif not os.path.isfile(filename):
-        logging.debug("file type error in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" % (os.getcwdu(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
-        logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
-        return
+
+        # try to find unique alternative file:
+        alternative_filename = find_unique_alternative_to_file(filename)
+
+        if not alternative_filename:
+            logging.debug('Could not locate alternative filename that starts with same substring')
+            logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
+            return
+        else:
+            logging.info("Could not find filename \"%s\" but found \"%s\" instead which starts with same substring ..." %
+                         (filename, alternative_filename))
+            filename = alternative_filename
 
     if do_filter:
         print_item_transition(filename, TAGFILTER_DIRECTORY, transition='link')
@@ -960,7 +1012,7 @@ def check_for_possible_shortcuts_in_entered_tags(usertags, list_of_shortcut_tags
                     # indexes for shortcuts:
                     foundtags.append(currenttag)
                     continue
-            if not currenttag in foundtags:
+            if currenttag not in foundtags:
                 # Stepping through all characters without IndexErrors
                 # showed us that all characters were valid indexes for
                 # shortcuts and therefore extending those shortcut tags to
