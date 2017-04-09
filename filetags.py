@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-04-09 10:44:27 vk>"
+PROG_VERSION = u"Time-stamp: <2017-04-09 10:48:56 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -96,6 +96,8 @@ separately. With this tool, this only requires one step.\n\
 Example usages:\n\
   " + sys.argv[0] + u" --tags=\"presentation projectA\" *.pptx\n\
       ... adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
+  " + sys.argv[0] + u" --tags=\"presentation -projectA\" *.pptx\n\
+      ... adds the tag \"presentation\" to and removes tag \"projectA\" from all PPTX-files\n\
   " + sys.argv[0] + u" -i *\n\
       ... ask for tag(s) and add them to all files in current folder\n\
   " + sys.argv[0] + u" -r draft *report*\n\

@@ -1,4 +1,4 @@
-## Time-stamp: <2016-08-29 18:09:06 karl.voit>
+## Time-stamp: <2017-04-09 10:53:24 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -8,13 +8,13 @@ This Python script adds or removes tags to file names in the following
 form:
 
 : file without time stamp in name -- *tag2*.txt
-: 
+:
 : file name with several tags -- *tag1 tag2*.jpeg
-: 
+:
 : another example file name with multiple example tags -- *fun videos kids*.mpeg
-: 
+:
 : 2013-05-09 a file name with ISO date stamp in name -- *tag1*.jpg
-: 
+:
 : 201t-05-09T16.17 file name with time stamp -- *tag3*.csv
 
 The script accepts an arbitrary number of files (see your shell for
@@ -28,7 +28,7 @@ possible length limitations).
 
 Besides the fact that I am using [[https://en.wikipedia.org/wiki/Iso_date][ISO dates and times]] in file names
 (as shown in examples above), I am using tags with file names. To
-separate tags from the file name, I am using the separator 
+separate tags from the file name, I am using the separator
 "space dash dash space".
 
 For people familiar with [[https://en.wikipedia.org/wiki/Regex][Regular Expressions]]:
@@ -54,6 +54,79 @@ Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[ht
 #+BEGIN_SRC sh :results output :wrap src
 ./filetags.py --help
 #+END_SRC
+
+#+BEGIN_src
+Usage:
+    ./filetags.py [<options>] <list of files>
+
+This tool adds or removes simple tags to/from file names.
+
+Tags within file names are placed between the actual file name and
+the file extension, separated with " -- ". Multiple tags are
+separated with " ":
+  Update for the Boss -- projectA presentation.pptx
+  2013-05-16T15.31.42 Error message -- screenshot projectB.png
+
+This easy to use tag system has a drawback: for tagging a larger
+set of files with the same tag, you have to rename each file
+separately. With this tool, this only requires one step.
+
+Example usages:
+  ./filetags.py --tags="presentation projectA" *.pptx
+      ... adds the tags "presentation" and "projectA" to all PPTX-files
+  ./filetags.py --tags="presentation -projectA" *.pptx
+      ... adds the tag "presentation" to and removes tag "projectA" from all PPTX-files
+  ./filetags.py -i *
+      ... ask for tag(s) and add them to all files in current folder
+  ./filetags.py -r draft *report*
+      ... removes the tag "draft" from all files containing the word "report"
+
+
+This tools is looking for (the first) text file named ".filetags" in
+current and parent directories. Each line of it is interpreted as a tag
+for tag completion.
+
+Verbose description: http://Karl-Voit.at/managing-digital-photographs/
+
+:copyright: (c) by Karl Voit <tools@Karl-Voit.at>
+:license: GPL v3 or any later version
+:URL: https://github.com/novoid/filetag
+:bugreports: via github or <tools@Karl-Voit.at>
+:version: 2017-04-09
+
+
+Options:
+  -h, --help            show this help message and exit
+  -t TAGS, --tag=TAGS, --tags=TAGS
+                        one or more tags (in quotes, separated by spaces) to
+                        add/remove
+  -r, -d, --remove, --delete
+                        remove tags from (instead of adding to) file name(s)
+  -f, --filter          ask for list of tags and generate a directory that
+                        contains links to all files that contain all given
+                        tags and start the imageviewer
+  --imageviewer=IMAGEVIEWER
+                        command to view images (for --filter; default: geeqie)
+  -i, --interactive     interactive mode: ask for (a)dding or (r)emoving and
+                        name of tag(s)
+  --recursive           recursively go through the current directory and all
+                        of its subdirectories (for tag-gardening only)
+  -s, --dryrun          enable dryrun mode: just simulate what would happen,
+                        do not modify files
+  --ln, --list-tags-by-number
+                        list all file-tags sorted by their number of use
+  --la, --list-tags-by-alphabet
+                        list all file-tags sorted by their name
+  --lu, --list-tags-unknown-to-vocabulary
+                        list all file-tags which are found in file names but
+                        are not part of .filetags
+  --tag-gardening       This is for getting an overview on tags that might
+                        require to be renamed (typos, singular/plural, ...).
+                        See also http://www.webology.org/2008/v5n3/a58.html
+  -v, --verbose         enable verbose mode
+  -q, --quiet           enable quiet mode
+  --version             display version and exit
+#+END_src
 
 #+BEGIN_src
 Usage:
@@ -164,9 +237,15 @@ Each line represents one tag. Those tags are used for *tag
 completion*.
 
 This is purely great: with tags within ~.filetags~ you don't have to
-enter the tags entrirely: just type the first characters and press TAB
+enter the tags entrirely: just type the first characters and press =TAB=
 (twice to show you all possibilities). You will be amazed how
 efficiently you are going to tag things! :-)
+
+Of course, you can remove existing tags by prepending a =-= character
+to the tag: =-tagname=. This also works interactively using the tab
+completion feature.
+
+** Mutually exclusive tags
 
 If you enter multiple tags in the same line in ~.filetags~, they are
 interpreted as *mutually exclusive tags*. For example, if your
