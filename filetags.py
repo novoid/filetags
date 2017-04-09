@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-04-09 09:56:18 vk>"
+PROG_VERSION = u"Time-stamp: <2017-04-09 10:44:27 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -204,6 +204,10 @@ class SimpleCompleter(object):
 
     def __init__(self, options):
         self.options = sorted(options)
+
+        # removing '-' as a delimiter character in order to be able to use '-tagname' for removing:
+        readline.set_completer_delims(readline.get_completer_delims().replace('-', ''))
+
         return
 
     def complete(self, text, state):
@@ -553,6 +557,8 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
         for tagname in tags:
             if do_remove:
                 new_filename = removing_tag_from_filename(new_filename, tagname)
+            elif tagname[0] == '-':
+                new_filename = removing_tag_from_filename(new_filename, tagname[1:])
             else:
                 ## FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
@@ -1294,14 +1300,28 @@ def main():
         else:
             if files:
 
-                # remove given (common) tags from the vocabulary:
+                # remove given (shared) tags from the vocabulary:
                 tags_intersection_of_files = get_common_tags_from_files(files)
                 tags_for_visual = tags_intersection_of_files
                 logging.debug("found common tags: tags_intersection_of_files[%s]" % '], ['.join(tags_intersection_of_files))
-                vocabulary = list(set(vocabulary) - set(tags_intersection_of_files))
+
+                # append current filetags with a prepended '-' in order to allow tag completion for removing tags via '-tagname'
+                tags_from_filenames = set()
+                for currentfile in files:
+                    tags_from_filenames = tags_from_filenames.union(set(extract_tags_from_filename(currentfile)))
+                negative_tags_from_filenames = set()
+                for currenttag in list(tags_from_filenames):
+                    negative_tags_from_filenames.add('-' + currenttag)
+
+                vocabulary = list(set(vocabulary).union(negative_tags_from_filenames) - set(tags_intersection_of_files))
 
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
-                upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(get_tags_from_files_and_subfolders(startdir=os.path.dirname(os.path.abspath(files[0]))), tags_intersection_of_files))
+                upto9_tags_for_shortcuts = sorted(
+                    get_upto_nine_keys_of_dict_with_highest_value(
+                        get_tags_from_files_and_subfolders(
+                            startdir=os.path.dirname(
+                                os.path.abspath(files[0]))),
+                        tags_intersection_of_files))
                 logging.debug('derived upto9_tags_for_shortcuts')
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
@@ -1328,7 +1348,7 @@ def main():
         logging.info("filtering items with tag(s) \"%s\" and linking to directory \"%s\" ..." %
                      (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)), str(TAGFILTER_DIRECTORY)))
     else:
-        logging.info("adding tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
+        logging.info("processing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
     if options.tagfilter and not files:
         assert_empty_tagfilter_directory()
