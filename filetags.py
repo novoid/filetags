@@ -1,6 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = u"Time-stamp: <2017-04-09 10:48:56 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-22 12:43:16 vk>"
 
 ## TODO:
 ## - fix parts marked with «FIXXME»
@@ -40,7 +40,7 @@ def save_import(library):
     try:
         globals()[library] = importlib.import_module(library)
     except ImportError:
-        print "Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\"."
+        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
         sys.exit(2)
 
 
@@ -59,8 +59,8 @@ save_import('clint')     # for config file handling
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
-FILENAME_TAG_SEPARATOR = u' -- '
-BETWEEN_TAG_SEPARATOR = u' '
+FILENAME_TAG_SEPARATOR = ' -- '
+BETWEEN_TAG_SEPARATOR = ' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
@@ -73,13 +73,13 @@ except ValueError:
 
 max_file_length = 0  # will be set after iterating over source files182
 
-unique_tags = [[u'teststring1', u'teststring2']]  # list of list which contains tags that are mutually exclusive
+unique_tags = [['teststring1', 'teststring2']]  # list of list which contains tags that are mutually exclusive
 ## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
 ##       You might delete them if you don't use my unit test suite.
 
 
-USAGE = u"\n\
-    " + sys.argv[0] + u" [<options>] <list of files>\n\
+USAGE = "\n\
+    " + sys.argv[0] + " [<options>] <list of files>\n\
 \n\
 This tool adds or removes simple tags to/from file names.\n\
 \n\
@@ -94,13 +94,13 @@ set of files with the same tag, you have to rename each file\n\
 separately. With this tool, this only requires one step.\n\
 \n\
 Example usages:\n\
-  " + sys.argv[0] + u" --tags=\"presentation projectA\" *.pptx\n\
+  " + sys.argv[0] + " --tags=\"presentation projectA\" *.pptx\n\
       ... adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
-  " + sys.argv[0] + u" --tags=\"presentation -projectA\" *.pptx\n\
+  " + sys.argv[0] + " --tags=\"presentation -projectA\" *.pptx\n\
       ... adds the tag \"presentation\" to and removes tag \"projectA\" from all PPTX-files\n\
-  " + sys.argv[0] + u" -i *\n\
+  " + sys.argv[0] + " -i *\n\
       ... ask for tag(s) and add them to all files in current folder\n\
-  " + sys.argv[0] + u" -r draft *report*\n\
+  " + sys.argv[0] + " -r draft *report*\n\
       ... removes the tag \"draft\" from all files containing the word \"report\"\n\
 \n\
 \n\
@@ -128,7 +128,7 @@ FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
 FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 cache_of_tags_by_folder = {}
-controlled_vocabulary_filename = u''
+controlled_vocabulary_filename = ''
 
 parser = optparse.OptionParser(usage=USAGE)
 
@@ -246,11 +246,9 @@ def contains_tag(filename, tagname=False):
     @param return: True|False
     """
 
-    assert filename.__class__ == str or \
-        filename.__class__ == unicode
+    assert(filename.__class__ == str)
     if tagname:
-        assert tagname.__class__ == str or \
-            tagname.__class__ == unicode
+        assert(tagname.__class__ == str)
 
     components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(filename))
 
@@ -273,8 +271,7 @@ def extract_tags_from_filename(filename):
     @param return: list of tags
     """
 
-    assert filename.__class__ == str or \
-        filename.__class__ == unicode
+    assert(filename.__class__ == str)
 
     components = re.match(FILE_WITH_TAGS_REGEX, filename)
 
@@ -293,19 +290,17 @@ def adding_tag_to_filename(filename, tagname):
     @param return: an unicode string of filename containing tagname
     """
 
-    assert filename.__class__ == str or \
-        filename.__class__ == unicode
-    assert tagname.__class__ == str or \
-        tagname.__class__ == unicode
+    assert(filename.__class__ == str)
+    assert(tagname.__class__ == str)
 
     if contains_tag(filename) is False:
-        logging.debug(u"adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
+        logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
         components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
         if components:
             old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(os.path.dirname(filename), old_filename + FILENAME_TAG_SEPARATOR + tagname + u'.' + extension)
+            return os.path.join(os.path.dirname(filename), old_filename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
         else:
             return os.path.join(os.path.dirname(filename), os.path.basename(filename) + FILENAME_TAG_SEPARATOR + tagname)
 
@@ -322,7 +317,7 @@ def adding_tag_to_filename(filename, tagname):
         if components:
             old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(os.path.dirname(filename), old_filename + BETWEEN_TAG_SEPARATOR + tagname + u'.' + extension)
+            return os.path.join(os.path.dirname(filename), old_filename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
         else:
             return os.path.join(os.path.dirname(filename), filename + BETWEEN_TAG_SEPARATOR + tagname)
 
@@ -336,10 +331,8 @@ def removing_tag_from_filename(filename, tagname):
     @param return: an unicode string of filename without tagname
     """
 
-    assert filename.__class__ == str or \
-        filename.__class__ == unicode
-    assert tagname.__class__ == str or \
-        tagname.__class__ == unicode
+    assert(filename.__class__ == str)
+    assert(tagname.__class__ == str)
 
     if not contains_tag(filename, tagname):
         return filename
@@ -354,15 +347,15 @@ def removing_tag_from_filename(filename, tagname):
         old_filename = components.group(FILE_WITH_TAGS_REGEX_FILENAME_INDEX)
         extension = components.group(FILE_WITH_TAGS_REGEX_EXTENSION_INDEX)
         if not extension:
-            extension = u''
+            extension = ''
         else:
-            extension = u'.' + extension
+            extension = '.' + extension
 
         if len(tags) < 2:
             logging.debug("given tagname is the only tag -> remove all tags and FILENAME_TAG_SEPARATOR as well")
             return old_filename + extension
         else:
-            ## still tags left
+            # still tags left
             return old_filename + FILENAME_TAG_SEPARATOR + \
                 BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + extension
 
@@ -373,11 +366,10 @@ def extract_tags_from_argument(argument):
     @param return: a list of unicode tags
     """
 
-    assert argument.__class__ == str or \
-        argument.__class__ == unicode
+    assert(argument.__class__ == str)
 
     if len(argument) > 0:
-        return argument.split(unicode(BETWEEN_TAG_SEPARATOR))
+        return argument.split(str(BETWEEN_TAG_SEPARATOR))
     else:
         return False
 
@@ -434,38 +426,30 @@ def print_item_transition(source, destination, transition):
     @param return: N/A
     """
 
-    transition_description = u''
+    transition_description = ''
     if transition == 'add':
-        transition_description = u'renaming'
+        transition_description = 'renaming'
     elif transition == 'delete':
-        transition_description = u'renaming'
+        transition_description = 'renaming'
     elif transition == 'link':
-        transition_description = u'linking'
+        transition_description = 'linking'
     else:
-        print "ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\""
+        print("ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\"")
 
     if 15 + len(transition_description) + (2 * max_file_length) < TTY_WIDTH:
         ## probably enough space: screen output with one item per line
 
         source_width = max_file_length
 
-        try:
-            arrow_left = u'――'
-            arrow_right = u'―→'
-            print u"  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width)
-        except UnicodeEncodeError:
-            arrow_left = u'--'
-            arrow_right = u'->'
-            print u"  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width)
+        arrow_left = '――'
+        arrow_right = '―→'
+        print("  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width))
 
     else:
         ## for narrow screens (and long file names): split up item source/destination in two lines
 
-        print u" {0:<{width}s}  \"{1:s}\"".format(transition_description, source, width=len(transition_description))
-        try:
-            print u" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ', destination, width=len(transition_description))
-        except UnicodeEncodeError:
-            print u" {0:<{width}s}     `-> \"{1:s}\"".format(' ', destination, width=len(transition_description))
+        print(" {0:<{width}s}  \"{1:s}\"".format(transition_description, source, width=len(transition_description)))
+        print(" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ', destination, width=len(transition_description)))
 
 
 def find_unique_alternative_to_file(filename):
@@ -475,12 +459,12 @@ def find_unique_alternative_to_file(filename):
     """
 
     logging.debug("file type error for file [%s] in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" %
-                  (filename, os.getcwdu(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
+                  (filename, os.getcwd(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
     logging.debug("trying to find a unique file starting with the same characters ...")
 
     path = os.path.dirname(filename)
     if len(path) < 1:
-        path = os.getcwdu()
+        path = os.getcwd()
 
     # get existing filenames of the directory of filename:
     existingfilenames = []
@@ -520,15 +504,14 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
     @param return: error value or new filename
     """
 
-    assert filename.__class__ == str or \
-        filename.__class__ == unicode
-    assert tags.__class__ == list
+    assert(filename.__class__ == str)
+    assert(tags.__class__ == list)
     if do_remove:
-        assert do_remove.__class__ == bool
+        assert(do_remove.__class__ == bool)
     if do_filter:
-        assert do_filter.__class__ == bool
+        assert(do_filter.__class__ == bool)
     if dryrun:
-        assert dryrun.__class__ == bool
+        assert(dryrun.__class__ == bool)
 
     if os.path.isdir(filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % filename)
@@ -550,7 +533,7 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
     if do_filter:
         print_item_transition(filename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
-            os.symlink(os.path.join(os.getcwdu(), filename),
+            os.symlink(os.path.join(os.getcwd(), filename),
                        os.path.join(TAGFILTER_DIRECTORY, filename))
 
     else:  # add or remove tags:
@@ -586,7 +569,7 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
             transition = 'add'
 
         if dryrun:
-            logging.info(u" ")
+            logging.info(" ")
             print_item_transition(filename, new_filename, transition=transition)
         else:
             if filename != new_filename:
@@ -606,11 +589,10 @@ def add_tag_to_countdict(tag, tags):
     @param return: dict of tags with incremented counter of tag (or 0 if new)
     """
 
-    assert tag.__class__ == str or \
-        tag.__class__ == unicode
-    assert tags.__class__ == dict
+    assert(tag.__class__ == str)
+    assert(tags.__class__ == dict)
 
-    if tag in tags.keys():
+    if tag in list(tags.keys()):
         tags[tag] = tags[tag] + 1
     else:
         tags[tag] = 1
@@ -618,7 +600,7 @@ def add_tag_to_countdict(tag, tags):
     return tags
 
 
-def get_tags_from_files_and_subfolders(startdir=os.getcwdu(), use_cache=True):
+def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
     """
     Traverses the file system starting with given directory,
     returns dict of all tags (including starttags) of all file
@@ -629,19 +611,19 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwdu(), use_cache=True):
     ## add ", starttags=False" to parameters to enable this feature in future
     starttags = False
 
-    assert os.path.isdir(startdir)
+    assert(os.path.isdir(startdir))
 
     if not starttags:
         tags = {}
     else:
-        assert starttags.__class__ == dict
+        assert(starttags.__class__ == dict)
         tags = starttags
 
     global cache_of_tags_by_folder
 
-    logging.debug('get_tags_from_files_and_subfolders called with startdir [%s], cached startdirs [%s]' % (startdir, str(len(cache_of_tags_by_folder.keys()))))
+    logging.debug('get_tags_from_files_and_subfolders called with startdir [%s], cached startdirs [%s]' % (startdir, str(len(list(cache_of_tags_by_folder.keys())))))
 
-    if use_cache and startdir in cache_of_tags_by_folder.keys():
+    if use_cache and startdir in list(cache_of_tags_by_folder.keys()):
         logging.debug("found " + str(len(cache_of_tags_by_folder[startdir])) + " tags in cache for directory: " + startdir)
         return cache_of_tags_by_folder[startdir]
 
@@ -666,7 +648,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwdu(), use_cache=True):
                                            options.tag_gardening)):
                 break  # do not loop
 
-        logging.debug("Writing " + str(len(tags.keys())) + " tags in cache for directory: " + startdir)
+        logging.debug("Writing " + str(len(list(tags.keys()))) + " tags in cache for directory: " + startdir)
         if use_cache:
             cache_of_tags_by_folder[startdir] = tags
         return tags
@@ -681,9 +663,8 @@ def find_similar_tags(tag, tags):
     @param return: list of tags that are similar to tag
     """
 
-    assert tag.__class__ == str or \
-        tag.__class__ == unicode
-    assert tags.__class__ == list
+    assert(tag.__class__ == str)
+    assert(tags.__class__ == list)
 
     similar_tags = difflib.get_close_matches(tag, tags, n=999, cutoff=0.7)
     close_but_not_exact_matches = []
@@ -709,18 +690,18 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
     tag_dict = tag_dict_reference
 
     ## determine maximum length of strings for formatting:
-    maxlength_tags = max(len(s) for s in tag_dict.keys()) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
+    maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
     maxlength_count = len(str(abs(max(tag_dict.values()))))
     if maxlength_count < 5:
         maxlength_count = 5
 
     hint_for_being_in_vocabulary = ''
-    similar_tags = u''
+    similar_tags = ''
     if vocabulary:
-        print u"\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)"
-    print "\n {0:{1}} : {2:{3}}".format(u'count', maxlength_count, u'tag', maxlength_tags)
-    print " " + '-' * (maxlength_tags + maxlength_count + 7)
-    for tuple in sorted(tag_dict.items(), key=operator.itemgetter(sort_index)):
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)")
+    print("\n {0:{1}} : {2:{3}}".format('count', maxlength_count, 'tag', maxlength_tags))
+    print(" " + '-' * (maxlength_tags + maxlength_count + 7))
+    for tuple in sorted(list(tag_dict.items()), key=operator.itemgetter(sort_index)):
         ## sort dict of (tag, count) according to sort_index
 
         if vocabulary and tuple[0] in vocabulary:
@@ -733,16 +714,16 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
             tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
             similar_tags_list = find_similar_tags(tuple[0], tags_for_comparing)
             if similar_tags_list:
-                similar_tags = u'      (similar to:  ' + ', '.join(similar_tags_list) + u')'
+                similar_tags = '      (similar to:  ' + ', '.join(similar_tags_list) + ')'
             else:
-                similar_tags = u''
+                similar_tags = ''
         else:
-            similar_tags = u''
+            similar_tags = ''
 
         if (print_only_tags_with_similar_tags and similar_tags_list) or not print_only_tags_with_similar_tags:
-            print " {0:{1}} : {2:{3}}   {4}".format(tuple[1], maxlength_count, tuple[0] + hint_for_being_in_vocabulary, maxlength_tags, similar_tags)
+            print(" {0:{1}} : {2:{3}}   {4}".format(tuple[1], maxlength_count, tuple[0] + hint_for_being_in_vocabulary, maxlength_tags, similar_tags))
 
-    print ''
+    print('')
 
 
 def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False):
@@ -760,7 +741,7 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
 
     hint_for_being_in_vocabulary = ''
     if vocabulary:
-        print u"\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)\n"
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)\n")
 
     for tag in sorted(tag_set):
 
@@ -773,15 +754,15 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
             tags_for_comparing = list(tag_set.union(set(vocabulary)))  # unified elements of both lists
             similar_tags_list = find_similar_tags(tag, tags_for_comparing)
             if similar_tags_list:
-                similar_tags = u'      (similar to:  ' + ', '.join(similar_tags_list) + u')'
+                similar_tags = '      (similar to:  ' + ', '.join(similar_tags_list) + ')'
             else:
-                similar_tags = u''
+                similar_tags = ''
         else:
-            similar_tags = u''
+            similar_tags = ''
 
-        print "  {0:{1}}   {2}".format(tag + hint_for_being_in_vocabulary, maxlength_tags, similar_tags)
+        print("  {0:{1}}   {2}".format(tag + hint_for_being_in_vocabulary, maxlength_tags, similar_tags))
 
-    print ''
+    print('')
 
 
 def list_unknown_tags(file_tag_dict):
@@ -794,13 +775,13 @@ def list_unknown_tags(file_tag_dict):
     vocabulary = locate_and_parse_controlled_vocabulary(False)
 
     ## filter out known tags from tag_dict
-    unknown_tag_dict = {key: value for key, value in file_tag_dict.items() if key not in vocabulary}
+    unknown_tag_dict = {key: value for key, value in list(file_tag_dict.items()) if key not in vocabulary}
 
     if unknown_tag_dict:
         print_tag_dict(unknown_tag_dict, vocabulary)
     else:
-        print "\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" + \
-            " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n"
+        print("\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" + \
+            " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n")
 
     return unknown_tag_dict
 
@@ -818,34 +799,34 @@ def handle_tag_gardening(vocabulary):
     @param return: -
     """
 
-    tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwdu())
+    tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwd())
     if not tag_dict:
-        print "\nNo file containing tags found in this folder hierarchy.\n"
+        print("\nNo file containing tags found in this folder hierarchy.\n")
         return
 
-    print u"\nYou have used " + str(len(tag_dict)) + " tags in total.\n"
+    print("\nYou have used " + str(len(tag_dict)) + " tags in total.\n")
 
     if vocabulary:
 
-        print u'\nYour controlled vocabulary is defined in ' + controlled_vocabulary_filename + ' and contains ' + str(len(vocabulary)) + ' tags.\n'
+        print('\nYour controlled vocabulary is defined in ' + controlled_vocabulary_filename + ' and contains ' + str(len(vocabulary)) + ' tags.\n')
 
         vocabulary_tags_not_used = set(vocabulary) - set(tag_dict.keys())
         if vocabulary_tags_not_used:
-            print u"\nTags from your vocabulary which you didn't use:\n"
+            print("\nTags from your vocabulary which you didn't use:\n")
             print_tag_set(vocabulary_tags_not_used)
 
         tags_not_in_vocabulary = set(tag_dict.keys()) - set(vocabulary)
         if tags_not_in_vocabulary:
-            print u"\nTags you used that are not in the vocabulary:\n"
+            print("\nTags you used that are not in the vocabulary:\n")
             print_tag_set(tags_not_in_vocabulary)
 
-    print "\nTags that appear only once are most probably typos or you have forgotten them:"
-    tags_only_used_once_dict = {key: value for key, value in tag_dict.items() if value < 2}
+    print("\nTags that appear only once are most probably typos or you have forgotten them:")
+    tags_only_used_once_dict = {key: value for key, value in list(tag_dict.items()) if value < 2}
     print_tag_dict(tags_only_used_once_dict, vocabulary, sort_index=0, print_only_tags_with_similar_tags=False)
 
-    print "\nTags which have similar other tags are probably typos or plural/singular forms of others:"
+    print("\nTags which have similar other tags are probably typos or plural/singular forms of others:")
     tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
-    only_similar_tags_by_alphabet_dict = {key: value for key, value in tag_dict.items() if find_similar_tags(key, tags_for_comparing)}
+    only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items()) if find_similar_tags(key, tags_for_comparing)}
     print_tag_dict(only_similar_tags_by_alphabet_dict, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
 
     tags_only_used_once_set = set(tags_only_used_once_dict.keys())
@@ -853,7 +834,7 @@ def handle_tag_gardening(vocabulary):
     tags_in_both_outputs = tags_only_used_once_set.intersection(only_similar_tags_by_alphabet_set)
 
     if tags_in_both_outputs != set([]):
-        print "\nIf tags appear in both lists from above (only once and similar to others), they most likely\nrequire your attention:"
+        print("\nIf tags appear in both lists from above (only once and similar to others), they most likely\nrequire your attention:")
         print_tag_set(tags_in_both_outputs, vocabulary=vocabulary, print_similar_vocabulary_tags=True)
 
 
@@ -880,18 +861,18 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
             starting_dir = startfile
             logging.debug('startfile [%s] is a directory, using it as starting_dir [%s] .....' % (str(startfile), starting_dir))
         else:
-            starting_dir = os.getcwdu()
+            starting_dir = os.getcwd()
             logging.debug('no startfile found; using cwd as starting_dir [%s] ......' % (starting_dir))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
         logging.debug('looking for \"%s\" in directory \"%s\" .......' % (filename, parent_dir))
-        while parent_dir != os.getcwdu():
+        while parent_dir != os.getcwd():
             os.chdir(parent_dir)
-            filename_to_look_for = os.path.abspath(os.path.join(os.getcwdu(), filename))
+            filename_to_look_for = os.path.abspath(os.path.join(os.getcwd(), filename))
             if os.path.isfile(filename_to_look_for):
                 logging.debug('found \"%s\" in directory \"%s\" ........' % (filename, parent_dir))
                 os.chdir(starting_dir)
                 return filename_to_look_for
-            parent_dir = os.path.abspath(os.path.join(os.getcwdu(), os.pardir))
+            parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
         os.chdir(starting_dir)
         logging.debug('did NOT find \"%s\" in current directory or any parent directory' % filename)
         return False
@@ -912,7 +893,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
     if startfile:
         filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
     else:
-        filename = locate_file_in_cwd_and_parent_directories(os.getcwdu(), CONTROLLED_VOCABULARY_FILENAME)
+        filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
 
     global unique_tags
 
@@ -958,31 +939,28 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_link
 
     if tags_get_added:
         if len(tag_list) < 9:
-            hint_string = u"Previously used tags in this directory:"
+            hint_string = "Previously used tags in this directory:"
         else:
-            hint_string = u"Top nine previously used tags in this directory:"
+            hint_string = "Top nine previously used tags in this directory:"
     elif tags_get_linked:
         if len(tag_list) < 9:
-            hint_string = u"Used tags in this directory:"
+            hint_string = "Used tags in this directory:"
         else:
-            hint_string = u"Top nine used tags in this directory:"
+            hint_string = "Top nine used tags in this directory:"
     else:
         if len(tag_list) < 9:
-            hint_string = u"Possible tags to be removed:"
+            hint_string = "Possible tags to be removed:"
         else:
-            hint_string = u"Top nine possible tags to be removed:"
-    print "\n  " + hint_string
+            hint_string = "Top nine possible tags to be removed:"
+    print("\n  " + hint_string)
 
     count = 1
     list_of_tag_hints = []
     for tag in tag_list:
         list_of_tag_hints.append(tag + ' (' + str(count) + ')')
         count += 1
-    try:
-        print u'    ' + u' ⋅ '.join(list_of_tag_hints)
-    except UnicodeEncodeError:
-        print u'    ' + u' - '.join(list_of_tag_hints)
-    print u''  # newline at end
+    print('    ' + ' ⋅ '.join(list_of_tag_hints))
+    print('')  # newline at end
 
 
 def check_for_possible_shortcuts_in_entered_tags(usertags, list_of_shortcut_tags):
@@ -995,8 +973,8 @@ def check_for_possible_shortcuts_in_entered_tags(usertags, list_of_shortcut_tags
     @param return: list of tags which were meant by the user, e.g., [u'bar', u'baz']
     """
 
-    assert usertags.__class__ == list
-    assert list_of_shortcut_tags.__class__ == list
+    assert(usertags.__class__ == list)
+    assert(list_of_shortcut_tags.__class__ == list)
 
     foundtags = []  # collect all found tags which are about to return from this function
 
@@ -1048,7 +1026,7 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
     @param return: list of up to top nine keys according to the rank of their values
     """
 
-    assert mydict.__class__ == dict
+    assert(mydict.__class__ == dict)
 
     complete_list = sorted(mydict, key=mydict.get, reverse=True)
 
@@ -1093,7 +1071,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     @param return: list of up to top nine keys according to the rank of their values
     """
 
-    completionhint = u''
+    completionhint = ''
     if vocabulary and len(vocabulary) > 0:
 
         assert(vocabulary.__class__ == list)
@@ -1104,17 +1082,17 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
         # Use the tab key for completion
         readline.parse_and_bind('tab: complete')
 
-        completionhint = u'; complete %s tags with TAB' % str(len(vocabulary))
+        completionhint = '; complete %s tags with TAB' % str(len(vocabulary))
 
     logging.debug("len(args) [%s]" % str(len(args)))
     logging.debug("args %s" % str(args))
 
-    print "                 "
-    print "Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
-        completionhint
-    print "                     "
-    print _get_tag_visual(tags_for_visual)
-    print "                     "
+    print("                 ")
+    print("Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
+        completionhint)
+    print("                     ")
+    print(_get_tag_visual(tags_for_visual))
+    print("                     ")
 
     if len(upto9_tags_for_shortcuts) > 0:
         print_tag_shortcut_with_numbers(upto9_tags_for_shortcuts,
@@ -1122,7 +1100,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
                                         tags_get_linked=options.tagfilter)
 
     logging.debug("interactive mode: asking for tags ...")
-    entered_tags = raw_input('Tags: ').strip()
+    entered_tags = input('Tags: ').strip()
     tags_from_userinput = extract_tags_from_argument(entered_tags)
 
     if not tags_from_userinput:
@@ -1208,7 +1186,7 @@ def main():
     """Main function"""
 
     if options.version:
-        print os.path.basename(sys.argv[0]) + " version " + PROG_VERSION_DATE
+        print(os.path.basename(sys.argv[0]) + " version " + PROG_VERSION_DATE)
         sys.exit(0)
 
     handle_logging()
@@ -1246,9 +1224,9 @@ def main():
 
     if options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags:
 
-        tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwdu())
+        tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwd())
         if not tag_dict:
-            print "\nNo file containing tags found in this folder hierarchy.\n"
+            print("\nNo file containing tags found in this folder hierarchy.\n")
             return {}
 
         if options.list_tags_by_alphabet:
@@ -1292,7 +1270,7 @@ def main():
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
 
         elif options.tagfilter:
-            for tag in get_tags_from_files_and_subfolders(startdir=os.getcwdu()):
+            for tag in get_tags_from_files_and_subfolders(startdir=os.getcwd()):
                 add_tag_to_countdict(tag, tags_for_vocabulary)
 
             logging.debug('generating vocabulary ...')
@@ -1354,7 +1332,7 @@ def main():
 
     if options.tagfilter and not files:
         assert_empty_tagfilter_directory()
-        files = filter_files_matching_tags(get_files_of_directory(os.getcwdu()), tags_from_userinput)
+        files = filter_files_matching_tags(get_files_of_directory(os.getcwd()), tags_from_userinput)
 
     logging.debug("iterate over files ...")
 
@@ -1365,8 +1343,6 @@ def main():
     logging.debug('determined maximum file name length with %i' % max_file_length)
 
     for filename in files:
-        if filename.__class__ == str:
-            filename = unicode(filename, "UTF-8")
         handle_file(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
 
     if options.tagfilter:
