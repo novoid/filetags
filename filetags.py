@@ -1,37 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-22 12:43:16 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-22 12:54:39 vk>"
 
-## TODO:
-## - fix parts marked with «FIXXME»
-## - $HOME/.config/ with default options (e.g., geeqie)
-##   - using clint/resource
-##   - if not found, write default config with defaults (and comments)
-## - move from optparse to argparse
-## - tagfilter: --copy :: copy files instead of creating symlinks
-## - tagfilter: all toggle-cmd line args as special tags: --copy and so forth
-##   - e.g., when user enters tag "--copy" when interactively reading tags, handle it like options.copy
-##   - overwriting cmd-line arguments (if contradictory)
-##   - allow combination of cmd-line tags and interactive tags
-##     - they get combined
-## - tagfilter: additional parameter to move matching files to a temporary subfolder
-##   - renaming/deleting of symlinks does not modify original files
-## - tagfilter: --recursive :: recursively going into subdirectories and
-##      collecting items (into one target directory) for:
-##   - adding tags
-##   - removing tags
-##   - filter
-## - tagfilter: --notag :: do not ask for tags, use all items that got no tag
-##      at all
-## - tagfilter: --ignoredirs :: do not symlink/copy directories
-## - tagfilter: --emptytmpdir :: empty temporary directory after the image viewer exits
-## - use "open" to open first(?) file
+# TODO:
+# - fix parts marked with «FIXXME»
+# - $HOME/.config/ with default options (e.g., geeqie)
+#   - using clint/resource
+#   - if not found, write default config with defaults (and comments)
+# - move from optparse to argparse
+# - tagfilter: --copy :: copy files instead of creating symlinks
+# - tagfilter: all toggle-cmd line args as special tags: --copy and so forth
+#   - e.g., when user enters tag "--copy" when interactively reading tags, handle it like options.copy
+#   - overwriting cmd-line arguments (if contradictory)
+#   - allow combination of cmd-line tags and interactive tags
+#     - they get combined
+# - tagfilter: additional parameter to move matching files to a temporary subfolder
+#   - renaming/deleting of symlinks does not modify original files
+# - tagfilter: --recursive :: recursively going into subdirectories and
+#      collecting items (into one target directory) for:
+#   - adding tags
+#   - removing tags
+#   - filter
+# - tagfilter: --notag :: do not ask for tags, use all items that got no tag
+#      at all
+# - tagfilter: --ignoredirs :: do not symlink/copy directories
+# - tagfilter: --emptytmpdir :: empty temporary directory after the image viewer exits
+# - use "open" to open first(?) file
 
 
-## ===================================================================== ##
-##  You might not want to modify anything below this line if you do not  ##
-##  know, what you are doing :-)                                         ##
-## ===================================================================== ##
+# ===================================================================== ##
+#  You might not want to modify anything below this line if you do not  ##
+#  know, what you are doing :-)                                         ##
+# ===================================================================== ##
 
 import importlib
 
@@ -74,8 +74,8 @@ except ValueError:
 max_file_length = 0  # will be set after iterating over source files182
 
 unique_tags = [['teststring1', 'teststring2']]  # list of list which contains tags that are mutually exclusive
-## Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
-##       You might delete them if you don't use my unit test suite.
+# Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
+#       You might delete them if you don't use my unit test suite.
 
 
 USAGE = "\n\
@@ -117,7 +117,7 @@ Verbose description: http://Karl-Voit.at/managing-digital-photographs/\n\
 :version: " + PROG_VERSION_DATE + "\n"
 
 
-## file names containing tags matches following regular expression
+# file names containing tags matches following regular expression
 FILE_WITH_TAGS_REGEX = re.compile("(.+?)" + FILENAME_TAG_SEPARATOR + "(.+?)(\.(\w+))??$")
 FILE_WITH_TAGS_REGEX_FILENAME_INDEX = 1  # component.group(1)
 FILE_WITH_TAGS_REGEX_TAGLIST_INDEX = 2
@@ -380,7 +380,7 @@ def extract_filenames_from_argument(argument):
     @param return: a list of unicode file names
     """
 
-    ## FIXXME: works at my computer without need to convertion but add check later on
+    # FIXXME: works at my computer without need to convertion but add check later on
     return argument
 
 
@@ -437,7 +437,7 @@ def print_item_transition(source, destination, transition):
         print("ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\"")
 
     if 15 + len(transition_description) + (2 * max_file_length) < TTY_WIDTH:
-        ## probably enough space: screen output with one item per line
+        # probably enough space: screen output with one item per line
 
         source_width = max_file_length
 
@@ -446,7 +446,7 @@ def print_item_transition(source, destination, transition):
         print("  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width))
 
     else:
-        ## for narrow screens (and long file names): split up item source/destination in two lines
+        # for narrow screens (and long file names): split up item source/destination in two lines
 
         print(" {0:<{width}s}  \"{1:s}\"".format(transition_description, source, width=len(transition_description)))
         print(" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ', destination, width=len(transition_description)))
@@ -545,16 +545,16 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
             elif tagname[0] == '-':
                 new_filename = removing_tag_from_filename(new_filename, tagname[1:])
             else:
-                ## FIXXME: not performance optimized for large number of unique tags in many lists:
+                # FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
 
                 if tagname != tag_in_unique_tags:
                     new_filename = adding_tag_to_filename(new_filename, tagname)
                 else:
-                    ## if tag within unique_tags found, and new unique tag is given, remove old tag:
-                    ## e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
-                    ## If user enters contradicting tags, only the last one will be applied.
-                    ## FIXXME: this is an undocumented feature -> please add proper documentation
+                    # if tag within unique_tags found, and new unique tag is given, remove old tag:
+                    # e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
+                    # If user enters contradicting tags, only the last one will be applied.
+                    # FIXXME: this is an undocumented feature -> please add proper documentation
 
                     current_filename_tags = extract_tags_from_filename(new_filename)
                     conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
@@ -608,7 +608,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
     @param return: dict of tags and their number of occurrence
     """
 
-    ## add ", starttags=False" to parameters to enable this feature in future
+    # add ", starttags=False" to parameters to enable this feature in future
     starttags = False
 
     assert(os.path.isdir(startdir))
@@ -641,7 +641,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
                 for tag in extract_tags_from_filename(dirname):
                     tags = add_tag_to_countdict(tag, tags)
 
-            ## Enable recursive directory traversal for specific options:
+            # Enable recursive directory traversal for specific options:
             if not (options.recursive and (options.list_tags_by_alphabet or
                                            options.list_tags_by_number or
                                            options.list_unknown_tags or
@@ -669,7 +669,7 @@ def find_similar_tags(tag, tags):
     similar_tags = difflib.get_close_matches(tag, tags, n=999, cutoff=0.7)
     close_but_not_exact_matches = []
 
-    ## omit exact matches   FIXXME: this can be done in one eloquent line -> refactor
+    # omit exact matches   FIXXME: this can be done in one eloquent line -> refactor
     for match in similar_tags:
         if match != tag:
             close_but_not_exact_matches.append(match)
@@ -689,7 +689,7 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
     tag_dict = {}
     tag_dict = tag_dict_reference
 
-    ## determine maximum length of strings for formatting:
+    # determine maximum length of strings for formatting:
     maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
     maxlength_count = len(str(abs(max(tag_dict.values()))))
     if maxlength_count < 5:
@@ -702,7 +702,7 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
     print("\n {0:{1}} : {2:{3}}".format('count', maxlength_count, 'tag', maxlength_tags))
     print(" " + '-' * (maxlength_tags + maxlength_count + 7))
     for tuple in sorted(list(tag_dict.items()), key=operator.itemgetter(sort_index)):
-        ## sort dict of (tag, count) according to sort_index
+        # sort dict of (tag, count) according to sort_index
 
         if vocabulary and tuple[0] in vocabulary:
             hint_for_being_in_vocabulary = HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE
@@ -736,7 +736,7 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
     @param print_similar_vocabulary_tags: if a vocabulary is given and tags are similar to it, print a list of them
     """
 
-    ## determine maximum length of strings for formatting:
+    # determine maximum length of strings for formatting:
     maxlength_tags = max(len(s) for s in tag_set) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
 
     hint_for_being_in_vocabulary = ''
@@ -774,14 +774,14 @@ def list_unknown_tags(file_tag_dict):
 
     vocabulary = locate_and_parse_controlled_vocabulary(False)
 
-    ## filter out known tags from tag_dict
+    # filter out known tags from tag_dict
     unknown_tag_dict = {key: value for key, value in list(file_tag_dict.items()) if key not in vocabulary}
 
     if unknown_tag_dict:
         print_tag_dict(unknown_tag_dict, vocabulary)
     else:
-        print("\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" + \
-            " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n")
+        print("\n  " + str(len(file_tag_dict)) + " different tags were found in file names which are all" +
+              " part of your .filetags vocabulary (consisting of " + str(len(vocabulary)) + " tags).\n")
 
     return unknown_tag_dict
 
@@ -912,7 +912,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
                         logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' % (line))
                         unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
                         for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                            ## *also* append unique tags to general tag list:
+                            # *also* append unique tags to general tag list:
                             tags.append(tag)
                     else:
                         tags.append(line)
@@ -1088,8 +1088,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     logging.debug("args %s" % str(args))
 
     print("                 ")
-    print("Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" + \
-        completionhint)
+    print("Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
+          completionhint)
     print("                     ")
     print(_get_tag_visual(tags_for_visual))
     print("                     ")
@@ -1109,7 +1109,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
         sys.exit(0)
     else:
         if len(upto9_tags_for_shortcuts) > 0:
-            ## check if user entered number shortcuts for tags to be removed:
+            # check if user entered number shortcuts for tags to be removed:
             tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_for_shortcuts)
         return tags_from_userinput
 
@@ -1195,7 +1195,7 @@ def main():
         error_exit(1, "Options \"--verbose\" and \"--quiet\" found. " +
                    "This does not make any sense, you silly fool :-)")
 
-    ## interactive mode and tags are given
+    # interactive mode and tags are given
     if options.interactive and options.tags:
         error_exit(3, "I found option \"--tag\" and option \"--interactive\". \n" +
                    "Please choose either tag option OR interactive mode.")
