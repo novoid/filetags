@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2017-08-22 12:45:35 vk>
+# Time-stamp: <2017-08-22 12:59:47 vk>
 
 ## invoke tests using following command line:
 ## ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -125,17 +125,17 @@ class TestMethods(unittest.TestCase):
 
         self.assertEqual(filetags.get_common_tags_from_files(['file1.txt']), [])
         self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt']), ['foo'])
-        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo bar.txt']), ['bar', 'foo'])
+        self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- foo bar.txt'])), set(['foo', 'bar']))
         self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt', 'file2.txt']), [])
         self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt', 'file2 -- foo bar.txt']), ['foo'])
         self.assertEqual(filetags.get_common_tags_from_files(['file1 -- baz foo.txt',
                                                               'file2 -- foo bar.txt'
                                                               'file3 -- foo bar baz.txt'
                                                               'file4 -- foo bar jodel.txt']), ['foo'])
-        self.assertEqual(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt',
-                                                              'file2 -- common foo bar.txt'
-                                                              'file3 -- common foo bar baz.txt'
-                                                              'file4 -- common foo bar jodel.txt']), ['common', 'foo'])
+        self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt',
+                                                                     'file2 -- common foo bar.txt'
+                                                                     'file3 -- common foo bar baz.txt'
+                                                                     'file4 -- common foo bar jodel.txt'])), set(['common', 'foo']))
 
     def tearDown(self):
 
