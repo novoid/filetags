@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2017-08-27 17:12:59 vk>
+# Time-stamp: <2017-08-27 23:54:13 vk>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -10,7 +10,16 @@ import os
 import filetags
 import tempfile
 import os.path
+import logging
 from shutil import rmtree
+
+# TEMPLATE for debugging:
+#        try:
+#        except AssertionError:
+#            import pdb; pdb.set_trace()
+
+FORMAT = "%(levelname)-8s %(asctime)-15s %(message)s"
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 
 class TestMethods(unittest.TestCase):
@@ -158,9 +167,12 @@ class TestFileWithoutTags(unittest.TestCase):
         # double-check set-up:
         self.assertTrue(self.file_exists(self.testfilename))
 
+        os.sync()
+
     def create_tmp_file(self, name):
 
-        open(os.path.join(self.tempdir, name), 'w')
+        with open(os.path.join(self.tempdir, name), 'w') as outputhandle:
+            outputhandle.write('This is a test file for filetags unit testing')
 
     def file_exists(self, name):
 
@@ -227,6 +239,7 @@ class TestFileWithoutTags(unittest.TestCase):
         filetags.handle_file(os.path.join(self.tempdir, filename), ['foo'], do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists(filename + ' -- foo'), True)
 
+    # there is no such function: filetags.list_tags_by_number()
     def NOtest_list_tags_by_number(self):
 
         # starting with no file with tags:
@@ -249,6 +262,7 @@ class TestFileWithoutTags(unittest.TestCase):
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {'bar': 1})
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=0), {'bar': 1, 'foo': 2})
 
+    # there is no such function: filetags.list_tags_by_aphabet()
     def NOtest_list_tags_by_alphabet(self):
 
         # starting with no file with tags:
@@ -299,9 +313,12 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.create_tmp_file("foo2 -- bar baz.txt")
         self.create_tmp_file("foo3 -- bar baz teststring1.txt")
 
+        os.sync()
+
     def create_tmp_file(self, name):
 
-        open(os.path.join(self.tempdir, name), 'w')
+        with open(os.path.join(self.tempdir, name), 'w') as outputhandle:
+            outputhandle.write('This is a test file for filetags unit testing')
 
     def file_exists(self, name):
 
@@ -329,11 +346,127 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
         print("FIXXME: test_locate_and_parse_controlled_vocabulary() not implemented yet")
 
-
     def tearDown(self):
 
         rmtree(self.tempdir)
 
+
+class TestReplacingSymlinkSourceAndTarget(unittest.TestCase):
+
+    tempdir = None
+
+    SOURCEFILE1 = 'source file 1 - same tags -- bar.txt'
+    LINKFILE1 = 'symlink file 1 - same tags -- bar.txt'
+
+    SOURCEFILE2 = 'source file 2 - source has tag and symlink not -- baz.txt'
+    LINKFILE2 = 'symlink file 2 - source has tag and symlink not.txt'
+
+    SOURCEFILE3 = 'source file 3 - source no tags and symlink has.txt'
+    LINKFILE3 = 'symlink file 3 - source no tags and symlink has -- baz.txt'
+
+    TESTFILE1 = 'symlink and source same name.txt'
+
+    def setUp(self):
+
+        # create temporary directory for the source files:
+        self.sourcedir = tempfile.mkdtemp(prefix='sources')
+        self.symlinkdir = tempfile.mkdtemp(prefix='symlinks')
+
+        os.chdir(self.sourcedir)
+        logging.info("\nTestReplacingSymlinkSourceAndTarget: sourcedir: " + self.sourcedir + " and symlinkdir: " + self.symlinkdir)
+
+        # create set of test files:
+        self.create_source_file(self.SOURCEFILE1)
+        self.create_source_file(self.SOURCEFILE2)
+        self.create_source_file(self.SOURCEFILE3)
+        self.create_source_file(self.SOURCEFILE3)
+        self.create_source_file(self.TESTFILE1)
+
+        # create symbolic links:
+        self.create_symlink_file(self.SOURCEFILE1, self.LINKFILE1)
+        self.create_symlink_file(self.SOURCEFILE2, self.LINKFILE2)
+        self.create_symlink_file(self.SOURCEFILE3, self.LINKFILE3)
+        self.create_symlink_file(self.TESTFILE1, self.TESTFILE1)
+
+        os.sync()
+
+    def create_source_file(self, name):
+
+        with open(os.path.join(self.sourcedir, name), 'w') as outputhandle:
+            outputhandle.write('This is a test file for filetags unit testing')
+
+    def create_symlink_file(self, source, destination):
+
+        os.symlink(os.path.join(self.sourcedir, source), os.path.join(self.symlinkdir, destination))
+
+    def source_file_exists(self, name):
+
+        return os.path.isfile(os.path.join(self.sourcedir, name))
+
+    def symlink_file_exists(self, name):
+
+        return os.path.isfile(os.path.join(self.symlinkdir, name))
+
+    def is_broken_link(self, name):
+
+        # This function determines if the given name points to a file
+        # that is a broken link. It returns False for any other cases
+        # such as non existing files and so forth.
+
+        if self.symlink_file_exists(name):
+            return False
+
+        try:
+            return not os.path.exists(os.readlink(os.path.join(self.symlinkdir, name)))
+        except FileNotFoundError:
+            return False
+
+    def tearDown(self):
+
+        rmtree(self.sourcedir)
+        rmtree(self.symlinkdir)
+
+    def test_adding_tags_to_symlinks(self):
+
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.LINKFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        logging.info('only the symlink gets this tag because basenames differ:')
+        self.assertEqual(self.symlink_file_exists('symlink file 1 - same tags -- bar foo.txt'), True)
+        self.assertEqual(self.source_file_exists(self.SOURCEFILE1), True)
+
+        logging.info('basenames are same, so both files should get the tag:')
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo.txt'), True)
+        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
+
+    def test_adding_tag_to_an_original_file_causing_broken_symlink(self):
+
+        self.assertFalse(self.is_broken_link(self.TESTFILE1))
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.sourcedir, self.TESTFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
+        self.assertTrue(self.is_broken_link(self.TESTFILE1))
+
+    def test_removing_tags(self):
+
+        logging.info('removing a non existing tag should not change anything at all:')
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo'], do_remove=True, do_filter=False, dryrun=False)
+        self.assertEqual(self.source_file_exists(self.TESTFILE1), True)
+        self.assertEqual(self.symlink_file_exists(self.TESTFILE1), True)
+
+        logging.info('adding tags just for the next tests:')
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo', 'bar'], do_remove=False, do_filter=False, dryrun=False)
+
+        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo bar.txt'), True)
+        self.assertEqual(self.source_file_exists('symlink and source same name -- foo bar.txt'), True)
+
+        logging.info('removing tags which only exists partially:')
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, 'symlink and source same name -- foo bar.txt'), ['baz', 'bar'], do_remove=True, do_filter=False, dryrun=False)
+        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo.txt'), True)
+        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
+
+        logging.info('removing tags using minus-notation like "-foo"')
+        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, 'symlink and source same name -- foo.txt'), ['-foo', 'bar'], do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.symlink_file_exists('symlink and source same name -- bar.txt'), True)
+        self.assertEqual(self.source_file_exists('symlink and source same name -- bar.txt'), True)
 
 if __name__ == '__main__':
     unittest.main()

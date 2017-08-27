@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-22 12:54:39 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-27 23:51:14 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -65,6 +65,7 @@ CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
+TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
 
 try:
     TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
@@ -498,6 +499,89 @@ def find_unique_alternative_to_file(filename):
         return False
 
 
+def is_nonbroken_symlink_file(filename):
+    """
+    Returns true if the filename is a non-broken symbolic link and not just an ordinary file. False, for any other case like no file at all.
+
+    @param filename: an unicode string containing a file name
+    @param return: bookean
+    """
+
+    if os.path.isfile(filename):
+        if os.path.islink(filename):
+            return True
+    else:
+        return False
+
+
+def get_link_source_file(filename):
+    """
+    Return a string representing the path to which the symbolic link points.
+
+    @param filename: an unicode string containing a file name
+    @param return: file path string
+    """
+
+    assert(os.path.islink(filename))
+    return os.readlink(filename)
+
+
+def is_broken_link(name):
+    """
+    This function determines if the given name points to a file that is a broken link.
+    It returns False for any other cases such as non existing files and so forth.
+
+    @param name: an unicode string containing a file name
+    @param return: boolean
+    """
+
+    if os.path.isfile(name):
+        return False
+
+    try:
+        return not os.path.exists(os.readlink(name))
+    except FileNotFoundError:
+        return False
+
+
+def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter, dryrun):
+    """
+    @param filename: string containing one file name
+    @param tags: list containing one or more tags
+    @param do_remove: boolean which defines if tags should be added (False) or removed (True)
+    @param dryrun: boolean which defines if files should be changed (False) or not (True)
+    @param return: error value or new filename
+    """
+
+    # if filename is a symbolic link and has same basename, tag the source file as well:
+    if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(filename):
+        old_sourcefilename = get_link_source_file(filename)
+
+        if os.path.basename(old_sourcefilename) == os.path.basename(filename):
+
+            new_sourcefilename = handle_file(old_sourcefilename, tags, do_remove, do_filter, dryrun)
+            if old_sourcefilename != new_sourcefilename:
+                logging.info('Tagging the symlink-destination file of "' + filename + '" ("' +
+                             old_sourcefilename + '") as well …')
+                if options.dryrun:
+                    logging.debug('I would re-link the old sourcefilename "' + old_sourcefilename +
+                                  '" to the new one "' + new_sourcefilename + '"')
+                else:
+                    logging.debug('re-linking symlink "' + filename + '" from the old sourcefilename "' +
+                                  old_sourcefilename + '" to the new one "' + new_sourcefilename + '"')
+                    os.remove(filename)
+                    os.symlink(new_sourcefilename, filename)
+            else:
+                logging.debug('The old sourcefilename "' + old_sourcefilename + '" did not change. So therefore I don\'t re-link.')
+        else:
+            logging.debug('The file "' + os.path.basename(filename) + '" is a symlink to "' + old_sourcefilename +
+                          '" but they two do have different basenames. Therefore I ignore the original file.')
+
+    # after handling potential symlink originals, I now handle the file we were talking about in the first place:
+    return handle_file(filename, tags, do_remove, do_filter, dryrun)
+
+
+
 def handle_file(filename, tags, do_remove, do_filter, dryrun):
     """
     @param filename: string containing one file name
@@ -541,18 +625,22 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
 
     else:  # add or remove tags:
         new_filename = filename
+        logging.debug('handle_file: set new_filename [' + new_filename + '] according to parameters (initialization)')
 
         for tagname in tags:
             if do_remove:
                 new_filename = removing_tag_from_filename(new_filename, tagname)
+                logging.debug('handle_file: set new_filename [' + new_filename + '] when do_remove')
             elif tagname[0] == '-':
                 new_filename = removing_tag_from_filename(new_filename, tagname[1:])
+                logging.debug('handle_file: set new_filename [' + new_filename + '] when tag starts with a minus')
             else:
                 # FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
 
                 if tagname != tag_in_unique_tags:
                     new_filename = adding_tag_to_filename(new_filename, tagname)
+                    logging.debug('handle_file: set new_filename [' + new_filename + '] when tagname != tag_in_unique_tags')
                 else:
                     # if tag within unique_tags found, and new unique tag is given, remove old tag:
                     # e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
@@ -564,7 +652,9 @@ def handle_file(filename, tags, do_remove, do_filter, dryrun):
                     logging.debug("found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
                     for conflicting_tag in conflicting_tags:
                         new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
+                        logging.debug('handle_file: set new_filename [' + new_filename + '] when conflicting_tag in conflicting_tags')
                     new_filename = adding_tag_to_filename(new_filename, tagname)
+                    logging.debug('handle_file: set new_filename [' + new_filename + '] after adding_tag_to_filename()')
 
         if do_remove:
             transition = 'delete'
@@ -1222,7 +1312,8 @@ def main():
     tags_from_userinput = []
     vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
-    if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
+    if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or
+                              options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
     if options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags:
@@ -1346,7 +1437,14 @@ def main():
     logging.debug('determined maximum file name length with %i' % max_file_length)
 
     for filename in files:
-        handle_file(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
+
+        if is_broken_link(filename):
+            # skip broken links completely and write error message:
+            logging.error('File "' + filename + '" is a broken symbolic link. Skipping this one …')
+
+        else:
+            # if filename is a symbolic link, tag the source file as well:
+            handle_file_and_symlink_source_if_found(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
 
     if options.tagfilter:
         save_import('subprocess')
