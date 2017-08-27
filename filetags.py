@@ -293,18 +293,21 @@ def adding_tag_to_filename(filename, tagname):
     assert(filename.__class__ == str)
     assert(tagname.__class__ == str)
 
-    if contains_tag(filename) is False:
+    dirname = os.path.dirname(filename)
+    basename = os.path.basename(filename)
+
+    if contains_tag(basename) is False:
         logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
+        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(basename))
         if components:
-            old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(os.path.dirname(filename), old_filename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
+            return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
         else:
-            return os.path.join(os.path.dirname(filename), os.path.basename(filename) + FILENAME_TAG_SEPARATOR + tagname)
+            return os.path.join(dirname, basename + FILENAME_TAG_SEPARATOR + tagname)
 
-    elif contains_tag(filename, tagname):
+    elif contains_tag(basename, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): tag already found in filename" % (filename, tagname))
 
         return filename
@@ -313,13 +316,13 @@ def adding_tag_to_filename(filename, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" %
                       (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(filename))
+        components = re.match(FILE_WITH_EXTENSION_REGEX, basename)
         if components:
-            old_filename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(os.path.dirname(filename), old_filename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
+            return os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
         else:
-            return os.path.join(os.path.dirname(filename), filename + BETWEEN_TAG_SEPARATOR + tagname)
+            return os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
 
 
 def removing_tag_from_filename(filename, tagname):
