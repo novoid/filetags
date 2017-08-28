@@ -1,4 +1,4 @@
-## Time-stamp: <2017-08-27 23:59:18 vk>
+## Time-stamp: <2017-08-28 14:39:56 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -56,8 +56,10 @@ Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[ht
 #+END_SRC
 
 #+BEGIN_src
-Usage:
-    ./filetags.py [<options>] <list of files>
+usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [-r] [-f]
+                     [--filebrowser PATH_TO_FILEBROWSER] [-i] [-R] [-s] [--ln]
+                     [--la] [--lu] [--tag-gardening] [-v] [-q] [--version]
+                     [FILE [FILE ...]]
 
 This tool adds or removes simple tags to/from file names.
 
@@ -73,14 +75,13 @@ separately. With this tool, this only requires one step.
 
 Example usages:
   ./filetags.py --tags="presentation projectA" *.pptx
-      ... adds the tags "presentation" and "projectA" to all PPTX-files
+      … adds the tags "presentation" and "projectA" to all PPTX-files
   ./filetags.py --tags="presentation -projectA" *.pptx
-      ... adds the tag "presentation" to and removes tag "projectA" from all PPTX-files
+      … adds the tag "presentation" to and removes tag "projectA" from all PPTX-files
   ./filetags.py -i *
-      ... ask for tag(s) and add them to all files in current folder
+      … ask for tag(s) and add them to all files in current folder
   ./filetags.py -r draft *report*
-      ... removes the tag "draft" from all files containing the word "report"
-
+      … removes the tag "draft" from all files containing the word "report"
 
 This tools is looking for (the first) text file named ".filetags" in
 current and parent directories. Each line of it is interpreted as a tag
@@ -88,28 +89,25 @@ for tag completion.
 
 Verbose description: http://Karl-Voit.at/managing-digital-photographs/
 
-:copyright: (c) by Karl Voit <tools@Karl-Voit.at>
-:license: GPL v3 or any later version
-:URL: https://github.com/novoid/filetag
-:bugreports: via github or <tools@Karl-Voit.at>
-:version: 2017-08-27
+positional arguments:
+  FILE                  One or more files to tag
 
-
-Options:
+optional arguments:
   -h, --help            show this help message and exit
-  -t TAGS, --tag=TAGS, --tags=TAGS
+  -t "STRING WITH TAGS", --tags "STRING WITH TAGS"
                         one or more tags (in quotes, separated by spaces) to
                         add/remove
-  -r, -d, --remove, --delete
+  -r, --remove, -d, --delete
                         remove tags from (instead of adding to) file name(s)
   -f, --filter          ask for list of tags and generate a directory that
                         contains links to all files that contain all given
                         tags and start the imageviewer
-  --imageviewer=IMAGEVIEWER
-                        command to view images (for --filter; default: geeqie)
+  --filebrowser PATH_TO_FILEBROWSER
+                        tool to view/manage files (for --filter; default:
+                        geeqie)
   -i, --interactive     interactive mode: ask for (a)dding or (r)emoving and
                         name of tag(s)
-  --recursive           recursively go through the current directory and all
+  -R, --recursive       recursively go through the current directory and all
                         of its subdirectories (for tag-gardening only)
   -s, --dryrun          enable dryrun mode: just simulate what would happen,
                         do not modify files
@@ -126,23 +124,30 @@ Options:
   -v, --verbose         enable verbose mode
   -q, --quiet           enable quiet mode
   --version             display version and exit
+
+:copyright: (c) by Karl Voit <tools@Karl-Voit.at>
+:license: GPL v3 or any later version
+:URL: https://github.com/novoid/filetag
+:bugreports: via github or <tools@Karl-Voit.at>
+:version: 2017-08-28
+·
 #+END_src
 
 *** Examples:
 
-: filetags.py --tag foo a_file_name.txt
+: filetags.py --tags foo a_file_name.txt
 ... adds tag "foo" such that it results in ~a_file_name -- foo.txt~
 
 : filetags.py -i *.jpeg
 ... interactive mode: asking for list of tags (for the JPEG files) from the user
 
-: filetags.py --tag "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
+: filetags.py --tags "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
 : "file name 1 -- foo bar.jpg"
 : "file name 2 -- foo bar.txt"
 : "file name 3 -- bar foo.csv"
 
-: filetags.py --remove --tag foo "foo a_file_name -- foo.txt"
+: filetags.py --remove --tags foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
 : filetags.py --tag-gardening
@@ -192,6 +197,11 @@ tags that are most likely typos or abandoned
   matching file name, the source file gets the same tags as the
   symbolic link of it
   - This is especially useful when using the =--filter= option
+- 2017-08-28:
+  - moved from optparse to [[https://docs.python.org/3/library/argparse.html][argparse]]
+  - removed option =--tag= (in favor to =--tags=)
+  - added option shortcut for recursive: =-R=
+  - renamed option =--imageviewer= to =--filebrowser= and enabled its functionality
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:

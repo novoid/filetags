@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-27 23:51:14 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-28 15:07:51 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
 # - $HOME/.config/ with default options (e.g., geeqie)
 #   - using clint/resource
 #   - if not found, write default config with defaults (and comments)
-# - move from optparse to argparse
 # - tagfilter: --copy :: copy files instead of creating symlinks
 # - tagfilter: all toggle-cmd line args as special tags: --copy and so forth
 #   - e.g., when user enters tag "--copy" when interactively reading tags, handle it like options.copy
@@ -21,7 +20,7 @@ PROG_VERSION = "Time-stamp: <2017-08-27 23:51:14 vk>"
 #   - adding tags
 #   - removing tags
 #   - filter
-# - tagfilter: --notag :: do not ask for tags, use all items that got no tag
+# - tagfilter: --notags :: do not ask for tags, use all items that got no tag
 #      at all
 # - tagfilter: --ignoredirs :: do not symlink/copy directories
 # - tagfilter: --emptytmpdir :: empty temporary directory after the image viewer exits
@@ -47,7 +46,7 @@ def save_import(library):
 import re
 import sys
 import os
-save_import('optparse')  # for handling command line arguments
+save_import('argparse')  # for handling command line arguments
 save_import('time')
 save_import('logging')
 save_import('operator')  # for sorting dicts
@@ -78,11 +77,7 @@ unique_tags = [['teststring1', 'teststring2']]  # list of list which contains ta
 # Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
 #       You might delete them if you don't use my unit test suite.
 
-
-USAGE = "\n\
-    " + sys.argv[0] + " [<options>] <list of files>\n\
-\n\
-This tool adds or removes simple tags to/from file names.\n\
+DESCRIPTION = "This tool adds or removes simple tags to/from file names.\n\
 \n\
 Tags within file names are placed between the actual file name and\n\
 the file extension, separated with \"" + FILENAME_TAG_SEPARATOR + "\". Multiple tags are\n\
@@ -96,26 +91,27 @@ separately. With this tool, this only requires one step.\n\
 \n\
 Example usages:\n\
   " + sys.argv[0] + " --tags=\"presentation projectA\" *.pptx\n\
-      ... adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
+      … adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
   " + sys.argv[0] + " --tags=\"presentation -projectA\" *.pptx\n\
-      ... adds the tag \"presentation\" to and removes tag \"projectA\" from all PPTX-files\n\
+      … adds the tag \"presentation\" to and removes tag \"projectA\" from all PPTX-files\n\
   " + sys.argv[0] + " -i *\n\
-      ... ask for tag(s) and add them to all files in current folder\n\
+      … ask for tag(s) and add them to all files in current folder\n\
   " + sys.argv[0] + " -r draft *report*\n\
-      ... removes the tag \"draft\" from all files containing the word \"report\"\n\
+      … removes the tag \"draft\" from all files containing the word \"report\"\n\
 \n\
 \n\
 This tools is looking for (the first) text file named \".filetags\" in\n\
 current and parent directories. Each line of it is interpreted as a tag\n\
 for tag completion.\n\
 \n\
-Verbose description: http://Karl-Voit.at/managing-digital-photographs/\n\
-\n\
+Verbose description: http://Karl-Voit.at/managing-digital-photographs/"
+
+EPILOG = u"\n\
 :copyright: (c) by Karl Voit <tools@Karl-Voit.at>\n\
 :license: GPL v3 or any later version\n\
 :URL: https://github.com/novoid/filetag\n\
 :bugreports: via github or <tools@Karl-Voit.at>\n\
-:version: " + PROG_VERSION_DATE + "\n"
+:version: " + PROG_VERSION_DATE + "\n·\n"
 
 
 # file names containing tags matches following regular expression
@@ -131,52 +127,64 @@ FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 cache_of_tags_by_folder = {}
 controlled_vocabulary_filename = ''
 
-parser = optparse.OptionParser(usage=USAGE)
+parser = argparse.ArgumentParser(prog=sys.argv[0],
+                                 # keep line breaks in EPILOG and such
+                                 formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 epilog=EPILOG,
+                                 description=DESCRIPTION)
 
-parser.add_option("-t", "--tag", "--tags", dest="tags",
-                  help="one or more tags (in quotes, separated by spaces) to add/remove")
+parser.add_argument(dest="files", metavar='FILE', nargs='*', help='One or more files to tag')
 
-parser.add_option("-r", "--remove", "-d", "--delete", action="store_true",
-                  help="remove tags from (instead of adding to) file name(s)")
+parser.add_argument("-t", "--tags",
+                    dest="tags",
+                    nargs=1,
+                    type=str,
+                    metavar='"STRING WITH TAGS"',
+                    required=False,
+                    help="one or more tags (in quotes, separated by spaces) to add/remove")
 
-parser.add_option("-f", "--filter", dest="tagfilter", action="store_true",
-                  help="ask for list of tags and generate a directory that contains links to all files that contain all given tags and start the imageviewer")
+parser.add_argument("-r", "--remove", "-d", "--delete", action="store_true",
+                    help="remove tags from (instead of adding to) file name(s)")
 
-parser.add_option("--imageviewer", dest="imageviewer",
-                  help="command to view images (for --filter; default: geeqie)")
+parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
+                    help="ask for list of tags and generate a directory that contains links " +
+                    "to all files that contain all given tags and start the imageviewer")
 
-parser.add_option("-i", "--interactive", action="store_true", dest="interactive",
-                  help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
+parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
+                    help="tool to view/manage files (for --filter; default: " + DEFAULT_IMAGE_VIEWER_LINUX + ")")
 
-parser.add_option("--recursive", dest="recursive", action="store_true",
-                  help="recursively go through the current directory and all of its subdirectories (for tag-gardening only)")
+parser.add_argument("-i", "--interactive", action="store_true", dest="interactive",
+                    help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
-parser.add_option("-s", "--dryrun", dest="dryrun", action="store_true",
-                  help="enable dryrun mode: just simulate what would happen, do not modify files")
+parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
+                    help="recursively go through the current directory and all of its subdirectories (for tag-gardening only)")
 
-parser.add_option("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
-                  help="list all file-tags sorted by their number of use")
+parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
+                    help="enable dryrun mode: just simulate what would happen, do not modify files")
 
-parser.add_option("--la", "--list-tags-by-alphabet", dest="list_tags_by_alphabet", action="store_true",
-                  help="list all file-tags sorted by their name")
+parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
+                    help="list all file-tags sorted by their number of use")
 
-parser.add_option("--lu", "--list-tags-unknown-to-vocabulary", dest="list_unknown_tags", action="store_true",
-                  help="list all file-tags which are found in file names but are not part of .filetags")
+parser.add_argument("--la", "--list-tags-by-alphabet", dest="list_tags_by_alphabet", action="store_true",
+                    help="list all file-tags sorted by their name")
 
-parser.add_option("--tag-gardening", dest="tag_gardening", action="store_true",
-                  help="This is for getting an overview on tags that might require to be renamed (typos, " +
-                  "singular/plural, ...). See also http://www.webology.org/2008/v5n3/a58.html")
+parser.add_argument("--lu", "--list-tags-unknown-to-vocabulary", dest="list_unknown_tags", action="store_true",
+                    help="list all file-tags which are found in file names but are not part of .filetags")
 
-parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-                  help="enable verbose mode")
+parser.add_argument("--tag-gardening", dest="tag_gardening", action="store_true",
+                    help="This is for getting an overview on tags that might require to be renamed (typos, " +
+                    "singular/plural, ...). See also http://www.webology.org/2008/v5n3/a58.html")
 
-parser.add_option("-q", "--quiet", dest="quiet", action="store_true",
-                  help="enable quiet mode")
+parser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
+                    help="enable verbose mode")
 
-parser.add_option("--version", dest="version", action="store_true",
-                  help="display version and exit")
+parser.add_argument("-q", "--quiet", dest="quiet", action="store_true",
+                    help="enable quiet mode")
 
-(options, args) = parser.parse_args()
+parser.add_argument("--version", dest="version", action="store_true",
+                    help="display version and exit")
+
+options = parser.parse_args()
 
 
 def handle_logging():
@@ -1177,8 +1185,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
 
         completionhint = '; complete %s tags with TAB' % str(len(vocabulary))
 
-    logging.debug("len(args) [%s]" % str(len(args)))
-    logging.debug("args %s" % str(args))
+    logging.debug("len(files) [%s]" % str(len(options.files)))
+    logging.debug("files: %s" % str(options.files))
 
     print("                 ")
     print("Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
@@ -1303,17 +1311,17 @@ def main():
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
 
     logging.debug("extracting list of files ...")
-    logging.debug("len(args) [%s]" % str(len(args)))
+    logging.debug("len(options.files) [%s]" % str(len(options.files)))
 
-    files = extract_filenames_from_argument(args)
+    files = extract_filenames_from_argument(options.files)
 
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
     logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
     vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
-    if len(args) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or
-                              options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
+    if len(options.files) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or
+                                       options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
     if options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags:
@@ -1347,7 +1355,7 @@ def main():
 
         tags_for_visual = None
 
-        if len(args) < 1 and not options.tagfilter:
+        if len(options.files) < 1 and not options.tagfilter:
             error_exit(5, "Please add at least one file name as argument")
 
         tags_for_vocabulary = {}
@@ -1407,7 +1415,7 @@ def main():
         # non-interactive: extract list of tags
         logging.debug("non-interactive mode: extracting tags from argument ...")
 
-        tags_from_userinput = extract_tags_from_argument(options.tags)
+        tags_from_userinput = extract_tags_from_argument(options.tags[0])
 
         if not tags_from_userinput:
             # FIXXME: check: can this be the case?
@@ -1452,7 +1460,10 @@ def main():
         current_platform = platform.system()
         logging.debug('platform.system() is: [' + current_platform + ']')
         if current_platform == 'Linux':
-            subprocess.call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
+            if options.filebrowser:
+                subprocess.call([options.filebrowser, TAGFILTER_DIRECTORY])
+            else:
+                subprocess.call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
         else:
             logging.info('No (default) image viewer defined for platform \"' + current_platform + '\".')
             logging.info('Please visit ' + TAGFILTER_DIRECTORY + ' to view filtered items.')
