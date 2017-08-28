@@ -1,4 +1,4 @@
-## Time-stamp: <2017-08-28 14:39:56 vk>
+## Time-stamp: <2017-08-28 19:32:27 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -56,8 +56,8 @@ Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[ht
 #+END_SRC
 
 #+BEGIN_src
-usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [-r] [-f]
-                     [--filebrowser PATH_TO_FILEBROWSER] [-i] [-R] [-s] [--ln]
+usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [-r] [-i] [-R] [-s] [-f]
+                     [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees] [--ln]
                      [--la] [--lu] [--tag-gardening] [-v] [-q] [--version]
                      [FILE [FILE ...]]
 
@@ -99,18 +99,26 @@ optional arguments:
                         add/remove
   -r, --remove, -d, --delete
                         remove tags from (instead of adding to) file name(s)
-  -f, --filter          ask for list of tags and generate a directory that
-                        contains links to all files that contain all given
-                        tags and start the imageviewer
-  --filebrowser PATH_TO_FILEBROWSER
-                        tool to view/manage files (for --filter; default:
-                        geeqie)
   -i, --interactive     interactive mode: ask for (a)dding or (r)emoving and
                         name of tag(s)
   -R, --recursive       recursively go through the current directory and all
                         of its subdirectories (for tag-gardening only)
   -s, --dryrun          enable dryrun mode: just simulate what would happen,
                         do not modify files
+  -f, --filter          ask for list of tags and generate links in
+                        "/home/vk/.filetags_tagfilter" containing symbolic
+                        links to all files with matching tags and start the
+                        filebrowser
+  --filebrowser PATH_TO_FILEBROWSER
+                        use this option to override the tool to view/manage
+                        files (for --filter; default: geeqie)
+  --tagtrees            This generates nested directories in
+                        "/home/vk/.filetags_tagfilter" for each combination of
+                        tags up to a limit of 2. Can not be used recuresively
+                        yet. Please note that this may take long since it
+                        relates exponentially to the number of tags involved.
+                        See also http://Karl-Voit.at/tagstore/ and
+                        http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf
   --ln, --list-tags-by-number
                         list all file-tags sorted by their number of use
   --la, --list-tags-by-alphabet
@@ -132,6 +140,7 @@ optional arguments:
 :version: 2017-08-28
 ·
 #+END_src
+
 
 *** Examples:
 
@@ -202,6 +211,7 @@ tags that are most likely typos or abandoned
   - removed option =--tag= (in favor to =--tags=)
   - added option shortcut for recursive: =-R=
   - renamed option =--imageviewer= to =--filebrowser= and enabled its functionality
+  - added new feature =--tagtrees=
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
@@ -229,15 +239,60 @@ completion feature.
 If you enter multiple tags in the same line in ~.filetags~, they are
 interpreted as *mutually exclusive tags*. For example, if your
 ~.filetags~ contains the line ~winter spring summer autumn~, filetags
-replaces any season-tag with the new one. So if you tag the file ...
+replaces any season-tag with the new one. So if you tag the file …
 
 : example file -- summer anothertag.txt
 
-... with the tag ~winter~, it gets modified to ...
+… with the tag ~winter~, it gets renamed to …
 
 : example file -- winter anothertag.txt
 
-... without having to manually remove the tag ~summer~.
+… without having to manually remove the tag ~summer~.
+
+** tagtrees
+
+This functions is somewhat sophisticated with regards to the
+background. If you're really interested in the whole story behind the
+visualization/navigation of tags using tagtrees, feel free to read [[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][my
+PhD thesis]] about it on [[http://Karl-Voit.at/tagstore/][the tagstore webpage]]. It is surely a piece of
+work I am proud of and the general chapters of it are written so that
+the average person is perfectly well able to follow.
+
+In short: this function takes the files of the current directory and
+generates hierarchies up to level of =$maxdepth= (by default 2) of all
+combinations of tags, [[https://en.wikipedia.org/wiki/Symbolic_link][linking]] all files according to their tags.
+
+Consider having a file like:
+
+: My new car -- car hardware expensive.jpg
+
+Now you generate the tagtrees, you'll find [[https://en.wikipedia.org/wiki/Symbolic_link][links]] to this file within
+sub-directories of =~/.filetags=, the default target directory: =new/=
+and =hardware/= and =expensive/= and =new/hardware/= and
+=new/expensive/= and =hardware/new/= and so on. You get the idea.
+
+Therefore, within the folder =new/expensive/= you will find all files
+that have at least the tags "new" and "expensive" in any order. This
+is /really/ cool to have.
+
+Files of the current directory that don't have any tag at all, are
+linked directly to =~/.filetags= so that you can find and tag them
+easily.
+
+I personally, do use this feature within my image viewer of choice
+([[http://geeqie.sourceforge.net/][geeqie]]). I mapped it to =Shift-T= because =Shift-t= is occupied by
+=filetags= for tagging of course. So when I am within my image viewer
+and I press =Shift-T=, tagtrees of the currently shown images are
+created. Then an additional image viewer window opens up for me,
+showing the resulting tagtrees. This way, I can quickly navigate
+through the tag combinations to easily interactively filter according
+to tags.
+
+Please note: when you are tagging linked files within the tagtrees
+with filetags, only the current link gets updated with the new name.
+All other links to this modified filename within the other directories
+of the tagtrees gets broken. You have to re-create the tagtrees to
+update all the links after tagging files.
 
 ** Bonus: Using tags to specify a sub-set of photographs
 

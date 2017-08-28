@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-28 15:07:51 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-28 19:21:22 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -46,15 +46,16 @@ def save_import(library):
 import re
 import sys
 import os
-save_import('argparse')  # for handling command line arguments
+save_import('argparse')   # for handling command line arguments
 save_import('time')
 save_import('logging')
-save_import('operator')  # for sorting dicts
-save_import('difflib')   # for good enough matching words
-save_import('readline')  # for raw_input() reading from stdin
-save_import('codecs')    # for handling Unicode content in .tagfiles
-save_import('math')      # (integer) calculations
-save_import('clint')     # for config file handling
+save_import('operator')   # for sorting dicts
+save_import('difflib')    # for good enough matching words
+save_import('readline')   # for raw_input() reading from stdin
+save_import('codecs')     # for handling Unicode content in .tagfiles
+save_import('math')       # (integer) calculations
+save_import('clint')      # for config file handling
+save_import('itertools')  # for calculating permutations of tagtrees
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -63,6 +64,7 @@ BETWEEN_TAG_SEPARATOR = ' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
+DEFAULT_TAGTREES_MAXDEPTH = 2  # be careful when making this more than 2: exponential growth of time/links with number of tags!
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
 TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
 
@@ -146,13 +148,6 @@ parser.add_argument("-t", "--tags",
 parser.add_argument("-r", "--remove", "-d", "--delete", action="store_true",
                     help="remove tags from (instead of adding to) file name(s)")
 
-parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
-                    help="ask for list of tags and generate a directory that contains links " +
-                    "to all files that contain all given tags and start the imageviewer")
-
-parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
-                    help="tool to view/manage files (for --filter; default: " + DEFAULT_IMAGE_VIEWER_LINUX + ")")
-
 parser.add_argument("-i", "--interactive", action="store_true", dest="interactive",
                     help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
@@ -161,6 +156,21 @@ parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="enable dryrun mode: just simulate what would happen, do not modify files")
+
+parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
+                    help="ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
+                    "containing symbolic links to all files with matching tags and start the filebrowser")
+
+parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
+                    help="use this option to override the tool to view/manage files (for --filter; default: " +
+                    DEFAULT_IMAGE_VIEWER_LINUX + ")")
+
+parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
+                    help="This generates nested directories in \"" + TAGFILTER_DIRECTORY + "\" for each combination of tags " +
+                    "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". " +
+                    "Can not be used recuresively yet. Please note that this may take long since it relates " +
+                    "exponentially to the number of tags involved. " +
+                    "See also http://Karl-Voit.at/tagstore/ and http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf")
 
 parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
                     help="list all file-tags sorted by their number of use")
@@ -589,7 +599,6 @@ def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter
     return handle_file(filename, tags, do_remove, do_filter, dryrun)
 
 
-
 def handle_file(filename, tags, do_remove, do_filter, dryrun):
     """
     @param filename: string containing one file name
@@ -706,6 +715,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
     Traverses the file system starting with given directory,
     returns dict of all tags (including starttags) of all file
 
+    @param use_cache: FOR FUTURE USE
     @param return: dict of tags and their number of occurrence
     """
 
@@ -1242,24 +1252,26 @@ def filter_files_matching_tags(allfiles, tags):
     return [x for x in allfiles if set(extract_tags_from_filename(x)).issuperset(set(tags))]
 
 
-def assert_empty_tagfilter_directory():
+def assert_empty_tagfilter_directory(directory):
     """
     Creates non-existent tagfilter directory or deletes and re-creates it.
+
+    @param directory: the directory to use as starting directory
     """
 
-    if not os.path.isdir(TAGFILTER_DIRECTORY):
-        logging.debug('creating non-existent tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
+    if not os.path.isdir(directory):
+        logging.debug('creating non-existent tagfilter directory "%s" ...' % str(directory))
         if not options.dryrun:
-            os.makedirs(TAGFILTER_DIRECTORY)
+            os.makedirs(directory)
     else:
-        logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(TAGFILTER_DIRECTORY))
+        logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(directory))
         if not options.dryrun:
             save_import('shutil')  # for removing directories with shutil.rmtree()
-            shutil.rmtree(TAGFILTER_DIRECTORY)
-            logging.debug('re-creating tagfilter directory "%s" ...' % str(TAGFILTER_DIRECTORY))
-            os.makedirs(TAGFILTER_DIRECTORY)
+            shutil.rmtree(directory)
+            logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
+            os.makedirs(directory)
     if not options.dryrun:
-        assert(os.path.isdir(TAGFILTER_DIRECTORY))
+        assert(os.path.isdir(directory))
 
 
 def get_common_tags_from_files(files):
@@ -1275,6 +1287,190 @@ def get_common_tags_from_files(files):
         list_of_tags_per_file.append(set(extract_tags_from_filename(currentfile)))
 
     return list(set.intersection(*list_of_tags_per_file))
+
+
+def generate_tagtrees(directory, maxdepth):
+    """
+    This functions is somewhat sophisticated with regards to the background.
+    If you're really interested in the whole story behind the
+    visualization/navigation of tags using tagtrees, feel free to read [my
+    PhD thesis] about it on [the tagstore webpage]. It is surely a piece of
+    work I am proud of and the general chapters of it are written so that
+    the average person is perfectly well able to follow.
+
+    In short: this function takes the files of the current directory and
+    generates hierarchies up to level of `$maxdepth' (by default 2) of all
+    combinations of tags, [linking] all files according to their tags.
+
+    Consider having a file like:
+
+    ┌────
+    │ My new car -- car hardware expensive.jpg
+    └────
+
+    Now you generate the tagtrees, you'll find [links] to this file within
+    `~/.filetags', the default target directory: `new/' and `hardware/' and
+    `expensive/' and `new/hardware/' and `new/expensive/' and
+    `hardware/new/' and so on. You get the idea.
+
+    Therefore, within the folder `new/expensive/' you will find all files
+    that have at least the tags "new" and "expensive" in any order. This is
+    /really/ cool to have.
+
+    Files of the current directory that don't have any tag at all, are
+    linked directly to `~/.filetags' so that you can find and tag them
+    easily.
+
+    I personally, do use this feature within my image viewer of choice
+    ([geeqie]). I mapped it to `Shift-T' because `Shift-t' is occupied by
+    `filetags' for tagging of course. So when I am within my image viewer
+    and I press `Shift-T', tagtrees of the currently shown images are
+    created. Then an additional image viewer window opens up for me, showing
+    the resulting tagtrees. This way, I can quickly navigate through the tag
+    combinations to easily interactively filter according to tags.
+
+    Please note: when you are tagging linked files within the tagtrees with
+    filetags, only the current link gets updated with the new name. All
+    other links to this modified filename within the other directories of
+    the tagtrees gets broken. You have to re-create the tagtrees to update
+    all the links after tagging files.
+
+
+    [my PhD thesis] http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf
+
+    [the tagstore webpage] http://Karl-Voit.at/tagstore/
+
+    [linking] https://en.wikipedia.org/wiki/Symbolic_link
+
+    [links] https://en.wikipedia.org/wiki/Symbolic_link
+
+    [geeqie] http://geeqie.sourceforge.net/
+
+    @param directory: the directory to use as starting directory
+    @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
+    """
+
+    assert_empty_tagfilter_directory(directory)
+
+    try:
+        files = get_files_of_directory(os.getcwd())  # FIXXME: switch to recursive version of this if options.recursive is set
+    except FileNotFoundError:
+        error_exit(11, 'When trying to look for files, I could not even find the current working directory. ' + \
+                   'Could it be the case that you\'ve tried to generate tagtrees within the directory "' + directory + '"? ' + \
+                   'This would be a pity because filetags tends to delete and re-create this directory on each call of this feature. ' + \
+                   'Therefore, this directory does not exist after starting filetags and cleaning up the old content of it. ' + \
+                   'So it looks like we\'ve got a shot-yourself-in-the-foot situation here … You can imagine that this was not ' + \
+                   'even simple to find and catch while testing for me either. Or was it? Make an educated guess. :-)')
+
+    if len(files) == 0:
+        error_exit(10, 'There is no single file in the current directory "' + os.getcwd() + '". I can\'t create ' + \
+                   'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
+
+    logging.info('Creating tagtrees and their symlinks. It may take a while …  (exponentially with respect to number of tags)')
+
+    tags = get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True)
+
+    # Here, we define a small helper function within a function. Cool,
+    # heh? Bet many folks are not aware of those nifty things I know of ;-P
+    def create_tagtrees_dir(basedirectory, tagpermutation):
+        "Creates (empty) directories of the tagtrees directory structure"
+
+        current_directory = os.path.join(basedirectory, *[x for x in tagpermutation])  ## flatten out list of permutations to elements
+        # logging.debug('generate_tagtrees: mkdir ' + current_directory)
+        if not options.dryrun and not os.path.exists(current_directory):
+            os.makedirs(current_directory)
+
+    # this generates a list whose elements (the tags) corresponds to
+    # the filenames in the files list:
+    tags_of_files = [extract_tags_from_filename(x) for x in files]
+
+    # Firstly, let's iterate over the files, create tagtree
+    # directories according to the set of tags from the current file
+    # to avoid empty tagtree directories. Then we're going to link the
+    # file to its tagtree directories. I'm confident that this is
+    # going to be great.
+
+    num_of_links = 0
+    for currentfile in enumerate(files):
+
+        tags_of_currentfile = tags_of_files[currentfile[0]]
+        filename = currentfile[1]
+
+        logging.debug('generate_tagtrees: handling file "' + filename + '" …')
+
+        if len(tags_of_currentfile) == 0:
+            # current file has no tags. It gets linked to the
+            # "directory" folder. This is somewhat handy to find files
+            # which are - you guessed right - not tagged yet ;-)
+
+            logging.debug('generate_tagtrees: file "' + filename + '" has no tags. Linking to "' +
+                          directory + '"')
+            if not options.dryrun:
+                os.symlink(os.path.join(os.getcwd(), filename), os.path.join(directory, filename))
+            num_of_links += 1
+
+        else:
+
+            # Here we go: current file has at least one tag. Create
+            # its tagtree directories and link the file:
+
+            # logging.debug('generate_tagtrees: permutations for file: "' + filename + '"')
+            for currentdepth in range(1, maxdepth+1):
+                # logging.debug('generate_tagtrees: currentdepth: ' + str(currentdepth))
+                for tagpermutation in itertools.permutations(tags_of_currentfile, currentdepth):
+
+                    # WHAT I THOUGHT:
+                    # Creating the directories does not require to iterate
+                    # over the different level of depht because
+                    # "os.makedirs()" is able to create all parent folders
+                    # that are necessary. This spares us a loop.
+                    # WHAT I LEARNED:
+                    # We *have* to iterate over the depht as well
+                    # because when a file has only one tag and the
+                    # maxdepth is more than one, we are forgetting
+                    # to create all those tagtree directories for this
+                    # single tag. Therefore: we need to depth-loop for
+                    # creating the directories as well. Bummer.
+                    create_tagtrees_dir(directory, tagpermutation)
+
+                    current_directory = os.path.join(directory, *[x for x in tagpermutation])  ## flatten out list of permutations to elements
+                    # logging.debug('generate_tagtrees: linking file in ' + current_directory)
+                    if not options.dryrun:
+                        os.symlink(os.path.join(os.getcwd(), filename), os.path.join(current_directory, filename))
+                    num_of_links += 1
+
+    # Brag about how brave I was. And: it also shows the user why the
+    # runtime was that long. The number of links grows exponentially
+    # with the number of tags. Keep this in mind when tempering with
+    # the maxdepth!
+    logging.info('Number of symbolic links created in "' + directory + '" for the ' + str(len(files)) + ' files: ' +
+                 str(num_of_links) + '  (tagtrees depth is ' + str(maxdepth) + ')')
+
+
+def start_filebrowser(directory):
+    """
+    This functions starts up the default file browser or the one given in the overriding command line parameter.
+
+    @param directory: the directory to use as starting directory
+    """
+
+    save_import('subprocess')
+    save_import('platform')
+    current_platform = platform.system()
+    logging.debug('platform.system() is: [' + current_platform + ']')
+    if current_platform == 'Linux':
+        chosen_filebrowser = DEFAULT_IMAGE_VIEWER_LINUX
+        if options.filebrowser:
+            chosen_filebrowser = options.filebrowser  # override if given
+
+        if options.dryrun:
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '"')
+        else:
+            subprocess.call([chosen_filebrowser, directory])
+
+    else:
+        logging.info('No (default) file browser defined for platform \"' + current_platform + '\".')
+        logging.info('Please visit ' + directory + ' to view filtered items.')
 
 
 def successful_exit():
@@ -1304,8 +1500,29 @@ def main():
     if options.list_tags_by_number and options.list_tags_by_alphabet:
         error_exit(6, "Please use only one list-by-option at once.")
 
-    if options.tag_gardening and (options.list_tags_by_number or options.list_tags_by_alphabet or options.tags or options.remove):
+    if options.tag_gardening and (options.list_tags_by_number or options.list_tags_by_alphabet or
+                                  options.tags or options.tagtrees or options.tagfilter):
         error_exit(7, "Please don't use that gardening option together with any other option.")
+
+    if options.tagfilter and (options.list_tags_by_number or options.list_tags_by_alphabet or
+                              options.tags or options.tagtrees or options.tag_gardening):
+        error_exit(7, "Please don't use that filter option together with any other option.")
+
+    if options.list_tags_by_number and (options.tagfilter or options.list_tags_by_alphabet or
+                                        options.tags or options.tagtrees or options.tag_gardening):
+        error_exit(7, "Please don't use that list option together with any other option.")
+
+    if options.list_tags_by_alphabet and (options.tagfilter or options.list_tags_by_number or
+                                          options.tags or options.tagtrees or options.tag_gardening):
+        error_exit(7, "Please don't use that list option together with any other option.")
+
+    if options.tags and (options.tagfilter or options.list_tags_by_number or
+                         options.list_tags_by_alphabet or options.tagtrees or options.tag_gardening):
+        error_exit(7, "Please don't use that tags option together with any other option.")
+
+    if options.tagtrees and (options.tagfilter or options.list_tags_by_number or
+                             options.list_tags_by_alphabet or options.tags or options.tag_gardening):
+        error_exit(7, "Please don't use the tagtrees option together with any other option.")
 
     if (options.list_tags_by_alphabet or options.list_tags_by_number) and (options.tags or options.interactive or options.remove):
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
@@ -1320,7 +1537,7 @@ def main():
     tags_from_userinput = []
     vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
-    if len(options.files) < 1 and not (options.tagfilter or options.list_tags_by_alphabet or
+    if len(options.files) < 1 and not (options.tagtrees or options.tagfilter or options.list_tags_by_alphabet or
                                        options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
@@ -1349,6 +1566,12 @@ def main():
     elif options.tag_gardening:
         logging.debug("handling option for tag gardening")
         handle_tag_gardening(vocabulary)
+        successful_exit()
+
+    elif options.tagtrees:
+        logging.debug("handling option for tagtrees")
+        generate_tagtrees(TAGFILTER_DIRECTORY, maxdepth=DEFAULT_TAGTREES_MAXDEPTH)
+        start_filebrowser(TAGFILTER_DIRECTORY)
         successful_exit()
 
     elif options.interactive or not options.tags:
@@ -1433,7 +1656,7 @@ def main():
         logging.info("processing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
     if options.tagfilter and not files:
-        assert_empty_tagfilter_directory()
+        assert_empty_tagfilter_directory(TAGFILTER_DIRECTORY)
         files = filter_files_matching_tags(get_files_of_directory(os.getcwd()), tags_from_userinput)
 
     logging.debug("iterate over files ...")
@@ -1455,18 +1678,7 @@ def main():
             handle_file_and_symlink_source_if_found(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
 
     if options.tagfilter:
-        save_import('subprocess')
-        save_import('platform')
-        current_platform = platform.system()
-        logging.debug('platform.system() is: [' + current_platform + ']')
-        if current_platform == 'Linux':
-            if options.filebrowser:
-                subprocess.call([options.filebrowser, TAGFILTER_DIRECTORY])
-            else:
-                subprocess.call([DEFAULT_IMAGE_VIEWER_LINUX, TAGFILTER_DIRECTORY])
-        else:
-            logging.info('No (default) image viewer defined for platform \"' + current_platform + '\".')
-            logging.info('Please visit ' + TAGFILTER_DIRECTORY + ' to view filtered items.')
+        start_filebrowser(TAGFILTER_DIRECTORY)
 
     successful_exit()
 
