@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-31 15:44:39 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-31 19:08:45 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -562,19 +562,50 @@ def is_broken_link(name):
         return False
 
 
-def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter, dryrun):
+def split_up_filename(filename):
     """
-    @param filename: string containing one file name
+    Returns separate strings for the given filename.
+
+    @param filename: an unicode string containing a file name
+    @param return: filename with absolute path, pathname, basename
+    """
+
+    basename = os.path.basename(filename)
+    dirname = os.path.abspath(os.path.dirname(filename))
+    return os.path.join(dirname, basename), dirname, basename
+
+
+def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_filter, dryrun):
+    """
+    @param orig_filename: string containing one file name
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
     @param return: error value or new filename
     """
 
-    logging.debug("handle_file_and_symlink_source_if_found(\"" + filename + "\") …  " + '★' * 20)
+    logging.debug("handle_file_and_symlink_source_if_found(\"" + orig_filename + "\") …  " + '★' * 20)
 
-    basename = os.path.basename(filename)
-    dirname = os.path.abspath(os.path.dirname(filename))
+    if os.path.isdir(orig_filename):
+        logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
+        return
+
+    filename, dirname, basename = split_up_filename(orig_filename)
+
+    if not (os.path.isfile(filename) or os.path.islink(filename)):
+        logging.debug('handle_file_and_symlink_source_if_found: this is no regular file nor a symlink; looking for an alternative file that starts with same substring …')
+
+        # try to find unique alternative file:
+        alternative_filename = find_unique_alternative_to_file(filename)
+
+        if not alternative_filename:
+            logging.debug('handle_file_and_symlink_source_if_found: Could not locate alternative basename that starts with same substring')
+            logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
+            return
+        else:
+            logging.info("Could not find basename \"%s\" but found \"%s\" instead which starts with same substring ..." %
+                         (filename, alternative_filename))
+            filename, dirname, basename = split_up_filename(orig_filename)
 
     if dirname:
         logging.debug("handle_file_and_symlink_source_if_found: changing to dir \"%s\"" % dirname)
@@ -586,19 +617,16 @@ def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter
     if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(basename):
         logging.debug('handle_file_and_symlink_source_if_found: file is a non-broken symlink and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is set')
 
-        old_source_filename = get_link_source_file(basename)
-        old_source_dirname = os.path.abspath(os.path.dirname(old_source_filename))
-        old_source_basename = os.path.basename(old_source_filename)
-        old_source_filename = os.path.join(old_source_dirname, old_source_basename)  # to get absolute path instead of relative ones
+        old_source_filename, old_source_dirname, old_source_basename = split_up_filename(get_link_source_file(basename))
 
-        if os.path.basename(old_source_filename) == os.path.basename(basename):
+        if old_source_basename == basename:
             logging.debug('handle_file_and_symlink_source_if_found: symlink "' + filename +
                           '" has same basename as its source file "' + old_source_filename + '"')
 
             new_source_basename = handle_file_and_symlink_source_if_found(old_source_filename, tags, do_remove, do_filter, dryrun)
             new_source_filename = os.path.join(old_source_dirname, new_source_basename)
 
-            if os.path.basename(old_source_filename) != new_source_basename:
+            if old_source_basename != new_source_basename:
                 logging.info('Tagging the symlink-destination file of "' + basename + '" ("' +
                              old_source_filename + '") as well …')
                 if options.dryrun:
@@ -609,13 +637,13 @@ def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter
                     logging.debug('handle_file_and_symlink_source_if_found: re-linking symlink "' + os.path.join(dirname, basename) +
                                   '" from the old sourcefilename "' +
                                   old_source_filename + '" to the new one "' + new_source_filename + '"')
-                    os.remove(os.path.join(dirname, basename))
-                    os.symlink(new_source_filename, os.path.join(dirname, basename))
+                    os.remove(filename)
+                    os.symlink(new_source_filename, filename)
             else:
                 logging.debug('handle_file_and_symlink_source_if_found: The old sourcefilename "' + old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
         else:
-            logging.debug('handle_file_and_symlink_source_if_found: The file "' + os.path.join(dirname, basename) +
+            logging.debug('handle_file_and_symlink_source_if_found: The file "' + filename +
                           '" is a symlink to "' + old_source_filename +
                           '" but they two do have different basenames. Therefore I ignore the original file.')
         os.chdir(dirname)  # go back to original dir after handling symlinks of different directories
@@ -623,20 +651,21 @@ def handle_file_and_symlink_source_if_found(filename, tags, do_remove, do_filter
         logging.debug('handle_file_and_symlink_source_if_found: file is not a non-broken symlink (' +
                       repr(is_nonbroken_symlink_file(basename)) + ') or TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is not set')
 
+
     # after handling potential symlink originals, I now handle the file we were talking about in the first place:
-    return handle_file(basename, tags, do_remove, do_filter, dryrun)
+    return handle_file(filename, tags, do_remove, do_filter, dryrun)
 
 
-def handle_file(basename, tags, do_remove, do_filter, dryrun):
+def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
     """
-    @param basename: string containing one file name without directory
+    @param orig_filename: string containing one file name with absolute path
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
-    @param return: error value or new basename
+    @param return: error value or new filename
     """
 
-    assert(basename.__class__ == str)
+    assert(orig_filename.__class__ == str)
     assert(tags.__class__ == list)
     if do_remove:
         assert(do_remove.__class__ == bool)
@@ -645,66 +674,49 @@ def handle_file(basename, tags, do_remove, do_filter, dryrun):
     if dryrun:
         assert(dryrun.__class__ == bool)
 
-    logging.debug("handle_file(\"" + basename + "\") …   within dir \"" + os.getcwd() + "\"")
+    filename, dirname, basename = split_up_filename(orig_filename)
 
-    if os.path.isdir(basename):
-        logging.warning("Skipping directory \"%s\" because this tool only renames file names." % basename)
-        return
-    elif not (os.path.isfile(basename) or os.path.islink(basename)):
-        logging.debug('handle_file: this is no regular file nor a symlink; looking for an alternative file that starts with same substring …')
-        import pdb; pdb.set_trace()
-
-
-        # try to find unique alternative file:
-        alternative_filename = find_unique_alternative_to_file(basename)
-
-        if not alternative_filename:
-            logging.debug('handle_file: Could not locate alternative basename that starts with same substring')
-            logging.error("Skipping \"%s\" because this tool only renames existing file names." % basename)
-            return
-        else:
-            logging.info("Could not find basename \"%s\" but found \"%s\" instead which starts with same substring ..." %
-                         (basename, alternative_filename))
-            basename = alternative_filename
+    logging.debug("handle_file(\"" + filename + "\") …   with woring dir \"" + os.getcwd() + "\"")
 
     if do_filter:
-        print_item_transition(basename, TAGFILTER_DIRECTORY, transition='link')
+        print_item_transition(filename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
-            os.symlink(os.path.join(os.getcwd(), basename),
-                       os.path.join(TAGFILTER_DIRECTORY, basename))
+            os.symlink(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
 
     else:  # add or remove tags:
-        new_filename = basename
-        logging.debug('handle_file: set new_filename [' + new_filename + '] according to parameters (initialization)')
+        new_basename = basename
+        logging.debug('handle_file: set new_basename [' + new_basename + '] according to parameters (initialization)')
 
         for tagname in tags:
             if do_remove:
-                new_filename = removing_tag_from_filename(new_filename, tagname)
-                logging.debug('handle_file: set new_filename [' + new_filename + '] when do_remove')
+                new_basename = removing_tag_from_filename(new_basename, tagname)
+                logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
             elif tagname[0] == '-':
-                new_filename = removing_tag_from_filename(new_filename, tagname[1:])
-                logging.debug('handle_file: set new_filename [' + new_filename + '] when tag starts with a minus')
+                new_basename = removing_tag_from_filename(new_basename, tagname[1:])
+                logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
             else:
                 # FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
 
                 if tagname != tag_in_unique_tags:
-                    new_filename = adding_tag_to_filename(new_filename, tagname)
-                    logging.debug('handle_file: set new_filename [' + new_filename + '] when tagname != tag_in_unique_tags')
+                    new_basename = adding_tag_to_filename(new_basename, tagname)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] when tagname != tag_in_unique_tags')
                 else:
                     # if tag within unique_tags found, and new unique tag is given, remove old tag:
                     # e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
                     # If user enters contradicting tags, only the last one will be applied.
                     # FIXXME: this is an undocumented feature -> please add proper documentation
 
-                    current_filename_tags = extract_tags_from_filename(new_filename)
+                    current_filename_tags = extract_tags_from_filename(new_basename)
                     conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
                     logging.debug("handle_file: found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
                     for conflicting_tag in conflicting_tags:
-                        new_filename = removing_tag_from_filename(new_filename, conflicting_tag)
-                        logging.debug('handle_file: set new_filename [' + new_filename + '] when conflicting_tag in conflicting_tags')
-                    new_filename = adding_tag_to_filename(new_filename, tagname)
-                    logging.debug('handle_file: set new_filename [' + new_filename + '] after adding_tag_to_filename()')
+                        new_basename = removing_tag_from_filename(new_basename, conflicting_tag)
+                        logging.debug('handle_file: set new_basename [' + new_basename + '] when conflicting_tag in conflicting_tags')
+                    new_basename = adding_tag_to_filename(new_basename, tagname)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] after adding_tag_to_filename()')
+
+        new_filename = os.path.join(dirname, new_basename)
 
         if do_remove:
             transition = 'delete'
@@ -713,12 +725,12 @@ def handle_file(basename, tags, do_remove, do_filter, dryrun):
 
         if dryrun:
             logging.info(" ")
-            print_item_transition(basename, new_filename, transition=transition)
+            print_item_transition(filename, new_basename, transition=transition)
         else:
-            if basename != new_filename:
+            if basename != new_basename:
                 if not options.quiet:
-                    print_item_transition(basename, new_filename, transition=transition)
-                os.rename(basename, new_filename)
+                    print_item_transition(filename, new_basename, transition=transition)
+                os.rename(filename, new_filename)
 
         return new_filename
 
