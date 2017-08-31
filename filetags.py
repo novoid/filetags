@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-31 19:08:45 vk>"
+PROG_VERSION = "Time-stamp: <2017-08-31 22:09:21 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -128,6 +128,7 @@ FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 cache_of_tags_by_folder = {}
 controlled_vocabulary_filename = ''
+list_of_symlink_directories = []
 
 parser = argparse.ArgumentParser(prog=sys.argv[0],
                                  # keep line breaks in EPILOG and such
@@ -438,12 +439,13 @@ def item_contained_in_list_of_lists(item, list_of_lists):
     return None, None
 
 
-def print_item_transition(source, destination, transition):
+def print_item_transition(path, source, destination, transition):
     """
     Returns true if item is member of at least one list in list_of_lists.
 
-    @param source: string of item before transition
-    @param destination: string of item after transition or target
+    @param path: string containing the path to the files
+    @param source: string of basename of filename before transition
+    @param destination: string of basename of filename after transition or target
     @param transision: string which determines type of transision: ("add", "delete", "link")
     @param return: N/A
     """
@@ -553,7 +555,7 @@ def is_broken_link(name):
     @param return: boolean
     """
 
-    if os.path.isfile(name):
+    if os.path.isfile(name) or os.path.isdir(name):
         return False
 
     try:
@@ -591,6 +593,7 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
         return
 
     filename, dirname, basename = split_up_filename(orig_filename)
+    global list_of_symlink_directories
 
     if not (os.path.isfile(filename) or os.path.islink(filename)):
         logging.debug('handle_file_and_symlink_source_if_found: this is no regular file nor a symlink; looking for an alternative file that starts with same substring …')
@@ -614,7 +617,7 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
         logging.debug("handle_file_and_symlink_source_if_found: no dirname found")
 
     # if basename is a symbolic link and has same basename, tag the source file as well:
-    if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(basename):
+    if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(filename):
         logging.debug('handle_file_and_symlink_source_if_found: file is a non-broken symlink and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is set')
 
         old_source_filename, old_source_dirname, old_source_basename = split_up_filename(get_link_source_file(basename))
@@ -627,8 +630,9 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
             new_source_filename = os.path.join(old_source_dirname, new_source_basename)
 
             if old_source_basename != new_source_basename:
-                logging.info('Tagging the symlink-destination file of "' + basename + '" ("' +
+                logging.debug('handle_file_and_symlink_source_if_found: Tagging the symlink-destination file of "' + basename + '" ("' +
                              old_source_filename + '") as well …')
+
                 if options.dryrun:
                     logging.debug('handle_file_and_symlink_source_if_found: I would re-link the old sourcefilename "'
                                   + old_source_filename +
@@ -651,9 +655,10 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
         logging.debug('handle_file_and_symlink_source_if_found: file is not a non-broken symlink (' +
                       repr(is_nonbroken_symlink_file(basename)) + ') or TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is not set')
 
-
     # after handling potential symlink originals, I now handle the file we were talking about in the first place:
-    return handle_file(filename, tags, do_remove, do_filter, dryrun)
+    new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
+
+    return new_filename
 
 
 def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
@@ -679,7 +684,7 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
     logging.debug("handle_file(\"" + filename + "\") …   with woring dir \"" + os.getcwd() + "\"")
 
     if do_filter:
-        print_item_transition(filename, TAGFILTER_DIRECTORY, transition='link')
+        print_item_transition(dirname, basename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
             os.symlink(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
 
@@ -723,13 +728,16 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
         else:
             transition = 'add'
 
-        if dryrun:
-            logging.info(" ")
-            print_item_transition(filename, new_basename, transition=transition)
-        else:
-            if basename != new_basename:
-                if not options.quiet:
-                    print_item_transition(filename, new_basename, transition=transition)
+        if basename != new_basename:
+
+            list_of_symlink_directories.append(dirname)
+
+            if len(list_of_symlink_directories) > 1:
+                logging.debug('new_filename is a symlink. Screen output of transistion gets postponed to later on.')
+            elif not options.quiet:
+                print_item_transition(dirname, basename, new_basename, transition=transition)
+
+            if not dryrun:
                 os.rename(filename, new_filename)
 
         return new_filename
@@ -1577,6 +1585,8 @@ def main():
 
     files = extract_filenames_from_argument(options.files)
 
+    global list_of_symlink_directories
+
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
     logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
@@ -1678,6 +1688,7 @@ def main():
         # ==================== Interactive asking user for tags ============================= ##
         tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual)
         # ==================== Interactive asking user for tags ============================= ##
+        print('')  # new line after input for separating input from output
 
     else:
         # non-interactive: extract list of tags
@@ -1697,7 +1708,7 @@ def main():
     elif options.tagfilter:
         logging.info("filtering items with tag(s) \"%s\" and linking to directory \"%s\" ..." %
                      (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)), str(TAGFILTER_DIRECTORY)))
-    else:
+    elif options.interactive:
         logging.info("processing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
     if options.tagfilter and not files:
@@ -1715,12 +1726,22 @@ def main():
     for filename in files:
 
         if is_broken_link(filename):
+
             # skip broken links completely and write error message:
             logging.error('File "' + filename + '" is a broken symbolic link. Skipping this one …')
 
         else:
+
             # if filename is a symbolic link, tag the source file as well:
             handle_file_and_symlink_source_if_found(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
+            logging.debug('list_of_symlink_directories: ' + repr(list_of_symlink_directories))
+
+            if len(list_of_symlink_directories) > 1:
+                logging.debug('Seems like we\'ve found symlinks and renamed their source as well. Print out the those directories as well:')
+                print('      This symbolic link has a link source with a matching basename. I renamed it there as well:')
+                for directory in list_of_symlink_directories[:-1]:
+                    print('      · ' + directory)
+            list_of_symlink_directories = []
 
     if options.tagfilter:
         start_filebrowser(TAGFILTER_DIRECTORY)
