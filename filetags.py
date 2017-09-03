@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-08-31 22:09:21 vk>"
+PROG_VERSION = "Time-stamp: <2017-09-03 21:49:26 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -153,7 +153,7 @@ parser.add_argument("-i", "--interactive", action="store_true", dest="interactiv
                     help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
 parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
-                    help="recursively go through the current directory and all of its subdirectories (for tag-gardening only)")
+                    help="recursively go through the current directory and all of its subdirectories. Implemented for --tag-gardening and --tagtrees")
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="enable dryrun mode: just simulate what would happen, do not modify files")
@@ -169,7 +169,7 @@ parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBR
 parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
                     help="This generates nested directories in \"" + TAGFILTER_DIRECTORY + "\" for each combination of tags " +
                     "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". " +
-                    "Can not be used recuresively yet. Please note that this may take long since it relates " +
+                    "Please note that this may take long since it relates " +
                     "exponentially to the number of tags involved. " +
                     "See also http://Karl-Voit.at/tagstore/ and http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf")
 
@@ -293,7 +293,7 @@ def extract_tags_from_filename(filename):
 
     assert(filename.__class__ == str)
 
-    components = re.match(FILE_WITH_TAGS_REGEX, filename)
+    components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(filename))
 
     if not components:
         return []
@@ -1288,8 +1288,12 @@ def get_files_of_directory(directory):
 
     files = []
     for (dirpath, dirnames, filenames) in os.walk(directory):
-        files.extend(filenames)
-        break
+        if options.recursive:
+            files.extend([os.path.join(dirpath, x) for x in filenames])
+        else:
+            files.extend(filenames)
+            break
+
     return files
 
 
@@ -1415,7 +1419,7 @@ def generate_tagtrees(directory, maxdepth):
                    'So it looks like we\'ve got a shot-yourself-in-the-foot situation here … You can imagine that this was not ' + \
                    'even simple to find and catch while testing for me either. Or was it? Make an educated guess. :-)')
 
-    if len(files) == 0:
+    if len(files) == 0 and not options.recursive:
         error_exit(10, 'There is no single file in the current directory "' + os.getcwd() + '". I can\'t create ' + \
                    'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
 
@@ -1447,7 +1451,8 @@ def generate_tagtrees(directory, maxdepth):
     for currentfile in enumerate(files):
 
         tags_of_currentfile = tags_of_files[currentfile[0]]
-        filename = currentfile[1]
+        filename, dirname, basename = split_up_filename(currentfile[1])
+
 
         logging.debug('generate_tagtrees: handling file "' + filename + '" …')
 
@@ -1459,7 +1464,13 @@ def generate_tagtrees(directory, maxdepth):
             logging.debug('generate_tagtrees: file "' + filename + '" has no tags. Linking to "' +
                           directory + '"')
             if not options.dryrun:
-                os.symlink(os.path.join(os.getcwd(), filename), os.path.join(directory, filename))
+                try:
+                    os.symlink(filename, os.path.join(directory, basename))
+                except FileExistsError:
+                    logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
+                                    os.path.join(directory, basename) + '\". You must have used the recursive ' +
+                                    'option and the sub-tree you\'re generating a tagtree from has two times the ' +
+                                    'same filename. I stick with the first one.')
             num_of_links += 1
 
         else:
@@ -1489,7 +1500,13 @@ def generate_tagtrees(directory, maxdepth):
                     current_directory = os.path.join(directory, *[x for x in tagpermutation])  ## flatten out list of permutations to elements
                     # logging.debug('generate_tagtrees: linking file in ' + current_directory)
                     if not options.dryrun:
-                        os.symlink(os.path.join(os.getcwd(), filename), os.path.join(current_directory, filename))
+                        try:
+                            os.symlink(filename, os.path.join(current_directory, basename))
+                        except FileExistsError:
+                            logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
+                                            os.path.join(current_directory, basename) + '\". You must have used the recursive ' +
+                                            'option and the sub-tree you\'re generating a tagtree from has two times the same ' +
+                                            'filename. I stick with the first one.')
                     num_of_links += 1
 
     # Brag about how brave I was. And: it also shows the user why the
@@ -1625,7 +1642,11 @@ def main():
 
     elif options.tagtrees:
         logging.debug("handling option for tagtrees")
+        start = time.time()
         generate_tagtrees(TAGFILTER_DIRECTORY, maxdepth=DEFAULT_TAGTREES_MAXDEPTH)
+        delta = time.time() - start  # it's a float
+        if delta > 3:
+            logging.info("Generated tagtrees in %.2f seconds" % delta)
         start_filebrowser(TAGFILTER_DIRECTORY)
         successful_exit()
 

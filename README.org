@@ -1,4 +1,4 @@
-## Time-stamp: <2017-08-28 19:32:27 vk>
+## Time-stamp: <2017-09-03 21:27:00 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -102,7 +102,8 @@ optional arguments:
   -i, --interactive     interactive mode: ask for (a)dding or (r)emoving and
                         name of tag(s)
   -R, --recursive       recursively go through the current directory and all
-                        of its subdirectories (for tag-gardening only)
+                        of its subdirectories. Implemented for --tag-gardening
+                        and --tagtrees
   -s, --dryrun          enable dryrun mode: just simulate what would happen,
                         do not modify files
   -f, --filter          ask for list of tags and generate links in
@@ -114,11 +115,11 @@ optional arguments:
                         files (for --filter; default: geeqie)
   --tagtrees            This generates nested directories in
                         "/home/vk/.filetags_tagfilter" for each combination of
-                        tags up to a limit of 2. Can not be used recuresively
-                        yet. Please note that this may take long since it
-                        relates exponentially to the number of tags involved.
-                        See also http://Karl-Voit.at/tagstore/ and
-                        http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf
+                        tags up to a limit of 2. Please note that this may
+                        take long since it relates exponentially to the number
+                        of tags involved. See also http://Karl-
+                        Voit.at/tagstore/ and http://Karl-
+                        Voit.at/tagstore/downloads/Voit2012b.pdf
   --ln, --list-tags-by-number
                         list all file-tags sorted by their number of use
   --la, --list-tags-by-alphabet
@@ -137,10 +138,9 @@ optional arguments:
 :license: GPL v3 or any later version
 :URL: https://github.com/novoid/filetag
 :bugreports: via github or <tools@Karl-Voit.at>
-:version: 2017-08-28
+:version: 2017-09-03
 ·
 #+END_src
-
 
 *** Examples:
 
