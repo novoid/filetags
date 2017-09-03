@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-09-03 21:49:26 vk>"
+PROG_VERSION = "Time-stamp: <2017-09-03 22:00:01 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1423,6 +1423,10 @@ def generate_tagtrees(directory, maxdepth):
         error_exit(10, 'There is no single file in the current directory "' + os.getcwd() + '". I can\'t create ' + \
                    'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
 
+    controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
+    if controlled_vocabulary_filename:
+        os.symlink(controlled_vocabulary_filename, os.path.join(TAGFILTER_DIRECTORY, CONTROLLED_VOCABULARY_FILENAME))
+
     logging.info('Creating tagtrees and their symlinks. It may take a while …  (exponentially with respect to number of tags)')
 
     tags = get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True)
@@ -1432,7 +1436,7 @@ def generate_tagtrees(directory, maxdepth):
     def create_tagtrees_dir(basedirectory, tagpermutation):
         "Creates (empty) directories of the tagtrees directory structure"
 
-        current_directory = os.path.join(basedirectory, *[x for x in tagpermutation])  ## flatten out list of permutations to elements
+        current_directory = os.path.join(basedirectory, *[x for x in tagpermutation])  # flatten out list of permutations to elements
         # logging.debug('generate_tagtrees: mkdir ' + current_directory)
         if not options.dryrun and not os.path.exists(current_directory):
             os.makedirs(current_directory)
