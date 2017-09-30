@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-09-03 22:00:01 vk>"
+PROG_VERSION = "Time-stamp: <2017-09-30 10:18:53 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1425,7 +1425,10 @@ def generate_tagtrees(directory, maxdepth):
 
     controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
     if controlled_vocabulary_filename:
-        os.symlink(controlled_vocabulary_filename, os.path.join(TAGFILTER_DIRECTORY, CONTROLLED_VOCABULARY_FILENAME))
+        logging.debug('I found controlled_vocabulary_filename: ' + controlled_vocabulary_filename)
+        os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(TAGFILTER_DIRECTORY, CONTROLLED_VOCABULARY_FILENAME))
+    else:
+        logging.debug('I did not find a controlled_vocabulary_filename')
 
     logging.info('Creating tagtrees and their symlinks. It may take a while …  (exponentially with respect to number of tags)')
 
