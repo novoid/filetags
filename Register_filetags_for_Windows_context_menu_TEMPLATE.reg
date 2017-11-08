@@ -1,0 +1,17 @@
+Windows Registry Editor Version 5.00
+
+;; for files:
+
+[HKEY_CLASSES_ROOT\*\shell\filetags]
+@="filetags (single file)"
+
+[HKEY_CLASSES_ROOT\*\shell\filetags\command]
+@="C:\\Python36\\python.exe C:\\Users\\karl.voit\\src\\filetags\\filetags.py -i \"%1\""
+
+;; for directories: (needed when * is used above?)
+;;[HKEY_CLASSES_ROOT\Directory\shell\emacsopensameframe]
+;;@="file@tags"
+;;"icon"="C:\\Program Files\\emacs-25\\bin\\emacsclientw.exe"
+;;
+;;[HKEY_CLASSES_ROOT\Directory\shell\emacsopensameframe\command]
+;;@="C:\\Program Files\\emacs-25\\bin\\emacsclientw.exe  -n --alternate-editor=\"C:\\Program Files\\emacs-25\\bin\\emacsclient.exe\" -n \"%1\""

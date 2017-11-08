@@ -1,4 +1,4 @@
-## Time-stamp: <2017-09-03 21:27:00 vk>
+## Time-stamp: <2017-11-07 19:14:00 karl.voit>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -489,6 +489,71 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 : rm $HOME/.config/Thunar/accels.scm.OLD
 : echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
 : #+END_SRC
+
+** Integration into Windows Explorer for single files
+
+Create a registry file =add_filetags_to_context_menu.reg= and edit it
+to meet the following template. Please make sure to replace the paths
+(python, =USERNAME= and =filetags.py=) accordingly:
+
+#+BEGIN_EXAMPLE
+Windows Registry Editor Version 5.00
+
+;; for files:
+
+[HKEY_CLASSES_ROOT\*\shell\filetags]
+@="filetags (single file)"
+
+[HKEY_CLASSES_ROOT\*\shell\filetags\command]
+@="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags.py -i \"%1\""
+#+END_EXAMPLE
+
+Execute the reg-file, confirm the warnings (you are modifying your
+Windows registry after all) and cheer up when you notice "filetags
+(single file)" in the context menu of your Windows Explorer.
+
+As the heading and the link name suggests: [[https://stackoverflow.com/questions/6440715/how-to-pass-multiple-filenames-to-a-context-menu-shell-command][this method works on single
+files]]. So if you select three files and invoke this context menu item,
+you will get three different filetag-windows to tag one file each.
+
+** Integration into Windows Explorer for single and multiple selected files
+
+Create a batch file in your home directory. Adapt the paths to meet
+your setup. The content looks like:
+
+: C:\Python36\python.exe C:\Users\USERNAME\src\filetags\filetags.py -i %*
+
+If you want to confirm the process (and see error messages and so
+forth), you might want to append as well following line:
+
+: set /p DUMMY=Hit ENTER to continue ...
+
+My batch file is located in =C:\Users\USERNAME\bin\filetags.bat=. Now
+create a lnk file for it (e.g., via Ctrl-Shift-drag), rename the lnk
+file to =filetags.lnk= and move the lnk file to
+=~/AppData/Roaming/Microsoft/Windows/SendTo/=.
+
+This way, you get a nice entry in your context menu sub-menu "Send to"
+which is also correctly tagging selection of files as if you put the
+list of selected items to a single call of filetags.
+
+** Integration into FreeCommander
+
+[[http://freecommander.com/en/summary/][FreeCommander]] is a [[https://en.wikipedia.org/wiki/File_manager#Orthodox_file_managers][orthodox file manager]] for Windows. You can add
+filetags as an favorite command:
+
+- press =Ctrl-Shift-Y= which opens up "Define favorite toolbars"
+- Create a new toolbar (if none is defined)
+- "Add new item"
+  - Name: filetags
+  - Program or folder: =C:\Users\YOURUSERNAME\bin\filetags.bat=
+    - look at "Integration into Windows Explorer for single and
+      multiple selected files" for the batch file
+  - Start folder: =%ActivDir%=
+  - Parameter: =%ActivSel%=
+  - select: =Enclose each selected item with "=
+  - assign a hotkey (like =Ctrl-1=)
+
 
 * Related tools and workflows
 
