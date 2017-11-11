@@ -1,4 +1,4 @@
-## Time-stamp: <2017-11-07 19:14:00 karl.voit>
+## Time-stamp: <2017-11-11 16:13:24 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -542,18 +542,33 @@ list of selected items to a single call of filetags.
 [[http://freecommander.com/en/summary/][FreeCommander]] is a [[https://en.wikipedia.org/wiki/File_manager#Orthodox_file_managers][orthodox file manager]] for Windows. You can add
 filetags as an favorite command:
 
-- press =Ctrl-Shift-Y= which opens up "Define favorite toolbars"
-- Create a new toolbar (if none is defined)
-- "Add new item"
-  - Name: filetags
-  - Program or folder: =C:\Users\YOURUSERNAME\bin\filetags.bat=
-    - look at "Integration into Windows Explorer for single and
-      multiple selected files" for the batch file
-  - Start folder: =%ActivDir%=
-  - Parameter: =%ActivSel%=
-  - select: =Enclose each selected item with "=
-  - assign a hotkey (like =Ctrl-1=)
+- Tools → Favorite tools → Favorite tools edit... (S-C-y)
+  - Create new toolbar (if none is present)
+  - Icon for "Add new item"
+    - Name: filetags
+    - Program or folder: <Path to filetags.bar>
+	- =filetags.bat= looks like: (please do modify the paths to meet your requirement)
+        : C:\Python36\python.exe C:\Users\YOURUSERNAME\src\filetags\filetags %*
+	  : REM optionally: set /p DUMMY=Hit ENTER to continue...
+    - Start folder: =%ActivDir%=
+    - Parameter: =%ActivSel%=
+    - [X] Enclose each selected item with ="=
+    - Hotkey: select next available one such as =Ctrl-1= (it gets overwritten below)
+	- remember its name such as "Favorite tool 01"
+  - OK
 
+So far, we've got =filetags= added as a favorite command which can be
+accessed via menu or icon toolbar and the selected keyboard shortcut.
+If you want to assign a different keyboard shortcut than =Ctrl-1= like
+=Alt-t= you might as well follow following procedure:
+
+- Tools → Define keyboard shortcuts...
+  - Scroll down to the last section "Favorite tools"
+  - locate the name such as "Favorite tool 01"
+  - Define your shortcut of choice like =Alt-t= in the right hand side of the window
+    - If your shortcut is taken, you'll get a notification. Don't
+      overwrite essential shortcuts you're using.
+  - OK
 
 * Related tools and workflows
 
