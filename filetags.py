@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-11 16:43:47 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-11 16:49:44 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -146,7 +146,7 @@ parser.add_argument("-t", "--tags",
                     required=False,
                     help="one or more tags (in quotes, separated by spaces) to add/remove")
 
-parser.add_argument("-r", "--remove", "-d", "--delete", action="store_true",
+parser.add_argument("--remove", action="store_true",
                     help="remove tags from (instead of adding to) file name(s)")
 
 parser.add_argument("-i", "--interactive", action="store_true", dest="interactive",
