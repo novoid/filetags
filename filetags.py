@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-11 18:20:45 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-11 18:59:45 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -183,6 +183,12 @@ parser.add_argument("--tagtrees-handle-no-tag",
                     "The value \"treeroot\" is the default behavior: items without a tag are linked to the tagtrees root. " +
                     "The value \"ignore\" will not link any non-tagged items at all. " +
                     "Any other value is interpreted as a folder name within the tagreees which is used to link all non-tagged items to.")
+
+parser.add_argument("--tagtrees-link-missing-mutual-tagged-items", dest="tagtrees_link_missing_mutual_tagged_items", action="store_true",
+                    help="When the controlled vocabulary holds mutual exclusive tags (multiple tags in one line) " +
+                    "this option generates directories in the tagtrees root that hold links to items that have no " +
+                    "single tag from those mutual exclusive sets. For example, when \"draft final\" is defined in the vocabulary, " +
+                    "all items without \"draft\" and \"final\" are linked to the \"no-draft-final\" directory.")
 
 parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
                     help="list all file-tags sorted by their number of use")
@@ -1357,7 +1363,7 @@ def get_common_tags_from_files(files):
     return list(set.intersection(*list_of_tags_per_file))
 
 
-def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir):
+def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, link_missing_mutual_tagged_items):
     """
     This functions is somewhat sophisticated with regards to the background.
     If you're really interested in the whole story behind the
@@ -1426,8 +1432,9 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir):
     @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
     @param ignore_nontagged: (bool) if True, non-tagged items are ignored and not linked
     @param nontagged_subdir: (string) holds a string containing the sub-directory name to link non-tagged items to
+    @param link_missing_mutual_tagged_items: (bool) if True, any item that has a missing tag of any unique_tags entry is linked to a separate directory which is auto-generated from the unique_tags set names
     """
-    import pdb; pdb.set_trace()
+
     assert_empty_tagfilter_directory(directory)
 
     # The boolean ignore_nontagged must be "False" when nontagged_subdir holds a value:
@@ -1558,6 +1565,34 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir):
                                             'option and the sub-tree you\'re generating a tagtree from has two times the same ' +
                                             'filename. I stick with the first one.')
                     num_of_links += 1
+
+            if link_missing_mutual_tagged_items:
+                for unique_tagset in unique_tags:
+
+                    # Oh yes, I do wish I had solved the default teststring issue in
+                    # a cleaner way. Ignore it here hard-coded.
+                    if unique_tagset == ['teststring1', 'teststring2']:
+                        continue
+
+                    # When there is no intersection between the item tags and the current unique_tagset ...
+                    if not set(tags_of_currentfile).intersection(set(unique_tagset)):
+
+                        # ... generate a no-$unique_tagset directory ...
+                        no_uniqueset_tag_found_dir = os.path.join(directory, 'no-' + ("-").join(unique_tagset))  # example: "no-draft-final"
+                        if not os.path.isdir(no_uniqueset_tag_found_dir):
+                            logging.debug('creating non-existent no_uniqueset_tag_found_dir "%s" ...' % str(no_uniqueset_tag_found_dir))
+                            if not options.dryrun:
+                                os.makedirs(no_uniqueset_tag_found_dir)
+
+                        # ... and link the item into it:
+                        if not options.dryrun:
+                            try:
+                                os.symlink(filename, os.path.join(no_uniqueset_tag_found_dir, basename))
+                            except FileExistsError:
+                                logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
+                                                os.path.join(no_uniqueset_tag_found_dir, basename) + '\". I stick with the first one.')
+                        num_of_links += 1
+
 
     # Brag about how brave I was. And: it also shows the user why the
     # runtime was that long. The number of links grows exponentially
@@ -1692,6 +1727,8 @@ def main():
 
     elif options.tagtrees:
         logging.debug("handling option for tagtrees")
+
+        # The command line options for tagtrees_handle_no_tag is checked:
         ignore_nontagged = False
         nontagged_subdir = False
         if options.tagtrees_handle_no_tag:
@@ -1707,7 +1744,7 @@ def main():
                 logging.debug("options.tagtrees_handle_no_tag found: use foldername [" + repr(options.tagtrees_handle_no_tag) + "]")
 
         start = time.time()
-        generate_tagtrees(TAGFILTER_DIRECTORY, DEFAULT_TAGTREES_MAXDEPTH, ignore_nontagged, nontagged_subdir)
+        generate_tagtrees(TAGFILTER_DIRECTORY, DEFAULT_TAGTREES_MAXDEPTH, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)
