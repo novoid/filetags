@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-11 16:49:44 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-11 17:51:41 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -172,6 +172,17 @@ parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
                     "Please note that this may take long since it relates " +
                     "exponentially to the number of tags involved. " +
                     "See also http://Karl-Voit.at/tagstore/ and http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf")
+
+parser.add_argument("--tagtrees-handle-no-tag",
+                    dest="tagtrees_handle_no_tag",
+                    nargs=1,
+                    type=str,
+                    metavar='"treeroot" | "ignore" | "FOLDERNAME"',
+                    required=False,
+                    help="When tagtrees are created, this parameter defines how to handle items that got no tag at all. " +
+                    "The value \"treeroot\" is the default behavior: items without a tag are linked to the tagtrees root. " +
+                    "The value \"ignore\" will not link any non-tagged items at all. " +
+                    "Any other value is interpreted as a folder name within the tagreees which is used to link all non-tagged items to.")
 
 parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
                     help="list all file-tags sorted by their number of use")
@@ -1346,7 +1357,7 @@ def get_common_tags_from_files(files):
     return list(set.intersection(*list_of_tags_per_file))
 
 
-def generate_tagtrees(directory, maxdepth):
+def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
     """
     This functions is somewhat sophisticated with regards to the background.
     If you're really interested in the whole story behind the
@@ -1403,11 +1414,33 @@ def generate_tagtrees(directory, maxdepth):
 
     [geeqie] http://geeqie.sourceforge.net/
 
+    Valid combinations for ignore_nontagged and nontagged_subdir are:
+
+    | ignore_nontagged | nontagged_subdir | results in ...                                                    |
+    |------------------+------------------+-------------------------------------------------------------------|
+    | False            | False            | non-linked items are linked to tagtrees root                      |
+    | False            | <a string>       | non-linked items are linked to a tagtrees folder named <a string> |
+    | True             | False            | non-linked items are ignored                                      |
+
     @param directory: the directory to use as starting directory
+    @param ignore_nontagged: (bool) if True, non-tagged items are ignored and not linked
+    @param nontagged_subdir: (string) holds a string containing the sub-directory name to link non-tagged items to
     @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
     """
 
     assert_empty_tagfilter_directory(directory)
+
+    # The boolean ignore_nontagged must be "False" when nontagged_subdir holds a value:
+    # valid combinations:
+    assert((ignore_nontagged and not nontagged_subdir) or
+           (not ignore_nontagged and (not nontagged_subdir or type(nontagged_subdir)==str)))
+
+    nontagged_item_dest_dir = False  # ignore non-tagged items
+    if nontagged_subdir:
+        nontagged_item_dest_dir = os.path.join(directory, nontagged_subdir)
+        assert_empty_tagfilter_directory(nontagged_item_dest_dir)
+    elif not ignore_nontagged:
+        nontagged_item_dest_dir = directory
 
     try:
         files = get_files_of_directory(os.getcwd())  # FIXXME: switch to recursive version of this if options.recursive is set
@@ -1425,8 +1458,9 @@ def generate_tagtrees(directory, maxdepth):
 
     controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
     if controlled_vocabulary_filename:
-        logging.debug('I found controlled_vocabulary_filename: ' + controlled_vocabulary_filename)
-        os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(TAGFILTER_DIRECTORY, CONTROLLED_VOCABULARY_FILENAME))
+        logging.debug('I found controlled_vocabulary_filename "' + controlled_vocabulary_filename + '" which I\'m going to link to the tagtrees folder')
+        if not options.dryrun:
+            os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
     else:
         logging.debug('I did not find a controlled_vocabulary_filename')
 
@@ -1465,20 +1499,23 @@ def generate_tagtrees(directory, maxdepth):
 
         if len(tags_of_currentfile) == 0:
             # current file has no tags. It gets linked to the
-            # "directory" folder. This is somewhat handy to find files
+            # nontagged_item_dest_dir folder (if set). This is somewhat handy to find files
             # which are - you guessed right - not tagged yet ;-)
 
-            logging.debug('generate_tagtrees: file "' + filename + '" has no tags. Linking to "' +
-                          directory + '"')
-            if not options.dryrun:
-                try:
-                    os.symlink(filename, os.path.join(directory, basename))
-                except FileExistsError:
-                    logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
-                                    os.path.join(directory, basename) + '\". You must have used the recursive ' +
-                                    'option and the sub-tree you\'re generating a tagtree from has two times the ' +
-                                    'same filename. I stick with the first one.')
-            num_of_links += 1
+            if ignore_nontagged:
+                logging.debug('generate_tagtrees: file "' + filename + '" has no tags and will be ignores because of command line switch.')
+            else:
+                logging.debug('generate_tagtrees: file "' + filename + '" has no tags. Linking to "' +
+                              nontagged_item_dest_dir + '"')
+                if not options.dryrun:
+                    try:
+                        os.symlink(filename, os.path.join(nontagged_item_dest_dir, basename))
+                    except FileExistsError:
+                        logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
+                                        os.path.join(nontagged_item_dest_dir, basename) + '\". You must have used the recursive ' +
+                                        'option and the sub-tree you\'re generating a tagtree from has two times the ' +
+                                        'same filename. I stick with the first one.')
+                num_of_links += 1
 
         else:
 
@@ -1649,8 +1686,22 @@ def main():
 
     elif options.tagtrees:
         logging.debug("handling option for tagtrees")
+        ignore_nontagged = False
+        nontagged_subdir = False
+        if options.tagtrees_handle_no_tag:
+            if options.tagtrees_handle_no_tag[0] == 'treeroot':
+                logging.debug("options.tagtrees_handle_no_tag found: treeroot (default)")
+                pass  # keep defaults
+            elif options.tagtrees_handle_no_tag[0] == 'ignore':
+                logging.debug("options.tagtrees_handle_no_tag found: ignore")
+                ignore_nontagged = True
+            else:
+                ignore_nontagged = False
+                nontagged_subdir = options.tagtrees_handle_no_tag[0]
+                logging.debug("options.tagtrees_handle_no_tag found: use foldername [" + repr(options.tagtrees_handle_no_tag) + "]")
+
         start = time.time()
-        generate_tagtrees(TAGFILTER_DIRECTORY, maxdepth=DEFAULT_TAGTREES_MAXDEPTH)
+        generate_tagtrees(TAGFILTER_DIRECTORY, ignore_nontagged, nontagged_subdir, maxdepth=DEFAULT_TAGTREES_MAXDEPTH)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)

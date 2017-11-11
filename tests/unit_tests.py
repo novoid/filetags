@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2017-08-27 23:54:13 vk>
+# Time-stamp: <2017-11-11 17:54:40 vk>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -21,6 +21,9 @@ from shutil import rmtree
 FORMAT = "%(levelname)-8s %(asctime)-15s %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
+# Missing tests:
+# - FIXXME: find code which is not tested yet (before 2017-11-11)
+# - everything related to tagtrees
 
 class TestMethods(unittest.TestCase):
 
