@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-11 17:51:41 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-11 18:20:45 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1357,7 +1357,7 @@ def get_common_tags_from_files(files):
     return list(set.intersection(*list_of_tags_per_file))
 
 
-def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
+def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir):
     """
     This functions is somewhat sophisticated with regards to the background.
     If you're really interested in the whole story behind the
@@ -1423,11 +1423,11 @@ def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
     | True             | False            | non-linked items are ignored                                      |
 
     @param directory: the directory to use as starting directory
+    @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
     @param ignore_nontagged: (bool) if True, non-tagged items are ignored and not linked
     @param nontagged_subdir: (string) holds a string containing the sub-directory name to link non-tagged items to
-    @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
     """
-
+    import pdb; pdb.set_trace()
     assert_empty_tagfilter_directory(directory)
 
     # The boolean ignore_nontagged must be "False" when nontagged_subdir holds a value:
@@ -1435,6 +1435,8 @@ def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
     assert((ignore_nontagged and not nontagged_subdir) or
            (not ignore_nontagged and (not nontagged_subdir or type(nontagged_subdir)==str)))
 
+    # Extract the variables nontagged_item_dest_dir from the valid combinations
+    # of nontagged_subdir and ignore_nontagged:
     nontagged_item_dest_dir = False  # ignore non-tagged items
     if nontagged_subdir:
         nontagged_item_dest_dir = os.path.join(directory, nontagged_subdir)
@@ -1443,7 +1445,7 @@ def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
         nontagged_item_dest_dir = directory
 
     try:
-        files = get_files_of_directory(os.getcwd())  # FIXXME: switch to recursive version of this if options.recursive is set
+        files = get_files_of_directory(os.getcwd())
     except FileNotFoundError:
         error_exit(11, 'When trying to look for files, I could not even find the current working directory. ' + \
                    'Could it be the case that you\'ve tried to generate tagtrees within the directory "' + directory + '"? ' + \
@@ -1456,6 +1458,10 @@ def generate_tagtrees(directory, ignore_nontagged, nontagged_subdir, maxdepth):
         error_exit(10, 'There is no single file in the current directory "' + os.getcwd() + '". I can\'t create ' + \
                    'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
 
+    # If a controlled vocabulary file is found for the directory where the tagtree
+    # should be generated for, we link this file to the resulting tagtrees root
+    # directory as well. This way, adding tags using tag completion also works for
+    # the linked items.
     controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
     if controlled_vocabulary_filename:
         logging.debug('I found controlled_vocabulary_filename "' + controlled_vocabulary_filename + '" which I\'m going to link to the tagtrees folder')
@@ -1701,7 +1707,7 @@ def main():
                 logging.debug("options.tagtrees_handle_no_tag found: use foldername [" + repr(options.tagtrees_handle_no_tag) + "]")
 
         start = time.time()
-        generate_tagtrees(TAGFILTER_DIRECTORY, ignore_nontagged, nontagged_subdir, maxdepth=DEFAULT_TAGTREES_MAXDEPTH)
+        generate_tagtrees(TAGFILTER_DIRECTORY, DEFAULT_TAGTREES_MAXDEPTH, ignore_nontagged, nontagged_subdir)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)
