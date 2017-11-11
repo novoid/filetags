@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-09-30 10:18:53 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-11 16:43:47 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -102,9 +102,9 @@ Example usages:\n\
       … removes the tag \"draft\" from all files containing the word \"report\"\n\
 \n\
 \n\
-This tools is looking for (the first) text file named \".filetags\" in\n\
-current and parent directories. Each line of it is interpreted as a tag\n\
-for tag completion.\n\
+This tools is looking for the optional first text file named \".filetags\" in\n\
+current and parent directories. Each of its lines is interpreted as a tag\n\
+for tag completion. Multiple tags per line are considered mutual exclusive.\n\
 \n\
 Verbose description: http://Karl-Voit.at/managing-digital-photographs/"
 
