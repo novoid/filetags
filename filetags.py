@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-11 18:59:45 vk>"
+PROG_VERSION = "Time-stamp: <2017-11-18 10:41:58 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1604,7 +1604,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
 
 def start_filebrowser(directory):
     """
-    This functions starts up the default file browser or the one given in the overriding command line parameter.
+    This function starts up the default file browser or the one given in the overriding command line parameter.
 
     @param directory: the directory to use as starting directory
     """
@@ -1627,6 +1627,38 @@ def start_filebrowser(directory):
         logging.info('No (default) file browser defined for platform \"' + current_platform + '\".')
         logging.info('Please visit ' + directory + ' to view filtered items.')
 
+def all_files_are_symlink_to_same_directory(files):
+    """
+    This function returns True when: all files in "files" are symbolic links with same
+    filenames in one single directory to a matching set of original filenames in a
+    different directory.
+
+    Returns False for any other case
+
+    @param files: list of files
+    @param return: boolean
+    """
+
+    if files and is_nonbroken_symlink_file(files[0]):
+        first_symlink_file_components = split_up_filename(files[0])
+        first_original_file_components = split_up_filename(get_link_source_file(files[0]))
+    else:
+        return False
+
+    for current_file in files:
+        if type(current_file) != str:
+            logging.info('not str')
+            return False
+        if not os.path.exists(current_file):
+            logging.info('not path exists')
+            return False
+        current_symlink_components = split_up_filename(current_file)  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
+        current_original_components = split_up_filename(get_link_source_file(current_file))
+        if current_original_components[1] != first_original_file_components[1] or \
+           current_symlink_components[2] != current_original_components[2]:
+            logging.info('non matching')
+            return False
+    return True
 
 def successful_exit():
     logging.debug("successfully finished.")
@@ -1781,6 +1813,21 @@ def main():
 
         else:
             if files:
+
+                # if it is only one file which is a symlink to the same basename
+                # in a different directory, show the original directory:
+                if len(files) == 1 and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and os.path.islink(files[0]):
+                    symlink_file = split_up_filename(files[0])
+                    original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
+                    if symlink_file[1] != original_file[1] and symlink_file[2] == original_file[2]:
+                        # basenames are same, dirs are different
+                        print("     ... symlink: tagging also matching filename in " + original_file[1])
+                # do the same but for a list of symlink files whose paths have to match:
+                if len(files) > 1 and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and all_files_are_symlink_to_same_directory(files):
+                    # using first file for determining directories:
+                    symlink_file = split_up_filename(files[0])
+                    original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
+                    print("     ... symlinks: tagging also matching filenames in " + original_file[1])
 
                 # remove given (shared) tags from the vocabulary:
                 tags_intersection_of_files = get_common_tags_from_files(files)
