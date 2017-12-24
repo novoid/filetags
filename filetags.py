@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-11-18 10:41:58 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-24 17:14:30 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -56,6 +56,7 @@ save_import('codecs')     # for handling Unicode content in .tagfiles
 save_import('math')       # (integer) calculations
 save_import('clint')      # for config file handling
 save_import('itertools')  # for calculating permutations of tagtrees
+save_import('colorama')   # for colorful output
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -477,12 +478,16 @@ def print_item_transition(path, source, destination, transition):
     else:
         print("ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\"")
 
+    style_destination = colorama.Style.BRIGHT + colorama.Back.GREEN + colorama.Fore.BLACK
+    destination = style_destination + destination + colorama.Style.RESET_ALL
+
     if 15 + len(transition_description) + (2 * max_file_length) < TTY_WIDTH:
         # probably enough space: screen output with one item per line
 
         source_width = max_file_length
 
-        arrow_left = '――'
+        source = source
+        arrow_left = colorama.Style.DIM + '――'
         arrow_right = '―→'
         print("  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width))
 
@@ -1133,7 +1138,7 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_link
             hint_string = "Possible tags to be removed:"
         else:
             hint_string = "Top nine possible tags to be removed:"
-    print("\n  " + hint_string)
+    print("\n  " + colorama.Style.DIM + hint_string + colorama.Style.RESET_ALL)
 
     count = 1
     list_of_tag_hints = []
@@ -1233,10 +1238,12 @@ def _get_tag_visual(tags_for_visual=None):
     else:
         tags = BETWEEN_TAG_SEPARATOR.join(sorted(tags_for_visual))
 
+    style = colorama.Back.BLACK + colorama.Fore.GREEN
+
     length = len(tags)
-    visual = "         .---" + '-' * length + "--, \n" + \
-             "        | o  " + tags + "  | \n" + \
-             "         `---" + '-' * length + "--' "
+    visual = "         " + style + ".---" + '-' * length + "--," + colorama.Style.RESET_ALL + " \n" + \
+             "        " + style + "| o  " + colorama.Style.BRIGHT + tags + colorama.Style.NORMAL + "  |" + colorama.Style.RESET_ALL + " \n" + \
+             "         " + style + "`---" + '-' * length + "--'" + colorama.Style.RESET_ALL + " "
 
     return visual
 
@@ -1269,8 +1276,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     logging.debug("files: %s" % str(options.files))
 
     print("                 ")
-    print("Please enter tags, separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
-          completionhint)
+    print("Please enter tags" + colorama.Style.DIM + ", separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
+          completionhint + colorama.Style.RESET_ALL)
     print("                     ")
     print(_get_tag_visual(tags_for_visual))
     print("                     ")
@@ -1281,7 +1288,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
                                         tags_get_linked=options.tagfilter)
 
     logging.debug("interactive mode: asking for tags ...")
-    entered_tags = input('Tags: ').strip()
+    entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
     tags_from_userinput = extract_tags_from_argument(entered_tags)
 
     if not tags_from_userinput:
