@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-24 17:14:30 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-28 17:00:01 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -130,6 +130,8 @@ FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 cache_of_tags_by_folder = {}
 controlled_vocabulary_filename = ''
 list_of_symlink_directories = []
+
+OSError_helptext = 'OSError: most likely you\'re using Windows without administration permission so that "SeCreateSymbolicLinkPrivilege" is not granted.\n         Sorry for this lousy operating system.\n         See: https://docs.python.org/3/library/os.html#os.symlink for details'
 
 parser = argparse.ArgumentParser(prog=sys.argv[0],
                                  # keep line breaks in EPILOG and such
@@ -664,7 +666,11 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
                                   '" from the old sourcefilename "' +
                                   old_source_filename + '" to the new one "' + new_source_filename + '"')
                     os.remove(filename)
-                    os.symlink(new_source_filename, filename)
+                    try:
+                        os.symlink(new_source_filename, filename)
+                    except OSError:
+                        logging.error(OSError_helptext)
+                        raise
             else:
                 logging.debug('handle_file_and_symlink_source_if_found: The old sourcefilename "' + old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
@@ -708,7 +714,11 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
     if do_filter:
         print_item_transition(dirname, basename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
-            os.symlink(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
+            try:
+                os.symlink(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
+            except OSError:
+                logging.error(OSError_helptext)
+                raise
 
     else:  # add or remove tags:
         new_basename = basename
@@ -1480,7 +1490,12 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     if controlled_vocabulary_filename:
         logging.debug('I found controlled_vocabulary_filename "' + controlled_vocabulary_filename + '" which I\'m going to link to the tagtrees folder')
         if not options.dryrun:
-            os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
+            try:
+                os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
+            except OSError:
+                logging.error(OSError_helptext)
+                raise
+
     else:
         logging.debug('I did not find a controlled_vocabulary_filename')
 
@@ -1530,6 +1545,9 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                 if not options.dryrun:
                     try:
                         os.symlink(filename, os.path.join(nontagged_item_dest_dir, basename))
+                    except OSError:
+                        logging.error(OSError_helptext)
+                        raise
                     except FileExistsError:
                         logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
                                         os.path.join(nontagged_item_dest_dir, basename) + '\". You must have used the recursive ' +
@@ -1566,6 +1584,9 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                     if not options.dryrun:
                         try:
                             os.symlink(filename, os.path.join(current_directory, basename))
+                        except OSError:
+                            logging.error(OSError_helptext)
+                            raise
                         except FileExistsError:
                             logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
                                             os.path.join(current_directory, basename) + '\". You must have used the recursive ' +
@@ -1595,6 +1616,9 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                         if not options.dryrun:
                             try:
                                 os.symlink(filename, os.path.join(no_uniqueset_tag_found_dir, basename))
+                            except OSError:
+                                logging.error(OSError_helptext)
+                                raise
                             except FileExistsError:
                                 logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
                                                 os.path.join(no_uniqueset_tag_found_dir, basename) + '\". I stick with the first one.')
