@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-28 17:00:01 karl.voit>"
+PROG_VERSION = "Time-stamp: <2017-12-29 19:28:11 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -130,8 +130,6 @@ FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 cache_of_tags_by_folder = {}
 controlled_vocabulary_filename = ''
 list_of_symlink_directories = []
-
-OSError_helptext = 'OSError: most likely you\'re using Windows without administration permission so that "SeCreateSymbolicLinkPrivilege" is not granted.\n         Sorry for this lousy operating system.\n         See: https://docs.python.org/3/library/os.html#os.symlink for details'
 
 parser = argparse.ArgumentParser(prog=sys.argv[0],
                                  # keep line breaks in EPILOG and such
@@ -666,11 +664,7 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
                                   '" from the old sourcefilename "' +
                                   old_source_filename + '" to the new one "' + new_source_filename + '"')
                     os.remove(filename)
-                    try:
-                        os.symlink(new_source_filename, filename)
-                    except OSError:
-                        logging.error(OSError_helptext)
-                        raise
+                    create_link(new_source_filename, filename)
             else:
                 logging.debug('handle_file_and_symlink_source_if_found: The old sourcefilename "' + old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
@@ -687,6 +681,28 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
     return new_filename
+
+
+def create_link(source, destination):
+    """
+    On non-Windows systems, a symbolic link is created that links
+    source (existing file) to destination (the new symlink). On
+    Windows systems a lnk-file is created instead.
+
+    @param source: a file name of the source, an existing file
+    @param destination: a file name for the link which is about to be created
+    """
+
+    OSError_helptext = 'OSError: most likely you\'re using Windows without administration ' + \
+                       'permission so that "SeCreateSymbolicLinkPrivilege" is not granted.\n         ' + \
+                       'Sorry for this lousy operating system.\n         See: ' + \
+                       'https://docs.python.org/3/library/os.html#os.symlink for details'
+
+    try:
+        os.symlink(source, destination)
+    except OSError:
+        logging.error(OSError_helptext)
+        raise
 
 
 def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
@@ -714,11 +730,7 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
     if do_filter:
         print_item_transition(dirname, basename, TAGFILTER_DIRECTORY, transition='link')
         if not dryrun:
-            try:
-                os.symlink(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
-            except OSError:
-                logging.error(OSError_helptext)
-                raise
+            create_link(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
 
     else:  # add or remove tags:
         new_basename = basename
@@ -1490,11 +1502,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     if controlled_vocabulary_filename:
         logging.debug('I found controlled_vocabulary_filename "' + controlled_vocabulary_filename + '" which I\'m going to link to the tagtrees folder')
         if not options.dryrun:
-            try:
-                os.symlink(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
-            except OSError:
-                logging.error(OSError_helptext)
-                raise
+            create_link(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
 
     else:
         logging.debug('I did not find a controlled_vocabulary_filename')
@@ -1544,10 +1552,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                               nontagged_item_dest_dir + '"')
                 if not options.dryrun:
                     try:
-                        os.symlink(filename, os.path.join(nontagged_item_dest_dir, basename))
-                    except OSError:
-                        logging.error(OSError_helptext)
-                        raise
+                        create_link(filename, os.path.join(nontagged_item_dest_dir, basename))
                     except FileExistsError:
                         logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
                                         os.path.join(nontagged_item_dest_dir, basename) + '\". You must have used the recursive ' +
@@ -1583,10 +1588,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                     # logging.debug('generate_tagtrees: linking file in ' + current_directory)
                     if not options.dryrun:
                         try:
-                            os.symlink(filename, os.path.join(current_directory, basename))
-                        except OSError:
-                            logging.error(OSError_helptext)
-                            raise
+                            create_link(filename, os.path.join(current_directory, basename))
                         except FileExistsError:
                             logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
                                             os.path.join(current_directory, basename) + '\". You must have used the recursive ' +
@@ -1615,10 +1617,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                         # ... and link the item into it:
                         if not options.dryrun:
                             try:
-                                os.symlink(filename, os.path.join(no_uniqueset_tag_found_dir, basename))
-                            except OSError:
-                                logging.error(OSError_helptext)
-                                raise
+                                create_link(filename, os.path.join(no_uniqueset_tag_found_dir, basename))
                             except FileExistsError:
                                 logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
                                                 os.path.join(no_uniqueset_tag_found_dir, basename) + '\". I stick with the first one.')
