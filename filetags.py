@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-29 19:28:11 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-30 12:57:36 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -46,6 +46,7 @@ def save_import(library):
 import re
 import sys
 import os
+import platform
 save_import('argparse')   # for handling command line arguments
 save_import('time')
 save_import('logging')
@@ -57,6 +58,12 @@ save_import('math')       # (integer) calculations
 save_import('clint')      # for config file handling
 save_import('itertools')  # for calculating permutations of tagtrees
 save_import('colorama')   # for colorful output
+if platform.system() == 'Windows':
+    try:
+        import win32com.client
+    except ImportError:
+        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
+        sys.exit(2)
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -67,6 +74,7 @@ HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
 DEFAULT_TAGTREES_MAXDEPTH = 2  # be careful when making this more than 2: exponential growth of time/links with number of tags!
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
+DEFAULT_IMAGE_VIEWER_WINDOWS = 'explorer'
 TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
 
 try:
@@ -689,20 +697,31 @@ def create_link(source, destination):
     source (existing file) to destination (the new symlink). On
     Windows systems a lnk-file is created instead.
 
+    The reason why we have to use really poor performing error-prone
+    "lnk"-files instead of symlinks on Windows is that you're required
+    to have administration permission so that "SeCreateSymbolicLinkPrivilege"
+    is granted. Sorry for this lousy operating system.
+    See: https://docs.python.org/3/library/os.html#os.symlink for details about that.
+
+    This is the reason why the "--tagrees" option does perform really bad
+    on Windows. And "really bad" means factor 10 to 1000. I measured it.
+
     @param source: a file name of the source, an existing file
     @param destination: a file name for the link which is about to be created
     """
 
-    OSError_helptext = 'OSError: most likely you\'re using Windows without administration ' + \
-                       'permission so that "SeCreateSymbolicLinkPrivilege" is not granted.\n         ' + \
-                       'Sorry for this lousy operating system.\n         See: ' + \
-                       'https://docs.python.org/3/library/os.html#os.symlink for details'
+    if platform.system() == 'Windows':
+        # do lnk-files instead of symlinks:
+        shell = win32com.client.Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(destination + '.lnk')
+        shortcut.Targetpath = source
+        shortcut.WorkingDirectory = os.path.dirname(destination)
+        # shortcut.IconLocation: is derived from the source file
+        shortcut.save()
 
-    try:
+    else:
+        # for normal operating systems, use good old high-performing symbolic links:
         os.symlink(source, destination)
-    except OSError:
-        logging.error(OSError_helptext)
-        raise
 
 
 def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
@@ -1640,7 +1659,6 @@ def start_filebrowser(directory):
     """
 
     save_import('subprocess')
-    save_import('platform')
     current_platform = platform.system()
     logging.debug('platform.system() is: [' + current_platform + ']')
     if current_platform == 'Linux':
@@ -1652,6 +1670,19 @@ def start_filebrowser(directory):
             logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '"')
         else:
             subprocess.call([chosen_filebrowser, directory])
+
+    elif current_platform == 'Windows':
+        chosen_filebrowser = DEFAULT_IMAGE_VIEWER_WINDOWS
+        if options.filebrowser:
+            chosen_filebrowser = options.filebrowser  # override if given
+
+        if options.dryrun:
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '"')
+        else:
+            if chosen_filebrowser == 'explorer':
+                os.system(r'start explorer.exe "' + directory + '"')
+            else:
+                logging.warning('FIXXME: for Windows, this script only supports the default file browser which is the file explorer.')
 
     else:
         logging.info('No (default) file browser defined for platform \"' + current_platform + '\".')
