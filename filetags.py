@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-30 13:24:01 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-30 16:22:36 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -203,11 +203,19 @@ parser.add_argument("--tagtrees-link-missing-mutual-tagged-items", dest="tagtree
                     "single tag from those mutual exclusive sets. For example, when \"draft final\" is defined in the vocabulary, " +
                     "all items without \"draft\" and \"final\" are linked to the \"no-draft-final\" directory.")
 
+parser.add_argument("--tagtrees-dir",
+                    dest="tagtrees_directory",
+                    nargs=1,
+                    type=str,
+                    metavar='<existing_directory>',
+                    required=False,
+                    help="When tagtrees are created, this parameter overrides the default target directory \"" + TAGFILTER_DIRECTORY +
+                    "\" with a user-defined one. It has to be an empty directory or a non-existing directory which will be created.")
+
 parser.add_argument("--tagtrees-depht",
                     dest="tagtrees_depth",
                     nargs=1,
                     type=int,
-                    #metavar='"treeroot" | "ignore" | "FOLDERNAME"',
                     required=False,
                     help="When tagtrees are created, this parameter defines the level of depth of the tagtree hierarchy. " +
                     "The default value is 2. Please note that increasing the depth increases the number of links exponentially. " +
@@ -1396,6 +1404,10 @@ def assert_empty_tagfilter_directory(directory):
     @param directory: the directory to use as starting directory
     """
 
+    if options.tagtrees_directory and os.path.isdir(directory) and os.listdir(directory):
+        error_exit(13, 'The given tagtrees directory ' + directory + ' is not empty. Aborting here instead ' +
+                   'of removing its content without asking. Please free it up yourself and try again.')
+
     if not os.path.isdir(directory):
         logging.debug('creating non-existent tagfilter directory "%s" ...' % str(directory))
         if not options.dryrun:
@@ -1491,7 +1503,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     | False            | <a string>       | non-linked items are linked to a tagtrees folder named <a string> |
     | True             | False            | non-linked items are ignored                                      |
 
-    @param directory: the directory to use as starting directory
+    @param directory: the directory to use for generating the tagtrees hierarchy
     @param maxdepth: integer which holds the depth to which the tagtrees are generated; keep short to avoid HUGE execution times!
     @param ignore_nontagged: (bool) if True, non-tagged items are ignored and not linked
     @param nontagged_subdir: (string) holds a string containing the sub-directory name to link non-tagged items to
@@ -1859,12 +1871,17 @@ def main():
                 logging.warning('The chosen tagtrees depth of ' + str(chosen_maxdepth) + ' is rather high.')
                 logging.warning('When linking more than a few files, this might take a long time using many filesystem inodes.')
 
+        chosen_tagtrees_dir = TAGFILTER_DIRECTORY
+        if options.tagtrees_directory:
+            chosen_tagtrees_dir = options.tagtrees_directory[0]
+            logging.debug('User overrides the default tagtrees directory to: ' + str(chosen_tagtrees_dir))
+
         start = time.time()
-        generate_tagtrees(TAGFILTER_DIRECTORY, chosen_maxdepth, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
+        generate_tagtrees(chosen_tagtrees_dir, chosen_maxdepth, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)
-        start_filebrowser(TAGFILTER_DIRECTORY)
+        start_filebrowser(chosen_tagtrees_dir)
         successful_exit()
 
     elif options.interactive or not options.tags:
