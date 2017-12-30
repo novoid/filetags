@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-30 12:57:36 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-30 13:24:01 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -77,10 +77,14 @@ DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
 DEFAULT_IMAGE_VIEWER_WINDOWS = 'explorer'
 TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
 
-try:
-    TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
-except ValueError:
-    TTY_HEIGHT, TTY_WIDTH = 80, 80
+# Determining the window size of the terminal:
+if platform.system() != 'Windows':
+    try:
+        TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
+    except ValueError:
+        TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
+else:
+    TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
 
 max_file_length = 0  # will be set after iterating over source files182
 
@@ -198,6 +202,17 @@ parser.add_argument("--tagtrees-link-missing-mutual-tagged-items", dest="tagtree
                     "this option generates directories in the tagtrees root that hold links to items that have no " +
                     "single tag from those mutual exclusive sets. For example, when \"draft final\" is defined in the vocabulary, " +
                     "all items without \"draft\" and \"final\" are linked to the \"no-draft-final\" directory.")
+
+parser.add_argument("--tagtrees-depht",
+                    dest="tagtrees_depth",
+                    nargs=1,
+                    type=int,
+                    #metavar='"treeroot" | "ignore" | "FOLDERNAME"',
+                    required=False,
+                    help="When tagtrees are created, this parameter defines the level of depth of the tagtree hierarchy. " +
+                    "The default value is 2. Please note that increasing the depth increases the number of links exponentially. " +
+                    "Especially when running Windows (using lnk-files instead of symbolic links) the performance is really slow. " +
+                    "Choose wisely.")
 
 parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
                     help="list all file-tags sorted by their number of use")
@@ -1836,8 +1851,16 @@ def main():
                 nontagged_subdir = options.tagtrees_handle_no_tag[0]
                 logging.debug("options.tagtrees_handle_no_tag found: use foldername [" + repr(options.tagtrees_handle_no_tag) + "]")
 
+        chosen_maxdepth = DEFAULT_TAGTREES_MAXDEPTH
+        if options.tagtrees_depth:
+            chosen_maxdepth = options.tagtrees_depth[0]
+            logging.debug('User overrides the default tagtrees depth to: ' + str(chosen_maxdepth))
+            if chosen_maxdepth > 4:
+                logging.warning('The chosen tagtrees depth of ' + str(chosen_maxdepth) + ' is rather high.')
+                logging.warning('When linking more than a few files, this might take a long time using many filesystem inodes.')
+
         start = time.time()
-        generate_tagtrees(TAGFILTER_DIRECTORY, DEFAULT_TAGTREES_MAXDEPTH, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
+        generate_tagtrees(TAGFILTER_DIRECTORY, chosen_maxdepth, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)
