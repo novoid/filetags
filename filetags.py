@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-30 16:26:01 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-30 16:32:35 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -177,7 +177,7 @@ parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
 
 parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
                     help="use this option to override the tool to view/manage files (for --filter; default: " +
-                    DEFAULT_IMAGE_VIEWER_LINUX + ")")
+                    DEFAULT_IMAGE_VIEWER_LINUX + "). Use \"none\" to omit the default one.")
 
 parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
                     help="This generates nested directories in \"" + TAGFILTER_DIRECTORY + "\" for each combination of tags " +
@@ -1684,6 +1684,10 @@ def start_filebrowser(directory):
 
     @param directory: the directory to use as starting directory
     """
+
+    if options.filebrowser and options.filebrowser == 'none':
+        logging.debug('user overrides filebrowser with "none". Skipping filebrowser alltogether.')
+        return
 
     save_import('subprocess')
     current_platform = platform.system()
