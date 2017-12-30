@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-30 16:22:36 vk>"
+PROG_VERSION = "Time-stamp: <2017-12-30 16:26:01 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1781,23 +1781,23 @@ def main():
 
     if options.tagfilter and (options.list_tags_by_number or options.list_tags_by_alphabet or
                               options.tags or options.tagtrees or options.tag_gardening):
-        error_exit(7, "Please don't use that filter option together with any other option.")
+        error_exit(14, "Please don't use that filter option together with any other option.")
 
     if options.list_tags_by_number and (options.tagfilter or options.list_tags_by_alphabet or
                                         options.tags or options.tagtrees or options.tag_gardening):
-        error_exit(7, "Please don't use that list option together with any other option.")
+        error_exit(15, "Please don't use that list option together with any other option.")
 
     if options.list_tags_by_alphabet and (options.tagfilter or options.list_tags_by_number or
                                           options.tags or options.tagtrees or options.tag_gardening):
-        error_exit(7, "Please don't use that list option together with any other option.")
+        error_exit(16, "Please don't use that list option together with any other option.")
 
     if options.tags and (options.tagfilter or options.list_tags_by_number or
                          options.list_tags_by_alphabet or options.tagtrees or options.tag_gardening):
-        error_exit(7, "Please don't use that tags option together with any other option.")
+        error_exit(17, "Please don't use that tags option together with any other option.")
 
     if options.tagtrees and (options.tagfilter or options.list_tags_by_number or
                              options.list_tags_by_alphabet or options.tags or options.tag_gardening):
-        error_exit(7, "Please don't use the tagtrees option together with any other option.")
+        error_exit(18, "Please don't use the tagtrees option together with any other option.")
 
     if (options.list_tags_by_alphabet or options.list_tags_by_number) and (options.tags or options.interactive or options.remove):
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
