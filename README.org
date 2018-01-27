@@ -1,4 +1,4 @@
-## Time-stamp: <2017-11-11 16:13:24 vk>
+## Time-stamp: <2018-01-27 12:47:16 vk>
 ## -*- mode: org; coding: utf-8 -*-
 ## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
@@ -56,9 +56,13 @@ Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[ht
 #+END_SRC
 
 #+BEGIN_src
-usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [-r] [-i] [-R] [-s] [-f]
-                     [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees] [--ln]
-                     [--la] [--lu] [--tag-gardening] [-v] [-q] [--version]
+usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i] [-R] [-s]
+                     [-f] [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees]
+                     [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
+                     [--tagtrees-link-missing-mutual-tagged-items]
+                     [--tagtrees-dir <existing_directory>]
+                     [--tagtrees-depht TAGTREES_DEPTH] [--ln] [--la] [--lu]
+                     [--tag-gardening] [-v] [-q] [--version]
                      [FILE [FILE ...]]
 
 This tool adds or removes simple tags to/from file names.
@@ -83,9 +87,9 @@ Example usages:
   ./filetags.py -r draft *report*
       … removes the tag "draft" from all files containing the word "report"
 
-This tools is looking for (the first) text file named ".filetags" in
-current and parent directories. Each line of it is interpreted as a tag
-for tag completion.
+This tools is looking for the optional first text file named ".filetags" in
+current and parent directories. Each of its lines is interpreted as a tag
+for tag completion. Multiple tags per line are considered mutual exclusive.
 
 Verbose description: http://Karl-Voit.at/managing-digital-photographs/
 
@@ -97,8 +101,7 @@ optional arguments:
   -t "STRING WITH TAGS", --tags "STRING WITH TAGS"
                         one or more tags (in quotes, separated by spaces) to
                         add/remove
-  -r, --remove, -d, --delete
-                        remove tags from (instead of adding to) file name(s)
+  --remove              remove tags from (instead of adding to) file name(s)
   -i, --interactive     interactive mode: ask for (a)dding or (r)emoving and
                         name of tag(s)
   -R, --recursive       recursively go through the current directory and all
@@ -112,7 +115,8 @@ optional arguments:
                         filebrowser
   --filebrowser PATH_TO_FILEBROWSER
                         use this option to override the tool to view/manage
-                        files (for --filter; default: geeqie)
+                        files (for --filter; default: geeqie). Use "none" to
+                        omit the default one.
   --tagtrees            This generates nested directories in
                         "/home/vk/.filetags_tagfilter" for each combination of
                         tags up to a limit of 2. Please note that this may
@@ -120,6 +124,38 @@ optional arguments:
                         of tags involved. See also http://Karl-
                         Voit.at/tagstore/ and http://Karl-
                         Voit.at/tagstore/downloads/Voit2012b.pdf
+  --tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"
+                        When tagtrees are created, this parameter defines how
+                        to handle items that got no tag at all. The value
+                        "treeroot" is the default behavior: items without a
+                        tag are linked to the tagtrees root. The value
+                        "ignore" will not link any non-tagged items at all.
+                        Any other value is interpreted as a folder name within
+                        the tagreees which is used to link all non-tagged
+                        items to.
+  --tagtrees-link-missing-mutual-tagged-items
+                        When the controlled vocabulary holds mutual exclusive
+                        tags (multiple tags in one line) this option generates
+                        directories in the tagtrees root that hold links to
+                        items that have no single tag from those mutual
+                        exclusive sets. For example, when "draft final" is
+                        defined in the vocabulary, all items without "draft"
+                        and "final" are linked to the "no-draft-final"
+                        directory.
+  --tagtrees-dir <existing_directory>
+                        When tagtrees are created, this parameter overrides
+                        the default target directory
+                        "/home/vk/.filetags_tagfilter" with a user-defined
+                        one. It has to be an empty directory or a non-existing
+                        directory which will be created.
+  --tagtrees-depht TAGTREES_DEPTH
+                        When tagtrees are created, this parameter defines the
+                        level of depth of the tagtree hierarchy. The default
+                        value is 2. Please note that increasing the depth
+                        increases the number of links exponentially.
+                        Especially when running Windows (using lnk-files
+                        instead of symbolic links) the performance is really
+                        slow. Choose wisely.
   --ln, --list-tags-by-number
                         list all file-tags sorted by their number of use
   --la, --list-tags-by-alphabet
@@ -138,7 +174,7 @@ optional arguments:
 :license: GPL v3 or any later version
 :URL: https://github.com/novoid/filetag
 :bugreports: via github or <tools@Karl-Voit.at>
-:version: 2017-09-03
+:version: 2018-01-26
 ·
 #+END_src
 
@@ -212,6 +248,27 @@ tags that are most likely typos or abandoned
   - added option shortcut for recursive: =-R=
   - renamed option =--imageviewer= to =--filebrowser= and enabled its functionality
   - added new feature =--tagtrees=
+- 2017-08-31:
+  - improved screen output when renaming files
+- 2017-09-03:
+  - =--recursive= option now works for linking files to tagtrees as well
+  - corresponding =.filetags= files get linked to the output of tagtrees as well
+- 2017-11-11:
+  - removed command line options =-r=, =-d=, and =--delete=
+    - keeping =--remove= as the only option for removing tags
+    - removing tags was overrepresented in the command line options, blocking them to be used for other useful commands
+  - added =--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"=
+  - added =--tagtrees-link-missing-mutual-tagged-items=
+- 2017-12-30:
+  - added =--tagtrees-dir <existing_directory>=
+    - overriding the default target directory for the tagtrees result
+  - added =--tagtrees-depht TAGTREES_DEPTH=
+    - allowing to override the default depht of tagtrees
+    - use with care: especially on Windows a larger depth than 2 takes very long
+  - tagtrees now work with Windows using =lnk= files
+    - in contrast to symbolic links, that have rather poor performance
+      though: generation of tagtrees take way longer than on Linux or
+      macOS
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
@@ -259,8 +316,9 @@ work I am proud of and the general chapters of it are written so that
 the average person is perfectly well able to follow.
 
 In short: this function takes the files of the current directory and
-generates hierarchies up to level of =$maxdepth= (by default 2) of all
-combinations of tags, [[https://en.wikipedia.org/wiki/Symbolic_link][linking]] all files according to their tags.
+generates hierarchies up to level of =$maxdepth= (by default 2, can be
+overridden via =--tagtrees-depht=) of all combinations of tags,
+[[https://en.wikipedia.org/wiki/Symbolic_link][linking]] all files according to their tags.
 
 Consider having a file like:
 
@@ -270,6 +328,8 @@ Now you generate the tagtrees, you'll find [[https://en.wikipedia.org/wiki/Symbo
 sub-directories of =~/.filetags=, the default target directory: =new/=
 and =hardware/= and =expensive/= and =new/hardware/= and
 =new/expensive/= and =hardware/new/= and so on. You get the idea.
+
+The default target directory can be overrided via =--tagtrees-dir=.
 
 Therefore, within the folder =new/expensive/= you will find all files
 that have at least the tags "new" and "expensive" in any order. This
@@ -293,6 +353,22 @@ with filetags, only the current link gets updated with the new name.
 All other links to this modified filename within the other directories
 of the tagtrees gets broken. You have to re-create the tagtrees to
 update all the links after tagging files.
+
+The option =--tagtrees-handle-no-tag= controls how files with no tags
+should be handled. When set to =treeroot=, untagged files are linked
+in the tagtrees target directory directly. The option =ignore= does
+not link them at all. The option =FOLDERNAME= links them to a
+directory named accordingly to the value which is a sub-directory of
+the tagrees target directory.
+
+With the option =--tagtrees-link-missing-mutual-tagged-items= you can
+control, whether or not there will be an additional tagtrees folder
+that contains all files which lack one of the mutually exclusive tags.
+Using the example ~winter spring summer autumn~ from above, all files
+that got none of those four tags get linked to a tagtrees directory
+named "no_winter_spring_summer_autumn". This way, you can easily find
+and tag files that don't participate in this set of mutually exclusive
+tags.
 
 ** Bonus: Using tags to specify a sub-set of photographs
 
