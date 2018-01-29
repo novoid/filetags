@@ -1,6 +1,5 @@
 ## Time-stamp: <2018-01-27 12:47:16 vk>
 ## -*- mode: org; coding: utf-8 -*-
-## This file is best viewed with GNU Emacs Org-mode: http://orgmode.org/
 
 * filetags
 

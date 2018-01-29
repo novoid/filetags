@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2017-12-30 16:32:35 vk>"
+PROG_VERSION = "Time-stamp: <2018-01-26 19:06:46 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -32,12 +32,12 @@ PROG_VERSION = "Time-stamp: <2017-12-30 16:32:35 vk>"
 #  know, what you are doing :-)                                         ##
 # ===================================================================== ##
 
-import importlib
+from importlib import import_module
 
 
 def save_import(library):
     try:
-        globals()[library] = importlib.import_module(library)
+        globals()[library] = import_module(library)
     except ImportError:
         print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
         sys.exit(2)
@@ -62,7 +62,7 @@ if platform.system() == 'Windows':
     try:
         import win32com.client
     except ImportError:
-        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
+        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install pywin32\".")
         sys.exit(2)
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
