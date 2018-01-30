@@ -1,4 +1,4 @@
-## Time-stamp: <2018-01-27 12:47:16 vk>
+## Time-stamp: <2018-01-30 20:40:11 vk>
 ## -*- mode: org; coding: utf-8 -*-
 
 * filetags
@@ -46,23 +46,28 @@ GNU/Linux.
 
 ** Installation
 
-Get it via [[https://github.com/novoid/filetags][GitHub]] or install it via [[https://pip.pypa.io/en/stable/][pip]]: ~pip install filetags~
+Install it via [[https://pip.pypa.io/en/stable/][pip]]: ~pip3 install filetags~ or get it via [[https://github.com/novoid/filetags][GitHub]].
+
+If you use the GitHub sources, the executable is
+~filetags/__init__.py~. You might want to create a symbolic link named
+"filetags" to that file.
 
 ** Usage
 
 #+BEGIN_SRC sh :results output :wrap src
-./filetags.py --help
+./filetags/__init__.py --help
 #+END_SRC
 
 #+BEGIN_src
-usage: ./filetags.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i] [-R] [-s]
-                     [-f] [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees]
-                     [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
-                     [--tagtrees-link-missing-mutual-tagged-items]
-                     [--tagtrees-dir <existing_directory>]
-                     [--tagtrees-depht TAGTREES_DEPTH] [--ln] [--la] [--lu]
-                     [--tag-gardening] [-v] [-q] [--version]
-                     [FILE [FILE ...]]
+usage: ./filetags/__init__.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i]
+                              [-R] [-s] [-f]
+                              [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees]
+                              [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
+                              [--tagtrees-link-missing-mutual-tagged-items]
+                              [--tagtrees-dir <existing_directory>]
+                              [--tagtrees-depht TAGTREES_DEPTH] [--ln] [--la]
+                              [--lu] [--tag-gardening] [-v] [-q] [--version]
+                              [FILE [FILE ...]]
 
 This tool adds or removes simple tags to/from file names.
 
@@ -77,13 +82,13 @@ set of files with the same tag, you have to rename each file
 separately. With this tool, this only requires one step.
 
 Example usages:
-  ./filetags.py --tags="presentation projectA" *.pptx
+  ./filetags/__init__.py --tags="presentation projectA" *.pptx
       … adds the tags "presentation" and "projectA" to all PPTX-files
-  ./filetags.py --tags="presentation -projectA" *.pptx
+  ./filetags/__init__.py --tags="presentation -projectA" *.pptx
       … adds the tag "presentation" to and removes tag "projectA" from all PPTX-files
-  ./filetags.py -i *
+  ./filetags/__init__.py -i *
       … ask for tag(s) and add them to all files in current folder
-  ./filetags.py -r draft *report*
+  ./filetags/__init__.py -r draft *report*
       … removes the tag "draft" from all files containing the word "report"
 
 This tools is looking for the optional first text file named ".filetags" in
@@ -179,22 +184,22 @@ optional arguments:
 
 *** Examples:
 
-: filetags.py --tags foo a_file_name.txt
+: filetags --tags foo a_file_name.txt
 ... adds tag "foo" such that it results in ~a_file_name -- foo.txt~
 
-: filetags.py -i *.jpeg
+: filetags -i *.jpeg
 ... interactive mode: asking for list of tags (for the JPEG files) from the user
 
-: filetags.py --tags "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
+: filetags --tags "foo bar" "file name 1.jpg" "file name 2 -- foo.txt" "file name 3 -- bar.csv"
 ... adds tag "foo" such that it results in ...
 : "file name 1 -- foo bar.jpg"
 : "file name 2 -- foo bar.txt"
 : "file name 3 -- bar foo.csv"
 
-: filetags.py --remove --tags foo "foo a_file_name -- foo.txt"
+: filetags --remove --tags foo "foo a_file_name -- foo.txt"
 ... removes tag "foo" such that it results in ~foo a_file_name.txt~
 
-: filetags.py --tag-gardening
+: filetags --tag-gardening
 ... prints out a summary of tags in current and sub-folders used and
 tags that are most likely typos or abandoned
 
@@ -268,6 +273,8 @@ tags that are most likely typos or abandoned
     - in contrast to symbolic links, that have rather poor performance
       though: generation of tagtrees take way longer than on Linux or
       macOS
+- 2018-01-30:
+  - fixed the pip3 package
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
@@ -477,7 +484,7 @@ script does provide a shell window for entering the tags.
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags.py --interactive "${@}"
+:     -x /home/vk/src/filetags/filetags/__init__.py --interactive "${@}"
 :
 : #end
 
@@ -489,7 +496,7 @@ looks like:
 :     --geometry=73x5+330+5  \
 :     --tab-with-profile=big \
 :     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags.py --interactive --remove "${@}"
+:     -x /home/vk/src/filetags/filetags/__init__.py --interactive --remove "${@}"
 :
 : #end
 
@@ -569,7 +576,7 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 
 Create a registry file =add_filetags_to_context_menu.reg= and edit it
 to meet the following template. Please make sure to replace the paths
-(python, =USERNAME= and =filetags.py=) accordingly:
+(python, =USERNAME=) accordingly:
 
 #+BEGIN_EXAMPLE
 Windows Registry Editor Version 5.00
@@ -580,7 +587,7 @@ Windows Registry Editor Version 5.00
 @="filetags (single file)"
 
 [HKEY_CLASSES_ROOT\*\shell\filetags\command]
-@="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags.py -i \"%1\""
+@="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags\\__init__.py -i \"%1\""
 #+END_EXAMPLE
 
 Execute the reg-file, confirm the warnings (you are modifying your
@@ -596,7 +603,7 @@ you will get three different filetag-windows to tag one file each.
 Create a batch file in your home directory. Adapt the paths to meet
 your setup. The content looks like:
 
-: C:\Python36\python.exe C:\Users\USERNAME\src\filetags\filetags.py -i %*
+: C:\Python36\python.exe C:\Users\USERNAME\src\filetags\filetags\__init__.py -i %*
 
 If you want to confirm the process (and see error messages and so
 forth), you might want to append as well following line:
