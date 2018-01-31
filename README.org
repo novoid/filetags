@@ -1,4 +1,4 @@
-## Time-stamp: <2018-01-30 20:40:11 vk>
+## Time-stamp: <2018-01-30 20:56:27 vk>
 ## -*- mode: org; coding: utf-8 -*-
 
 * filetags
@@ -14,7 +14,7 @@ form:
 :
 : 2013-05-09 a file name with ISO date stamp in name -- *tag1*.jpg
 :
-: 201t-05-09T16.17 file name with time stamp -- *tag3*.csv
+: 2013-05-09T16.17 file name with time stamp -- *tag3*.csv
 
 The script accepts an arbitrary number of files (see your shell for
 possible length limitations).
@@ -47,6 +47,8 @@ GNU/Linux.
 ** Installation
 
 Install it via [[https://pip.pypa.io/en/stable/][pip]]: ~pip3 install filetags~ or get it via [[https://github.com/novoid/filetags][GitHub]].
+
+On Windows, you are going to need also ~pip3 install pypiwin32~
 
 If you use the GitHub sources, the executable is
 ~filetags/__init__.py~. You might want to create a symbolic link named

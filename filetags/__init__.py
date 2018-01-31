@@ -62,7 +62,7 @@ if platform.system() == 'Windows':
     try:
         import win32com.client
     except ImportError:
-        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install pywin32\".")
+        print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., with \"sudo pip install pypiwin32\".")
         sys.exit(2)
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
