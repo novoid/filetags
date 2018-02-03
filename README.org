@@ -1,7 +1,12 @@
-## Time-stamp: <2018-01-30 20:56:27 vk>
-## -*- mode: org; coding: utf-8 -*-
-
 * filetags
+
+[[file:screencast.gif]]
+
+... filetags example demonstrating: controlled vocabulary file
+=~/.filetags=, tagging multiple files at once, removing tags by
+prepending a minus character, tagging using the proposed number
+shortcuts, tab completion of tags via =Tab=, and mutually exclusive
+tags (switching from =draft= to =final= without removing =draft=).
 
 This Python script adds or removes tags to file names in the following
 form:
