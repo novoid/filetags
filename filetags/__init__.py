@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-01-26 19:06:46 vk>"
+PROG_VERSION = "Time-stamp: <2018-02-21 13:10:36 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1209,7 +1209,12 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_link
     for tag in tag_list:
         list_of_tag_hints.append(tag + ' (' + str(count) + ')')
         count += 1
-    print('    ' + ' ⋅ '.join(list_of_tag_hints))
+    try:
+        print('    ' + ' ⋅ '.join(list_of_tag_hints))
+    except UnicodeEncodeError:
+        logging.debug('ERROR: I got an UnicodeEncodeError when displaying "⋅" (or list_of_tag_hints) ' +
+                      'but I re-try with "|" as a separator instead ...')
+        print('    ' + ' | '.join(list_of_tag_hints))
     print('')  # newline at end
 
 
