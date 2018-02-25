@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-02-21 13:10:36 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-02-25 15:24:04 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -940,8 +940,13 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
     tag_dict = tag_dict_reference
 
     # determine maximum length of strings for formatting:
-    maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
-    maxlength_count = len(str(abs(max(tag_dict.values()))))
+    if len(tag_dict) > 0:
+        maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
+        maxlength_count = len(str(abs(max(tag_dict.values()))))
+    else:
+        maxlength_tags = len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
+        maxlength_count = 5
+
     if maxlength_count < 5:
         maxlength_count = 5
 
