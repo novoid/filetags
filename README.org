@@ -403,57 +403,60 @@ in geeqie and instead of 937 photographs, my friends just have to
 watch the best 50 or so. :-)
 
 The script ~vksel.sh~ looks like this:
-: #!/bin/sh
-:
-: TMPDIR="/tmp/imageselection"
-: IMAGEDIR="${1}"
-: IMAGEVIEWER="geeqie"
-: FILENAME=$(basename $0)
-:
-: print_usage()
-: {
-:         echo
-:         echo "usage:   ${FILENAME} <directory>"
-:         echo
-:         echo "... starts a image viewer containing files tagged with \"sel\" in the current"
-:         echo "folder or the folder given as parameter 1."
-:         echo
-: }
-:
-: STARTDIR=`pwd`
-:
-: if [ "x${IMAGEDIR}" = "x-h" -o "x${IMAGEDIR}" = "x--help" ]; then
-:     print_usage
-:     exit 0
-: fi
-:
-: if [ "x${IMAGEDIR}" = "x" ]; then
-:     IMAGEDIR="${STARTDIR}"
-: fi
-:
-: if [ ! -d ${IMAGEIDIR} ]; then
-:     echo
-:     echo "  Please specify a folder containing the <directory>."
-:     echo
-:     print_usage
-:     exit 1
-: fi
-:
-:
-: ## remove (old) TMPDIR if exists:
-: test -d "${TMPDIR}" && rm -rf "${TMPDIR}"
-:
-: ## create fresh TMPDIR
-: mkdir "${TMPDIR}"
-: cd "${TMPDIR}"
-:
-:
-: find "${IMAGEDIR}" -name '* -- *sel*' -print0 | xargs -0 -I {} ln -s {} . --
-: ${IMAGEVIEWER}
-:
-: cd "${STARTDIR}"
-:
-: #end
+
+#+BEGIN_EXAMPLE
+#!/bin/sh
+
+TMPDIR="/tmp/imageselection"
+IMAGEDIR="${1}"
+IMAGEVIEWER="geeqie"
+FILENAME=$(basename $0)
+
+print_usage()
+{
+        echo
+        echo "usage:   ${FILENAME} <directory>"
+        echo
+        echo "... starts a image viewer containing files tagged with \"sel\" in the current"
+        echo "folder or the folder given as parameter 1."
+        echo
+}
+
+STARTDIR=`pwd`
+
+if [ "x${IMAGEDIR}" = "x-h" -o "x${IMAGEDIR}" = "x--help" ]; then
+    print_usage
+    exit 0
+fi
+
+if [ "x${IMAGEDIR}" = "x" ]; then
+    IMAGEDIR="${STARTDIR}"
+fi
+
+if [ ! -d ${IMAGEIDIR} ]; then
+    echo
+    echo "  Please specify a folder containing the <directory>."
+    echo
+    print_usage
+    exit 1
+fi
+
+
+## remove (old) TMPDIR if exists:
+test -d "${TMPDIR}" && rm -rf "${TMPDIR}"
+
+## create fresh TMPDIR
+mkdir "${TMPDIR}"
+cd "${TMPDIR}"
+
+
+find "${IMAGEDIR}" -name '* -- *sel*' -print0 | xargs -0 -I {} ln -s {} . --
+${IMAGEVIEWER}
+
+cd "${STARTDIR}"
+
+#end
+#+END_EXAMPLE
 
 Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.desktop~
 : [Desktop Entry]
