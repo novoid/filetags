@@ -47,9 +47,12 @@ GNU/Linux.
 
 ** Installation
 
-Install it via [[https://pip.pypa.io/en/stable/][pip]]: ~pip3 install filetags~ or get it via [[https://github.com/novoid/filetags][GitHub]].
+This tool needs [[http://www.python.org/downloads/][Python 3 to be installed]].
 
-On Windows, you are going to need also ~pip3 install pypiwin32~
+On Microsoft Windows, you are going to need ~pip3 install pypiwin32~
+as well.
+
+Now install filetags via [[https://pip.pypa.io/en/stable/][pip]]: ~pip3 install filetags~ or get it via [[https://github.com/novoid/filetags][GitHub]].
 
 If you use the GitHub sources, the executable is
 ~filetags/__init__.py~. You might want to create a symbolic link named
@@ -575,52 +578,124 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 : echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
 : #+END_SRC
 
-** Integration into Windows Explorer for single files
+** Integration into Windows Explorer
+:PROPERTIES:
+:CREATED:  [2018-03-07 Wed 21:42]
+:END:
+
+You do have two independent options to integrate filetags to your
+Windows Explorer.
+
+The first one integrates it directly into the context menu of a file.
+This has the advantage, that you can tag a file very quickly. Howver,
+the downside is that this only works for a single file.
+
+If you want to tag multiple files at once, you have to integrate
+filetags using the second method. This does add filetags into your
+"Sent to" context sub-menu. This allows for multiple file tagging but
+is one mouse click further away.
+
+You can do both and choose one or the other, depending on how many
+files you have selected.
+
+*** Integration into Windows Explorer for single files
 
 Create a registry file =add_filetags_to_context_menu.reg= and edit it
 to meet the following template. Please make sure to replace the paths
 (python, =USERNAME=) accordingly:
 
+To get the correct path to =filetags.exe= open =cmd.exe= (via Win-key
+and typing "cmd" + ENTER):
+
+1. invoke =where filetags.exe=
+2. mark the resulting line and copy it to the clipboard via ENTER
+
+Then write the following lines together with the pasted path into the
+file =add_filetags_to_context_menu.reg= so that it looks similar to:
+
 #+BEGIN_EXAMPLE
 Windows Registry Editor Version 5.00
-
-;; for files:
 
 [HKEY_CLASSES_ROOT\*\shell\filetags]
 @="filetags (single file)"
 
 [HKEY_CLASSES_ROOT\*\shell\filetags\command]
-@="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags\\__init__.py -i \"%1\""
+@="C:\\Users\\USERNAME\\AppData\\Local\\Programs\\Python\\Python36\\Scripts\\filetags.exe -i \"%1\""
 #+END_EXAMPLE
 
-Execute the reg-file, confirm the warnings (you are modifying your
-Windows registry after all) and cheer up when you notice "filetags
-(single file)" in the context menu of your Windows Explorer.
+Note that you have to double all backslashes in the path to =filetags.exe=.
 
-As the heading and the link name suggests: [[https://stackoverflow.com/questions/6440715/how-to-pass-multiple-filenames-to-a-context-menu-shell-command][this method works on single
-files]]. So if you select three files and invoke this context menu item,
-you will get three different filetag-windows to tag one file each.
+If did install filetags via source code (and not via pip), the line
+should look similar to:
 
-** Integration into Windows Explorer for single and multiple selected files
+: @="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags\\__init__.py -i \"%1\""
 
-Create a batch file in your home directory. Adapt the paths to meet
-your setup. The content looks like:
+Execute the registry-file, confirm the warnings (you are modifying
+your Windows registry after all) and cheer up when you notice
+"filetags (single file)" in the context menu of your Windows Explorer.
+
+As mentioned above: [[https://stackoverflow.com/questions/6440715/how-to-pass-multiple-filenames-to-a-context-menu-shell-command][this method works on single files]]. So if you
+select three files and invoke this context menu item, you will get
+three different filetag-windows to tag one file each. Therefore, you
+might want to check out the following section for multiple files.
+
+The following python source generates a proper registry file, if you
+prefer it not to write it manually:
+
+#+BEGIN_SRC python :results output
+import subprocess
+myresult = subprocess.run(["where", "filetags.exe"], stdout=subprocess.PIPE)
+myfiletags = str(myresult.stdout.strip()).replace('\\', '\\')[2:-1]
+with open("register_filetags_for_single_files.reg", "w") as out:
+    out.write("Windows Registry Editor Version 5.00\n\n")
+    out.write("[HKEY_CLASSES_ROOT\\*\\shell\\filetags]\n@=\"filetags\"\n\n")
+    out.write("[HKEY_CLASSES_ROOT\\*\\shell\\filetags\\command]\n")
+    out.write("@=\"" + myfiletags + " -i \\\"%1\\\"\"\n\n")
+print("Successfully written registry file \"register_filetags_for_single_files.reg\".")
+print("Please check content before executing.")
+#+END_SRC
+
+*** Integration into Windows Explorer for single and multiple selected files
+
+Follow the instructions:
+
+- Open =cmd.exe= (via Win-key and typing "cmd" + ENTER)
+  - Invoke =where filetags.exe=
+    - If you did not use pip to install filetags, locate the python
+      executable via =where python= instead.
+  - Mark the resulting line and copy it to the clipboard via ENTER.
+- Create a new text file named =filetags.bat=
+- Edit this new file named =filetags.bat=, e.g., with Notepad.exe
+  - Paste the clipboard to the file
+  - At the end of the line, add " -i %*"
+  - The line now should look similar to: =C:\[...]\Scripts\filetags.exe  -i %*=
+    - If you did not use pip to install filetags, you have to paste
+      the path to =python.exe= followed by the path to the
+      =filetags/__init__.py= file of the source code.
+  - If you want to confirm the tagging process (and see error messages
+    and so forth), you might want to append as well following line:
+    : set /p DUMMY=Hit ENTER to continue ...
+  - Save the file and close the editor.
+
+The =filetags.bat= now contains something like this:
+
+: C:\Users\USERNAME\AppData\Local\Programs\Python\Python36\Scripts\filetags.exe  -i %*
+
+If you did not use pip to install, it looks like this:
 
 : C:\Python36\python.exe C:\Users\USERNAME\src\filetags\filetags\__init__.py -i %*
 
-If you want to confirm the process (and see error messages and so
-forth), you might want to append as well following line:
+- Now create a link to the file =filetags.bat=
+  - This can be done using drag and drop in the same folder while
+    holding the Shift and Ctrl keys.
+- Move the link to the following folder:
+  - In your user folder, go to the sub-folder
+    =AppData/Roaming/Microsoft/Windows/SendTo= and place the link file
+    here.
+  - Rename the link file to simply "filetags".
 
-: set /p DUMMY=Hit ENTER to continue ...
-
-My batch file is located in =C:\Users\USERNAME\bin\filetags.bat=. Now
-create a lnk file for it (e.g., via Ctrl-Shift-drag), rename the lnk
-file to =filetags.lnk= and move the lnk file to
-=~/AppData/Roaming/Microsoft/Windows/SendTo/=.
-
-This way, you get a nice entry in your context menu sub-menu "Send to"
-which is also correctly tagging selection of files as if you put the
-list of selected items to a single call of filetags.
+This way, you got a nice entry in your context sub-menu "Send to"
+which is also correctly tagging multiple files at once.
 
 ** Integration into FreeCommander
 
