@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-03-18 14:59:48 vk>"
+PROG_VERSION = "Time-stamp: <2018-03-18 16:55:59 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -964,12 +964,22 @@ def get_files_with_metadata(startdir=os.getcwd(), use_cache=True):
                 absfilename = os.path.abspath(os.path.join(root, filename))
                 # logging.debug('get_files_with_metadata: file [%s]' % absfilename)  # LOTS of debug output
                 path, basename = os.path.split(absfilename)
+                if os.path.islink(absfilename):
+                    # link files do not have ctime and must be dereferenced before. However, they can link to another link file or they can be broken.
+                    # Design decision: ignoring link files alltogether. Their source should speak for themselves.
+                    logging.debug('get_files_with_metadata: file [%s] is link to [%s] and gets ignored here' %
+                                  (absfilename,
+                                   os.path.join(os.path.dirname(absfilename), os.readlink(absfilename))))
+                    continue
+                else:
+                    ctime = time.localtime(os.path.getctime(absfilename))
+
                 cache.append({
                     'filename': basename,
                     'filetags': extract_tags_from_filename(basename),
                     'path': path,
                     'alltags': extract_tags_from_path(absfilename),
-                    'ctime': time.localtime(os.path.getctime(absfilename)),
+                    'ctime': ctime,
                     'datestamp': extract_iso_datestamp_from_filename(basename)
                 })
 
