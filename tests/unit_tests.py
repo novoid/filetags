@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2017-11-11 17:54:40 vk>
+# Time-stamp: <2018-03-18 11:00:42 vk>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -146,6 +146,22 @@ class TestMethods(unittest.TestCase):
                                                                      'file2 -- common foo bar.txt'
                                                                      'file3 -- common foo bar baz.txt'
                                                                      'file4 -- common foo bar jodel.txt'])), set(['common', 'foo']))
+
+    def test_extract_tags_from_path(self):
+        self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
+        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags')),
+                         set(['ptag1', 'ptag2']))
+        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags -- ftag1')),
+                         set(['ptag1', 'ptag2', 'ftag1']))
+
+    def test_extract_iso_datestamp_from_filename(self):
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename(''), [])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('foo'), [])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('9999-99-99 foo bar'), [])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18 foo bar'), ['2018', '03', '18'])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18_foo bar'), ['2018', '03', '18'])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18-foo bar'), ['2018', '03', '18'])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18T23.59 foo bar'), ['2018', '03', '18'])
 
     def tearDown(self):
 

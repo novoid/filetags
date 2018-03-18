@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-02-25 15:24:04 vk>"
+PROG_VERSION = "Time-stamp: <2018-03-18 14:59:48 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -88,7 +88,8 @@ else:
 
 max_file_length = 0  # will be set after iterating over source files182
 
-unique_tags = [['teststring1', 'teststring2']]  # list of list which contains tags that are mutually exclusive
+UNIQUE_TAG_TESTSTRINGS = ['teststring1', 'teststring2']
+unique_tags = [UNIQUE_TAG_TESTSTRINGS]  # list of list which contains tags that are mutually exclusive
 # Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
 #       You might delete them if you don't use my unit test suite.
 
@@ -139,7 +140,10 @@ FILE_WITH_EXTENSION_REGEX = re.compile("(.*)\.(.*)$")
 FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
 FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
+YYYY_MM_DD_PATTERN = re.compile('^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
+
 cache_of_tags_by_folder = {}
+cache_of_files_with_metadata = {}  # dict of big list of dicts: 'filename', 'path' and other metadata
 controlled_vocabulary_filename = ''
 list_of_symlink_directories = []
 
@@ -350,6 +354,65 @@ def extract_tags_from_filename(filename):
         return components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
 
 
+def extract_tags_from_path(path):
+    """
+    Returns list of all tags contained within the absolute path that may contain
+    directories and an optional file. If no tag is found, return empty list.
+
+    @param path: an unicode string containing a path
+    @param return: list of tags
+    """
+
+    def splitall(path):
+        """
+        Snippet from https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch04s16.html
+
+        >>> splitall('a/b/c')
+        ['a', 'b', 'c']
+        >>> splitall('/a/b/c/')
+        ['/', 'a', 'b', 'c', '']
+        >>> splitall('/')
+        ['/']
+        >>> splitall('C:')
+        ['C:']
+        >>> splitall('C:\\')
+        ['C:\\']
+        >>> splitall('C:\\a')
+        ['C:\\', 'a']
+        >>> splitall('C:\\a\\')
+        ['C:\\', 'a', '']
+        >>> splitall('C:\\a\\b')
+        ['C:\\', 'a', 'b']
+        >>> splitall('a\\b')
+        ['a', 'b']
+        """
+
+        allparts = []
+        while 1:
+            parts = os.path.split(path)
+            if parts[0] == path:  # sentinel for absolute paths
+                allparts.insert(0, parts[0])
+                break
+            elif parts[1] == path:  # sentinel for relative paths
+                allparts.insert(0, parts[1])
+                break
+            else:
+                path = parts[0]
+                allparts.insert(0, parts[1])
+        return allparts
+
+    assert(path.__class__ == str)
+
+    tags = []
+    abspath = os.path.abspath(path)
+    for item in splitall(abspath):
+        itemtags = extract_tags_from_filename(item)
+        for currentitemtag in itemtags:
+            if currentitemtag not in tags:
+                tags.append(currentitemtag)
+    return tags
+
+
 def adding_tag_to_filename(filename, tagname):
     """
     Returns string of file name with tagname as additional tag.
@@ -452,7 +515,7 @@ def extract_filenames_from_argument(argument):
     @param return: a list of unicode file names
     """
 
-    # FIXXME: works at my computer without need to convertion but add check later on
+    # FIXXME: currently works without need to convertion but add check later on
     return argument
 
 
@@ -849,10 +912,86 @@ def add_tag_to_countdict(tag, tags):
     return tags
 
 
+def extract_iso_datestamp_from_filename(filename):
+    """
+    Returns array of year, month, day if filename starts with
+    YYYY-MM-DD datestamp. Returns empty array else.
+    """
+
+    components = re.match(YYYY_MM_DD_PATTERN, filename)
+    if components:
+        return [components.group(1), components.group(2), components.group(3)]
+    else:
+        return []
+
+
+def get_files_with_metadata(startdir=os.getcwd(), use_cache=True):
+    """
+    Traverses the file system starting with given directory,
+    returns list: filename and metadata-dict:
+
+    The result is stored in the global dict as
+    cache_of_files_with_metadata[startdir] with dict elements like:
+      'filename': '2018-03-18 this is a file name -- tag1 tag2.txt',
+      'filetags': ['tag1', 'tag2'],
+      'path': '/this/is -- tag1/the -- tag3/path',
+      'alltags': ['tag1', 'tag2', 'tag3'],
+      'ctime': time.struct_time,
+      'datestamp': ['2018', '03', '18'],
+
+    @param use_cache: FOR FUTURE USE; default = True
+    @param return: list of filenames and metadata-dict
+    """
+
+    global cache_of_files_with_metadata
+
+    assert(os.path.isdir(startdir))
+
+    logging.debug('get_files_with_metadata called with startdir [%s], cached startdirs [%s]' % (startdir, str(len(list(cache_of_files_with_metadata.keys())))))
+
+    if use_cache and len(cache_of_files_with_metadata) > 0:
+        logging.debug("found " + str(len(cache_of_files_with_metadata)) + " files in cache for files")
+        return cache_of_files_with_metadata
+
+    else:
+
+        cache = []
+        for root, dirs, files in os.walk(startdir):
+
+            # logging.debug('get_files_with_metadata: root [%s]' % root)  # LOTS of debug output
+            for filename in files:
+
+                absfilename = os.path.abspath(os.path.join(root, filename))
+                # logging.debug('get_files_with_metadata: file [%s]' % absfilename)  # LOTS of debug output
+                path, basename = os.path.split(absfilename)
+                cache.append({
+                    'filename': basename,
+                    'filetags': extract_tags_from_filename(basename),
+                    'path': path,
+                    'alltags': extract_tags_from_path(absfilename),
+                    'ctime': time.localtime(os.path.getctime(absfilename)),
+                    'datestamp': extract_iso_datestamp_from_filename(basename)
+                })
+
+            # Enable recursive directory traversal for specific options:
+            if not (options.recursive and (options.list_tags_by_alphabet or
+                                           options.list_tags_by_number or
+                                           options.list_unknown_tags or
+                                           options.tag_gardening)):
+                break  # do not loop
+
+        logging.debug("Writing " + str(len(cache)) + " files in cache for directory: " + startdir)
+        if use_cache:
+            cache_of_files_with_metadata[startdir] = cache
+        return cache
+
+
 def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
     """
     Traverses the file system starting with given directory,
-    returns dict of all tags (including starttags) of all file
+    returns dict of all tags (including starttags) of all file.
+    Uses cache_of_files_with_metadata of use_cache is true and
+    cache is populated with same startdir.
 
     @param use_cache: FOR FUTURE USE
     @param return: dict of tags and their number of occurrence
@@ -877,6 +1016,16 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
         logging.debug("found " + str(len(cache_of_tags_by_folder[startdir])) + " tags in cache for directory: " + startdir)
         return cache_of_tags_by_folder[startdir]
 
+    elif use_cache and startdir in cache_of_files_with_metadata.keys():
+        logging.debug('using cache_of_files_with_metadata instead of traversing file system again')
+        cachedata = cache_of_files_with_metadata[startdir]
+
+        # FIXXME: check if tags are extracted from dirnames as in traversal algorithm below
+
+        for entry in cachedata:
+            for tag in entry['alltags']:
+                tags = add_tag_to_countdict(tag, tags)
+
     else:
 
         for root, dirs, files in os.walk(startdir):
@@ -898,10 +1047,10 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
                                            options.tag_gardening)):
                 break  # do not loop
 
-        logging.debug("Writing " + str(len(list(tags.keys()))) + " tags in cache for directory: " + startdir)
-        if use_cache:
-            cache_of_tags_by_folder[startdir] = tags
-        return tags
+    logging.debug("Writing " + str(len(list(tags.keys()))) + " tags in cache for directory: " + startdir)
+    if use_cache:
+        cache_of_tags_by_folder[startdir] = tags
+    return tags
 
 
 def find_similar_tags(tag, tags):
@@ -1054,6 +1203,7 @@ def handle_tag_gardening(vocabulary):
     @param return: -
     """
 
+    files_with_metadata = get_files_with_metadata(startdir=os.getcwd())  # = cache_of_files_with_metadata of current dir
     tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwd())
     if not tag_dict:
         print("\nNo file containing tags found in this folder hierarchy.\n")
@@ -1061,9 +1211,38 @@ def handle_tag_gardening(vocabulary):
 
     print("\nYou have used " + str(len(tag_dict)) + " tags in total.\n")
 
-    if vocabulary:
+    number_of_files = len(files_with_metadata)
+    print("\nNumber of total files:                           " + str(number_of_files))
 
-        print('\nYour controlled vocabulary is defined in ' + controlled_vocabulary_filename + ' and contains ' + str(len(vocabulary)) + ' tags.\n')
+    def str_percentage(fraction, total):
+        "returns a string containing the percentage of the fraction wrt the total"
+        assert(type(fraction) == int)
+        assert(type(total) == int)
+        if total == 0:
+            return "0%"  # avoid division by zero
+        else:
+            return str(round(100*fraction/total, 1)) + '%'
+
+    files_without_alltags = [x for x in files_with_metadata if not x['alltags']]
+    num_files_without_alltags = len(files_without_alltags)
+    print("Number of files without tags including pathtags: " + str(num_files_without_alltags) +
+          "   (" + str_percentage(num_files_without_alltags, number_of_files) + " of total files)")
+
+    files_without_filetags = [x for x in files_with_metadata if not x['filetags']]
+    num_files_without_filetags = len(files_without_filetags)
+    print("Number of files without filetags:                " + str(num_files_without_filetags) +
+          "   (" + str_percentage(num_files_without_filetags, number_of_files) + " of total files)")
+
+    num_files_with_alltags = number_of_files - len(files_without_alltags)
+
+    files_with_filetags = [x for x in files_with_metadata if x['filetags']]
+    num_files_with_filetags = len(files_with_filetags)
+    print("Number of files with filetags:                   " + str(num_files_with_filetags) +
+          "   (" + str_percentage(num_files_with_filetags, number_of_files) + " of total files)")
+
+    if vocabulary:
+        print('\nYour controlled vocabulary is defined in ' + controlled_vocabulary_filename +
+              ' and contains ' + str(len(vocabulary)) + ' tags.\n')
 
         vocabulary_tags_not_used = set(vocabulary) - set(tag_dict.keys())
         if vocabulary_tags_not_used:
@@ -1075,13 +1254,47 @@ def handle_tag_gardening(vocabulary):
             print("\nTags you used that are not in the vocabulary:\n")
             print_tag_set(tags_not_in_vocabulary)
 
+        if unique_tags and len(unique_tags) > 0:
+            # There are mutually exclusive tags defined in the controlled vocabulary
+            for taggroup in unique_tags:
+                # iterate over mutually exclusive tag groups one by one
+
+                if taggroup == UNIQUE_TAG_TESTSTRINGS:
+                    continue
+                if len(set(tag_dict.keys()).intersection(set(taggroup))) > 0:
+                    files_with_any_tag_from_taggroup = [x for x in
+                                                        files_with_metadata if
+                                                        len(set(x['alltags']).intersection(set(taggroup))) > 0]
+                    num_files_with_any_tag_from_taggroup = len(files_with_any_tag_from_taggroup)
+                    print('\nTag group ' + str(taggroup) + ":\n   Number of files with tag from tag group: " +
+                          str(num_files_with_any_tag_from_taggroup) +
+                          "   (" + str_percentage(num_files_with_any_tag_from_taggroup, num_files_with_alltags) +
+                          " of tagged files)")
+
+                    longest_tagname = max(taggroup, key=len)
+                    for tag in taggroup:
+                        files_with_tag_from_taggroup = [x for x in files_with_metadata if tag in x['alltags']]
+                        num_files_with_tag_from_taggroup = len(files_with_tag_from_taggroup)
+                        if num_files_with_tag_from_taggroup > 0:
+                            print('   {:<{}}  •  {:>{}} tagged file(s)   = {:>5} of tag group'.format(
+                                tag,
+                                len(longest_tagname),
+                                str(num_files_with_tag_from_taggroup),
+                                len(str(num_files_with_any_tag_from_taggroup)),
+                                str_percentage(num_files_with_tag_from_taggroup, num_files_with_any_tag_from_taggroup)))
+                        else:
+                            print('   "' + tag + '": Not used')
+                else:
+                    print('Tag group ' + str(taggroup) + ': Not used')
+
     print("\nTags that appear only once are most probably typos or you have forgotten them:")
     tags_only_used_once_dict = {key: value for key, value in list(tag_dict.items()) if value < 2}
     print_tag_dict(tags_only_used_once_dict, vocabulary, sort_index=0, print_only_tags_with_similar_tags=False)
 
     print("\nTags which have similar other tags are probably typos or plural/singular forms of others:")
     tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
-    only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items()) if find_similar_tags(key, tags_for_comparing)}
+    only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
+                                          if find_similar_tags(key, tags_for_comparing)}
     print_tag_dict(only_similar_tags_by_alphabet_dict, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
 
     tags_only_used_once_set = set(tags_only_used_once_dict.keys())
@@ -1102,7 +1315,8 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     @param return: file name found
     """
 
-    if startfile and os.path.isfile(startfile) and os.path.isfile(os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
+    if startfile and os.path.isfile(startfile) and os.path.isfile(
+            os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
         logging.debug('found \"%s\" in directory of \"%s\" ..' % (filename, startfile))
         return filename
     elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
