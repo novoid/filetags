@@ -295,6 +295,9 @@ tags that are most likely typos or abandoned
       macOS
 - 2018-01-30:
   - fixed the pip3 package
+- 2018-03-18:
+  - added more detailed statistics on usage of tag groups when doing tag gardening
+  - added internal data structure =cache_of_files_with_metadata=
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
