@@ -642,10 +642,24 @@ def is_nonbroken_symlink_file(filename):
     Returns true if the filename is a non-broken symbolic link and not just an ordinary file. False, for any other case like no file at all.
 
     @param filename: an unicode string containing a file name
-    @param return: bookean
+    @param return: boolean
     """
 
-    if os.path.isfile(filename):
+    if IS_WINDOWS:
+        # do lnk-files instead of symlinks:
+        if filename.endswith('.lnk'):
+            shell = win32com.client.Dispatch('WScript.Shell')
+            shortcut = shell.CreateShortCut(filename)
+            lnk_destination = shortcut.Targetpath
+            # FIXXME: check if link destination is another lnk file or not
+            if os.path.exists(lnk_destination):
+                return True
+            else:
+                return False
+        else:
+            return False  # file is not a windows lnk file at all
+
+    elif os.path.isfile(filename):
         if os.path.islink(filename):
             return True
     else:
@@ -736,11 +750,17 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
 
     # if basename is a symbolic link and has same basename, tag the source file as well:
     if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(filename):
-        logging.debug('handle_file_and_symlink_source_if_found: file is a non-broken symlink and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is set')
+        logging.debug('handle_file_and_symlink_source_if_found: file is a non-broken symlink (and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is set)')
 
         old_source_filename, old_source_dirname, old_source_basename = split_up_filename(get_link_source_file(basename))
 
-        if old_source_basename == basename:
+        linkbasename_same_as_originalbasename = False
+        if IS_WINDOWS:
+            linkbasename_same_as_originalbasename = old_source_basename == basename[:-4]  # remove ending '.lnk'
+        else:
+            linkbasename_same_as_originalbasename = old_source_basename == basename
+
+        if linkbasename_same_as_originalbasename:
             logging.debug('handle_file_and_symlink_source_if_found: symlink "' + filename +
                           '" has same basename as its source file "' + old_source_filename + '"')
 
@@ -832,7 +852,7 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
     filename, dirname, basename = split_up_filename(orig_filename)
 
-    logging.debug("handle_file(\"" + filename + "\") …   with woring dir \"" + os.getcwd() + "\"")
+    logging.debug("handle_file(\"" + filename + "\") …   with working dir \"" + os.getcwd() + "\"")
 
     if do_filter:
         print_item_transition(dirname, basename, TAGFILTER_DIRECTORY, transition='link')
