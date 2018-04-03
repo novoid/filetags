@@ -76,15 +76,17 @@ DEFAULT_TAGTREES_MAXDEPTH = 2  # be careful when making this more than 2: expone
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
 DEFAULT_IMAGE_VIEWER_WINDOWS = 'explorer'
 TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
+IS_WINDOWS = False
 
 # Determining the window size of the terminal:
-if platform.system() != 'Windows':
+if platform.system() == 'Windows':
+    TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
+    IS_WINDOWS = True
+else:
     try:
         TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
     except ValueError:
         TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
-else:
-    TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
 
 max_file_length = 0  # will be set after iterating over source files182
 
@@ -796,7 +798,7 @@ def create_link(source, destination):
     @param destination: a file name for the link which is about to be created
     """
 
-    if platform.system() == 'Windows':
+    if IS_WINDOWS:
         # do lnk-files instead of symlinks:
         shell = win32com.client.Dispatch('WScript.Shell')
         shortcut = shell.CreateShortCut(destination + '.lnk')
