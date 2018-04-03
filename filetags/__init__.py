@@ -108,13 +108,13 @@ set of files with the same tag, you have to rename each file\n\
 separately. With this tool, this only requires one step.\n\
 \n\
 Example usages:\n\
-  " + sys.argv[0] + " --tags=\"presentation projectA\" *.pptx\n\
+  filetags --tags=\"presentation projectA\" *.pptx\n\
       … adds the tags \"presentation\" and \"projectA\" to all PPTX-files\n\
-  " + sys.argv[0] + " --tags=\"presentation -projectA\" *.pptx\n\
+  filetags --tags=\"presentation -projectA\" *.pptx\n\
       … adds the tag \"presentation\" to and removes tag \"projectA\" from all PPTX-files\n\
-  " + sys.argv[0] + " -i *\n\
+  filetags -i *\n\
       … ask for tag(s) and add them to all files in current folder\n\
-  " + sys.argv[0] + " -r draft *report*\n\
+  filetags -r draft *report*\n\
       … removes the tag \"draft\" from all files containing the word \"report\"\n\
 \n\
 \n\
