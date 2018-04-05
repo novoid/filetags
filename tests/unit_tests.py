@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-03-18 11:00:42 vk>
+# Time-stamp: <2018-04-05 14:52:54 karl.voit>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -11,6 +11,8 @@ import filetags
 import tempfile
 import os.path
 import logging
+import platform
+import time  # for sleep()
 from shutil import rmtree
 
 # TEMPLATE for debugging:
@@ -44,6 +46,20 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.contains_tag('Some file name -- foo bar.jpeg'), True)
         self.assertEqual(filetags.contains_tag('Some file name.jpeg'), False)
 
+        # ignoring Windows .lnk extension as extension:
+
+        self.assertEqual(filetags.contains_tag('Some file name -- foo.jpeg.lnk', 'foo'), True)
+        self.assertEqual(filetags.contains_tag('Some file name -- foo bar.jpeg.lnk', 'foo'), True)
+        self.assertEqual(filetags.contains_tag('Some file name -- bar foo.jpeg.lnk', 'foo'), True)
+        self.assertEqual(filetags.contains_tag('Some file name -- foobar.jpeg.lnk', 'foo'), False)
+        self.assertEqual(filetags.contains_tag('Some file name -- foo.jpeg.lnk', 'bar'), False)
+        self.assertEqual(filetags.contains_tag('Some foo file name -- bar.jpeg.lnk', 'foo'), False)
+
+        # without tagname -> check if any tags are found:
+        self.assertEqual(filetags.contains_tag('Some file name -- foo.jpeg.lnk'), True)
+        self.assertEqual(filetags.contains_tag('Some file name -- foo bar.jpeg.lnk'), True)
+        self.assertEqual(filetags.contains_tag('Some file name.jpeg.lnk'), False)
+
     def test_adding_tag_to_filename(self):
 
         self.assertEqual(filetags.adding_tag_to_filename('Some file name.jpeg', 'bar'),
@@ -52,6 +68,14 @@ class TestMethods(unittest.TestCase):
                          'Some file name -- foo bar.jpeg')
         self.assertEqual(filetags.adding_tag_to_filename('Some file name -- foo.jpeg', 'foo'),
                          'Some file name -- foo.jpeg')
+
+        # ignoring Windows .lnk extension as extension:
+        self.assertEqual(filetags.adding_tag_to_filename('Some file name.jpeg.lnk', 'bar'),
+                         'Some file name -- bar.jpeg.lnk')
+        self.assertEqual(filetags.adding_tag_to_filename('Some file name -- foo.jpeg.lnk', 'bar'),
+                         'Some file name -- foo bar.jpeg.lnk')
+        self.assertEqual(filetags.adding_tag_to_filename('Some file name -- foo.jpeg.lnk', 'foo'),
+                         'Some file name -- foo.jpeg.lnk')
 
     def test_removing_tag_from_filename(self):
 
@@ -62,6 +86,14 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.removing_tag_from_filename('Some file name -- bar.jpeg', 'foo'),
                          'Some file name -- bar.jpeg')
 
+        # ignoring Windows .lnk extension as extension:
+        self.assertEqual(filetags.removing_tag_from_filename('Some file name -- bar.jpeg.lnk', 'bar'),
+                         'Some file name.jpeg.lnk')
+        self.assertEqual(filetags.removing_tag_from_filename('Some file name -- foo bar.jpeg.lnk', 'bar'),
+                         'Some file name -- foo.jpeg.lnk')
+        self.assertEqual(filetags.removing_tag_from_filename('Some file name -- bar.jpeg.lnk', 'foo'),
+                         'Some file name -- bar.jpeg.lnk')
+
     def test_extract_tags_from_filename(self):
         self.assertEqual(filetags.extract_tags_from_filename('Some file name - bar.jpeg'), [])
         self.assertEqual(filetags.extract_tags_from_filename('-- bar.jpeg'), [])
@@ -71,6 +103,15 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.extract_tags_from_filename('Some file name -- foo bar baz.jpeg'),
                          ['foo', 'bar', 'baz'])
         self.assertEqual(filetags.extract_tags_from_filename('Some file name -- foo bar baz'),
+                         ['foo', 'bar', 'baz'])
+
+        # ignoring Windows .lnk extension as extension:
+        self.assertEqual(filetags.extract_tags_from_filename('Some file name - bar.jpeg.lnk'), [])
+        self.assertEqual(filetags.extract_tags_from_filename('-- bar.jpeg.lnk'), [])
+        self.assertEqual(filetags.extract_tags_from_filename('Some file name.jpeg.lnk'), [])
+        self.assertEqual(filetags.extract_tags_from_filename('Some file name - bar.jpeg.lnk'), [])
+        self.assertEqual(filetags.extract_tags_from_filename('Some file name -- bar.jpeg.lnk'), ['bar'])
+        self.assertEqual(filetags.extract_tags_from_filename('Some file name -- foo bar baz.jpeg.lnk'),
                          ['foo', 'bar', 'baz'])
 
     def test_add_tag_to_countdict(self):
@@ -146,6 +187,11 @@ class TestMethods(unittest.TestCase):
                                                                      'file2 -- common foo bar.txt'
                                                                      'file3 -- common foo bar baz.txt'
                                                                      'file4 -- common foo bar jodel.txt'])), set(['common', 'foo']))
+        # ignoring Windows .lnk extension as extension:
+        self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt.lnk',
+                                                                     'file2 -- common foo bar.txt.lnk'
+                                                                     'file3 -- common foo bar baz.txt.lnk'
+                                                                     'file4 -- common foo bar jodel.txt.lnk'])), set(['common', 'foo']))
 
     def test_extract_tags_from_path(self):
         self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
@@ -186,7 +232,8 @@ class TestFileWithoutTags(unittest.TestCase):
         # double-check set-up:
         self.assertTrue(self.file_exists(self.testfilename))
 
-        os.sync()
+        if platform.system() != 'Windows':
+            os.sync()
 
     def create_tmp_file(self, name):
 
@@ -310,7 +357,10 @@ class TestFileWithoutTags(unittest.TestCase):
 
     def tearDown(self):
 
-        rmtree(self.tempdir)
+        if platform.system() != 'Windows':
+            # 2018-04-05: disabled until I find a solution for:
+            # PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\KARL~1.VOI\\AppData\\Local\\Temp\\tmprfwup13z'
+            rmtree(self.tempdir)
 
 
 class TestHierarchyWithFilesAndFolders(unittest.TestCase):
@@ -332,7 +382,8 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.create_tmp_file("foo2 -- bar baz.txt")
         self.create_tmp_file("foo3 -- bar baz teststring1.txt")
 
-        os.sync()
+        if platform.system() != 'Windows':
+            os.sync()
 
     def create_tmp_file(self, name):
 
@@ -349,7 +400,8 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     def test_get_tags_from_files_and_subfolders(self):
 
-        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, use_cache=False), {'baz': 2, 'bar': 3, 'teststring1': 1})
+        self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, use_cache=False),
+                         {'baz': 2, 'bar': 3, 'teststring1': 1})
 
         # FIXXME: write test which tests the cache
 
@@ -367,64 +419,77 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     def tearDown(self):
 
-        rmtree(self.tempdir)
+        if platform.system() != 'Windows':
+            # 2018-04-05: disabled until I find a solution for:
+            # PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\KARL~1.VOI\\AppData\\Local\\Temp\\tmprfwup13z'
+            rmtree(self.tempdir)
 
 
-class TestReplacingSymlinkSourceAndTarget(unittest.TestCase):
+class TestReplacingLinkSourceAndTarget(unittest.TestCase):
 
     tempdir = None
 
     SOURCEFILE1 = 'source file 1 - same tags -- bar.txt'
-    LINKFILE1 = 'symlink file 1 - same tags -- bar.txt'
+    LINKFILE1 = 'link file 1 - same tags -- bar.txt'
 
-    SOURCEFILE2 = 'source file 2 - source has tag and symlink not -- baz.txt'
-    LINKFILE2 = 'symlink file 2 - source has tag and symlink not.txt'
+    SOURCEFILE2 = 'source file 2 - source has tag and link not -- baz.txt'
+    LINKFILE2 = 'link file 2 - source has tag and link not.txt'
 
-    SOURCEFILE3 = 'source file 3 - source no tags and symlink has.txt'
-    LINKFILE3 = 'symlink file 3 - source no tags and symlink has -- baz.txt'
+    SOURCEFILE3 = 'source file 3 - source no tags and link has.txt'
+    LINKFILE3 = 'link file 3 - source no tags and link has -- baz.txt'
 
-    TESTFILE1 = 'symlink and source same name.txt'
+    SOURCEFILE4 = 'link and source same name.txt'
+    LINKFILE4 = 'link and source same name.txt'
+
+    if platform.system() == 'Windows':
+        LINKFILE1 = LINKFILE1 + '.lnk'
+        LINKFILE2 = LINKFILE2 + '.lnk'
+        LINKFILE3 = LINKFILE3 + '.lnk'
+        LINKFILE4 = LINKFILE4 + '.lnk'
 
     def setUp(self):
 
         # create temporary directory for the source files:
         self.sourcedir = tempfile.mkdtemp(prefix='sources')
-        self.symlinkdir = tempfile.mkdtemp(prefix='symlinks')
+        self.linkdir = tempfile.mkdtemp(prefix='links')
 
         os.chdir(self.sourcedir)
-        logging.info("\nTestReplacingSymlinkSourceAndTarget: sourcedir: " + self.sourcedir + " and symlinkdir: " + self.symlinkdir)
+        logging.info("\nTestReplacingLinkSourceAndTarget: sourcedir: " + self.sourcedir + " and linkdir: " + self.linkdir)
 
         # create set of test files:
         self.create_source_file(self.SOURCEFILE1)
         self.create_source_file(self.SOURCEFILE2)
         self.create_source_file(self.SOURCEFILE3)
         self.create_source_file(self.SOURCEFILE3)
-        self.create_source_file(self.TESTFILE1)
+        self.create_source_file(self.SOURCEFILE4)
 
         # create symbolic links:
-        self.create_symlink_file(self.SOURCEFILE1, self.LINKFILE1)
-        self.create_symlink_file(self.SOURCEFILE2, self.LINKFILE2)
-        self.create_symlink_file(self.SOURCEFILE3, self.LINKFILE3)
-        self.create_symlink_file(self.TESTFILE1, self.TESTFILE1)
+        self.create_link_file(self.SOURCEFILE1, self.LINKFILE1)
+        self.create_link_file(self.SOURCEFILE2, self.LINKFILE2)
+        self.create_link_file(self.SOURCEFILE3, self.LINKFILE3)
+        self.create_link_file(self.SOURCEFILE4, self.LINKFILE4)
 
-        os.sync()
+        if platform.system() != 'Windows':
+            os.sync()
 
     def create_source_file(self, name):
 
         with open(os.path.join(self.sourcedir, name), 'w') as outputhandle:
             outputhandle.write('This is a test file for filetags unit testing')
 
-    def create_symlink_file(self, source, destination):
+    def create_link_file(self, source, destination):
 
-        os.symlink(os.path.join(self.sourcedir, source), os.path.join(self.symlinkdir, destination))
+        filetags.create_link(os.path.join(self.sourcedir, source), os.path.join(self.linkdir, destination))
 
     def source_file_exists(self, name):
 
         return os.path.isfile(os.path.join(self.sourcedir, name))
 
-    def symlink_file_exists(self, name):
+    def link_file_exists(self, name):
 
-        return os.path.isfile(os.path.join(self.symlinkdir, name))
+        if platform.system() == 'Windows' and not name.endswith('.lnk'):
+            name += '.lnk'
+        return os.path.isfile(os.path.join(self.linkdir, name))
 
     def is_broken_link(self, name):
 
@@ -432,60 +497,79 @@ class TestReplacingSymlinkSourceAndTarget(unittest.TestCase):
         # that is a broken link. It returns False for any other cases
         # such as non existing files and so forth.
 
-        if self.symlink_file_exists(name):
-            return False
-
-        try:
-            return not os.path.exists(os.readlink(os.path.join(self.symlinkdir, name)))
-        except FileNotFoundError:
-            return False
+        return filetags.is_broken_link(os.path.join(self.linkdir, name))
 
     def tearDown(self):
 
-        rmtree(self.sourcedir)
-        rmtree(self.symlinkdir)
+        if platform.system() != 'Windows':
+            # 2018-04-05: disabled until I find a solution for:
+            # PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\KARL~1.VOI\\AppData\\Local\\Temp\\tmprfwup13z'
+            rmtree(self.sourcedir)
+            rmtree(self.linkdir)
 
-    def test_adding_tags_to_symlinks(self):
+    def test_adding_tags_to_links(self):
 
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.LINKFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
-        logging.info('only the symlink gets this tag because basenames differ:')
-        self.assertEqual(self.symlink_file_exists('symlink file 1 - same tags -- bar foo.txt'), True)
+        self.assertEqual(self.link_file_exists(self.LINKFILE1), True)
+        logging.info('#' * 90)
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, self.LINKFILE1),
+                                               ['foo'],
+                                               do_remove=False, do_filter=False, dryrun=False)
+        logging.info('only the link gets this tag because basenames differ:')
+        self.assertEqual(self.link_file_exists('link file 1 - same tags -- bar foo.txt'), True)
         self.assertEqual(self.source_file_exists(self.SOURCEFILE1), True)
 
         logging.info('basenames are same, so both files should get the tag:')
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
-        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo.txt'), True)
-        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, self.LINKFILE4),
+                                               ['foo'],
+                                               do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.link_file_exists('link and source same name -- foo.txt'), True)
+        self.assertEqual(self.source_file_exists('link and source same name -- foo.txt'), True)
 
-    def test_adding_tag_to_an_original_file_causing_broken_symlink(self):
+    def test_adding_tag_to_an_original_file_causing_broken_link(self):
 
-        self.assertFalse(self.is_broken_link(self.TESTFILE1))
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.sourcedir, self.TESTFILE1), ['foo'], do_remove=False, do_filter=False, dryrun=False)
-        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
-        self.assertTrue(self.is_broken_link(self.TESTFILE1))
+        self.assertFalse(self.is_broken_link(self.LINKFILE4))
+        filetags.handle_file_and_optional_link(os.path.join(self.sourcedir, self.SOURCEFILE4),
+                                               ['foo'],
+                                               do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.source_file_exists('link and source same name -- foo.txt'), True)
+        self.assertTrue(self.is_broken_link(self.LINKFILE4))
 
     def test_removing_tags(self):
 
         logging.info('removing a non existing tag should not change anything at all:')
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo'], do_remove=True, do_filter=False, dryrun=False)
-        self.assertEqual(self.source_file_exists(self.TESTFILE1), True)
-        self.assertEqual(self.symlink_file_exists(self.TESTFILE1), True)
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, self.LINKFILE4),
+                                               ['foo'],
+                                               do_remove=True, do_filter=False, dryrun=False)
+        self.assertEqual(self.source_file_exists(self.SOURCEFILE4), True)
+        self.assertEqual(self.link_file_exists(self.LINKFILE4), True)
 
         logging.info('adding tags just for the next tests:')
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, self.TESTFILE1), ['foo', 'bar'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, self.LINKFILE4),
+                                               ['foo', 'bar'],
+                                               do_remove=False, do_filter=False, dryrun=False)
 
-        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo bar.txt'), True)
-        self.assertEqual(self.source_file_exists('symlink and source same name -- foo bar.txt'), True)
+        self.assertEqual(self.link_file_exists('link and source same name -- foo bar.txt'), True)
+        self.assertEqual(self.source_file_exists('link and source same name -- foo bar.txt'), True)
 
         logging.info('removing tags which only exists partially:')
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, 'symlink and source same name -- foo bar.txt'), ['baz', 'bar'], do_remove=True, do_filter=False, dryrun=False)
-        self.assertEqual(self.symlink_file_exists('symlink and source same name -- foo.txt'), True)
-        self.assertEqual(self.source_file_exists('symlink and source same name -- foo.txt'), True)
+        filename = 'link and source same name -- foo bar.txt'
+        if platform.system() == 'Windows':
+            filename += '.lnk'
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, filename),
+                                               ['baz', 'bar'],
+                                               do_remove=True, do_filter=False, dryrun=False)
+        self.assertEqual(self.link_file_exists('link and source same name -- foo.txt'), True)
+        self.assertEqual(self.source_file_exists('link and source same name -- foo.txt'), True)
 
         logging.info('removing tags using minus-notation like "-foo"')
-        filetags.handle_file_and_symlink_source_if_found(os.path.join(self.symlinkdir, 'symlink and source same name -- foo.txt'), ['-foo', 'bar'], do_remove=False, do_filter=False, dryrun=False)
-        self.assertEqual(self.symlink_file_exists('symlink and source same name -- bar.txt'), True)
-        self.assertEqual(self.source_file_exists('symlink and source same name -- bar.txt'), True)
+        filename = 'link and source same name -- foo.txt'
+        if platform.system() == 'Windows':
+            filename += '.lnk'
+        filetags.handle_file_and_optional_link(os.path.join(self.linkdir, filename),
+                                               ['-foo', 'bar'],
+                                               do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.link_file_exists('link and source same name -- bar.txt'), True)
+        self.assertEqual(self.source_file_exists('link and source same name -- bar.txt'), True)
 
 if __name__ == '__main__':
     unittest.main()

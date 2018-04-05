@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-03-18 16:55:59 vk>"
+PROG_VERSION = "Time-stamp: <2018-04-04 17:30:30 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
+# - move global variables to parameter lists, avoiding global variables in general
 # - $HOME/.config/ with default options (e.g., geeqie)
 #   - using clint/resource
 #   - if not found, write default config with defaults (and comments)
@@ -15,11 +16,6 @@ PROG_VERSION = "Time-stamp: <2018-03-18 16:55:59 vk>"
 #     - they get combined
 # - tagfilter: additional parameter to move matching files to a temporary subfolder
 #   - renaming/deleting of symlinks does not modify original files
-# - tagfilter: --recursive :: recursively going into subdirectories and
-#      collecting items (into one target directory) for:
-#   - adding tags
-#   - removing tags
-#   - filter
 # - tagfilter: --notags :: do not ask for tags, use all items that got no tag
 #      at all
 # - tagfilter: --ignoredirs :: do not symlink/copy directories
@@ -33,7 +29,6 @@ PROG_VERSION = "Time-stamp: <2018-03-18 16:55:59 vk>"
 # ===================================================================== ##
 
 from importlib import import_module
-
 
 def save_import(library):
     try:
@@ -75,7 +70,7 @@ TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter
 DEFAULT_TAGTREES_MAXDEPTH = 2  # be careful when making this more than 2: exponential growth of time/links with number of tags!
 DEFAULT_IMAGE_VIEWER_LINUX = 'geeqie'
 DEFAULT_IMAGE_VIEWER_WINDOWS = 'explorer'
-TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS = True
+TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS = True
 IS_WINDOWS = False
 
 # Determining the window size of the terminal:
@@ -147,7 +142,8 @@ YYYY_MM_DD_PATTERN = re.compile('^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
 cache_of_tags_by_folder = {}
 cache_of_files_with_metadata = {}  # dict of big list of dicts: 'filename', 'path' and other metadata
 controlled_vocabulary_filename = ''
-list_of_symlink_directories = []
+list_of_link_directories = []
+chosen_tagtrees_dir = False  # holds the definitive choice for a destination folder for filtering or tagtrees
 
 parser = argparse.ArgumentParser(prog=sys.argv[0],
                                  # keep line breaks in EPILOG and such
@@ -179,7 +175,8 @@ parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
 
 parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
                     help="ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
-                    "containing symbolic links to all files with matching tags and start the filebrowser")
+                    "containing links to all files with matching tags and start the filebrowser. Target directory " +
+                    "can be overridden by --tagtrees-dir.")
 
 parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
                     help="use this option to override the tool to view/manage files (for --filter; default: " +
@@ -187,7 +184,8 @@ parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBR
 
 parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
                     help="This generates nested directories in \"" + TAGFILTER_DIRECTORY + "\" for each combination of tags " +
-                    "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". " +
+                    "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". Target directory " +
+                    "can be overridden by --tagtrees-dir. " +
                     "Please note that this may take long since it relates " +
                     "exponentially to the number of tags involved. " +
                     "See also http://Karl-Voit.at/tagstore/ and http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf")
@@ -216,7 +214,8 @@ parser.add_argument("--tagtrees-dir",
                     metavar='<existing_directory>',
                     required=False,
                     help="When tagtrees are created, this parameter overrides the default target directory \"" + TAGFILTER_DIRECTORY +
-                    "\" with a user-defined one. It has to be an empty directory or a non-existing directory which will be created.")
+                    "\" with a user-defined one. It has to be an empty directory or a non-existing directory which will be created. " +
+                    "This also overrides the default directory for --filter.")
 
 parser.add_argument("--tagtrees-depht",
                     dest="tagtrees_depth",
@@ -325,7 +324,9 @@ def contains_tag(filename, tagname=False):
     if tagname:
         assert(tagname.__class__ == str)
 
-    components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(filename))
+    filename, dirname, basename, basename_without_lnk = split_up_filename(filename)
+
+    components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(basename_without_lnk))
 
     if not tagname:
         return components is not None
@@ -348,7 +349,9 @@ def extract_tags_from_filename(filename):
 
     assert(filename.__class__ == str)
 
-    components = re.match(FILE_WITH_TAGS_REGEX, os.path.basename(filename))
+    filename, dirname, basename, basename_without_lnk = split_up_filename(filename)
+
+    components = re.match(FILE_WITH_TAGS_REGEX, basename_without_lnk)
 
     if not components:
         return []
@@ -427,21 +430,27 @@ def adding_tag_to_filename(filename, tagname):
     assert(filename.__class__ == str)
     assert(tagname.__class__ == str)
 
-    dirname = os.path.dirname(filename)
-    basename = os.path.basename(filename)
+    filename, dirname, basename, basename_without_lnk = split_up_filename(filename)
 
-    if contains_tag(basename) is False:
+    if contains_tag(basename_without_lnk) is False:
         logging.debug("adding_tag_to_filename(%s, %s): no tag found so far" % (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, os.path.basename(basename))
+        components = re.match(FILE_WITH_EXTENSION_REGEX, basename_without_lnk)
         if components:
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
+            if is_lnk_file(filename):
+                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension + '.lnk')
+            else:
+                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
         else:
-            return os.path.join(dirname, basename + FILENAME_TAG_SEPARATOR + tagname)
+            # filename has no extension
+            if is_lnk_file(filename):
+                return os.path.join(dirname, basename_without_lnk + FILENAME_TAG_SEPARATOR + tagname + '.lnk')
+            else:
+                return os.path.join(dirname, basename + FILENAME_TAG_SEPARATOR + tagname)
 
-    elif contains_tag(basename, tagname):
+    elif contains_tag(basename_without_lnk, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): tag already found in filename" % (filename, tagname))
 
         return filename
@@ -450,35 +459,41 @@ def adding_tag_to_filename(filename, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): add as additional tag to existing list of tags" %
                       (filename, tagname))
 
-        components = re.match(FILE_WITH_EXTENSION_REGEX, basename)
+        components = re.match(FILE_WITH_EXTENSION_REGEX, basename_without_lnk)
+        new_filename = False
         if components:
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            return os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
+            new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
         else:
-            return os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
+            new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
+        if is_lnk_file(filename):
+            return new_filename + '.lnk'
+        else:
+            return new_filename
 
 
-def removing_tag_from_filename(filename, tagname):
+def removing_tag_from_filename(orig_filename, tagname):
     """
     Returns string of file name with tagname removed as tag.
 
-    @param filename: an unicode string containing a file name
+    @param orig_filename: an unicode string containing a file name
     @param tagname: an unicode string containing a tag name
     @param return: an unicode string of filename without tagname
     """
 
-    assert(filename.__class__ == str)
+    assert(orig_filename.__class__ == str)
     assert(tagname.__class__ == str)
 
-    if not contains_tag(filename, tagname):
-        return filename
+    if not contains_tag(orig_filename, tagname):
+        return orig_filename
 
-    components = re.match(FILE_WITH_TAGS_REGEX, filename)
+    filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
+    components = re.match(FILE_WITH_TAGS_REGEX, basename_without_lnk)
 
     if not components:
-        logging.debug("file [%s] does not match FILE_WITH_TAGS_REGEX" % filename)
-        return filename
+        logging.debug("file [%s] does not match FILE_WITH_TAGS_REGEX" % orig_filename)
+        return orig_filename
     else:
         tags = components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
         old_filename = components.group(FILE_WITH_TAGS_REGEX_FILENAME_INDEX)
@@ -488,13 +503,19 @@ def removing_tag_from_filename(filename, tagname):
         else:
             extension = '.' + extension
 
+        new_filename = False
         if len(tags) < 2:
             logging.debug("given tagname is the only tag -> remove all tags and FILENAME_TAG_SEPARATOR as well")
-            return old_filename + extension
+            new_filename = old_filename + extension
         else:
             # still tags left
-            return old_filename + FILENAME_TAG_SEPARATOR + \
+            new_filename = old_filename + FILENAME_TAG_SEPARATOR + \
                 BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + extension
+
+        if is_lnk_file(orig_filename):
+            return new_filename + '.lnk'
+        else:
+            return new_filename
 
 
 def extract_tags_from_argument(argument):
@@ -575,7 +596,7 @@ def print_item_transition(path, source, destination, transition):
         print("ERROR: print_item_transition(): unknown transition parameter: \"" + transition + "\"")
 
     style_destination = colorama.Style.BRIGHT + colorama.Back.GREEN + colorama.Fore.BLACK
-    destination = style_destination + destination + colorama.Style.RESET_ALL
+    destination = style_destination + os.path.basename(destination) + colorama.Style.RESET_ALL
 
     if 15 + len(transition_description) + (2 * max_file_length) < TTY_WIDTH:
         # probably enough space: screen output with one item per line
@@ -637,9 +658,10 @@ def find_unique_alternative_to_file(filename):
         return False
 
 
-def is_nonbroken_symlink_file(filename):
+def is_nonbroken_link(filename):
     """
-    Returns true if the filename is a non-broken symbolic link and not just an ordinary file. False, for any other case like no file at all.
+    Returns true if the filename is a non-broken symbolic link or a non-broken Windows LNK file
+    and not just an ordinary file. False, for any other case like no file at all.
 
     @param filename: an unicode string containing a file name
     @param return: boolean
@@ -647,7 +669,7 @@ def is_nonbroken_symlink_file(filename):
 
     if IS_WINDOWS:
         # do lnk-files instead of symlinks:
-        if filename.endswith('.lnk'):
+        if is_lnk_file(filename):
             shell = win32com.client.Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(filename)
             lnk_destination = shortcut.Targetpath
@@ -668,48 +690,113 @@ def is_nonbroken_symlink_file(filename):
 
 def get_link_source_file(filename):
     """
-    Return a string representing the path to which the symbolic link points.
+    Return a string representing the path to which the symbolic link
+    or Windows LNK file points.
 
     @param filename: an unicode string containing a file name
-    @param return: file path string
+    @param return: file path string (or False if broken link)
     """
 
-    assert(os.path.islink(filename))
-    return os.readlink(filename)
+    if IS_WINDOWS:
+        assert(is_lnk_file(filename))
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(filename)
+        original_file = shortcut.Targetpath
+        assert(len(shortcut.Targetpath)>0)  # only continue if it is a lnk file
+        if os.path.exists(original_file):
+            logging.debug('get_link_source_file(' + filename + ') == ' + original_file + '  which does exist -> non-broken link')
+            return(original_file)
+        else:
+            logging.debug('get_link_source_file(' + filename + ') == ' + original_file + '  which does NOT exist -> broken link')
+            return(False)
+
+    else:
+        assert(os.path.islink(filename))
+        return os.readlink(filename)
 
 
-def is_broken_link(name):
+def is_broken_link(filename):
     """
-    This function determines if the given name points to a file that is a broken link.
+    This function determines if the given filename points to a file that is a broken
+    symbolic link or broken Windows LNK file.
     It returns False for any other cases such as non existing files and so forth.
 
-    @param name: an unicode string containing a file name
+    @param filename: an unicode string containing a file name
     @param return: boolean
     """
 
-    if os.path.isfile(name) or os.path.isdir(name):
-        return False
+    if IS_WINDOWS:
+        if is_lnk_file(filename):
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut(filename)
+            original_file = shortcut.Targetpath
+            assert(len(shortcut.Targetpath)>0)  # only continue if it is a valid lnk file
 
-    try:
-        return not os.path.exists(os.readlink(name))
-    except FileNotFoundError:
-        return False
+            if os.path.exists(original_file):
+                logging.debug('is_broken_link(' + filename + ') == ' + original_file + '  which does exist -> non-broken link')
+                return(False)
+            else:
+                logging.debug('is_broken_link(' + filename + ') == ' + original_file + '  which does NOT exist -> broken link')
+                return(True)
+        else:
+            logging.debug('is_broken_link(' + filename + ')  is not a lnk file at all; thus: not a broken link')
+            return(False)
+
+    else:
+        if os.path.isfile(filename) or os.path.isdir(filename):
+            return False
+
+        try:
+            return not os.path.exists(os.readlink(filename))
+        except FileNotFoundError:
+            return False
+
+
+def is_lnk_file(filename):
+    """
+    This function determines whether or not the given filename is a Windows
+    LNK file.
+
+    Note: Do not add a check for the content. This method is also used for
+    checking file names that do not exist yet.
+
+    @param filename: an unicode string containing a file name
+    @param return: boolean
+    """
+
+    return filename.upper().endswith('.LNK')
 
 
 def split_up_filename(filename):
     """
     Returns separate strings for the given filename.
 
+    If filename is not a Windows lnk file, the "basename
+    without the optional .lnk extension" is the same as
+    the basename.
+
     @param filename: an unicode string containing a file name
-    @param return: filename with absolute path, pathname, basename
+    @param return: filename with absolute path, pathname, basename, basename without the optional ".lnk" extension
     """
 
+    if not os.path.exists(filename):
+        # This does make sense for splitting up filenames that are about to be created for example:
+        logging.debug('split_up_filename(' + filename + ') does NOT exist. Playing along and returning non-existent filename parts.')
+        dirname = os.path.dirname(filename)
+    else:
+        dirname = os.path.dirname(os.path.abspath(filename))
+
     basename = os.path.basename(filename)
-    dirname = os.path.abspath(os.path.dirname(filename))
-    return os.path.join(dirname, basename), dirname, basename
+
+    if is_lnk_file(basename):
+        basename_without_lnk = basename[:-4]
+    else:
+        basename_without_lnk = basename
+
+    return os.path.join(dirname, basename), dirname, basename, basename_without_lnk
 
 
-def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_filter, dryrun):
+def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dryrun):
     """
     @param orig_filename: string containing one file name
     @param tags: list containing one or more tags
@@ -718,84 +805,100 @@ def handle_file_and_symlink_source_if_found(orig_filename, tags, do_remove, do_f
     @param return: error value or new filename
     """
 
-    logging.debug("handle_file_and_symlink_source_if_found(\"" + orig_filename + "\") …  " + '★' * 20)
+    logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") …  " + '★' * 20)
 
     if os.path.isdir(orig_filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
         return
 
-    filename, dirname, basename = split_up_filename(orig_filename)
-    global list_of_symlink_directories
+    filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
+    global list_of_link_directories
 
     if not (os.path.isfile(filename) or os.path.islink(filename)):
-        logging.debug('handle_file_and_symlink_source_if_found: this is no regular file nor a symlink; looking for an alternative file that starts with same substring …')
+        logging.debug('handle_file_and_optional_link: this is no regular file nor a link; looking for an alternative file that starts with same substring …')
 
         # try to find unique alternative file:
         alternative_filename = find_unique_alternative_to_file(filename)
 
         if not alternative_filename:
-            logging.debug('handle_file_and_symlink_source_if_found: Could not locate alternative basename that starts with same substring')
+            logging.debug('handle_file_and_optional_link: Could not locate alternative basename that starts with same substring')
             logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
             return
         else:
             logging.info("Could not find basename \"%s\" but found \"%s\" instead which starts with same substring ..." %
                          (filename, alternative_filename))
-            filename, dirname, basename = split_up_filename(orig_filename)
+            filename, dirname, basename, basename_without_lnk = split_up_filename(alternative_filename)
 
-    if dirname:
-        logging.debug("handle_file_and_symlink_source_if_found: changing to dir \"%s\"" % dirname)
+    if dirname and os.getcwd() != dirname:
+        logging.debug("handle_file_and_optional_link: changing to dir \"%s\"" % dirname)
         os.chdir(dirname)
-    else:
-        logging.debug("handle_file_and_symlink_source_if_found: no dirname found")
+    # else:
+    #     logging.debug("handle_file_and_optional_link: no dirname found or os.getcwd() is dirname")
 
-    # if basename is a symbolic link and has same basename, tag the source file as well:
-    if TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and is_nonbroken_symlink_file(filename):
-        logging.debug('handle_file_and_symlink_source_if_found: file is a non-broken symlink (and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is set)')
+    # if basename is a link and has same basename, tag the source file as well:
+    if TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and is_nonbroken_link(filename):
+        logging.debug('handle_file_and_optional_link: file is a non-broken link (and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS is set)')
 
-        old_source_filename, old_source_dirname, old_source_basename = split_up_filename(get_link_source_file(basename))
+        old_source_filename, old_source_dirname, old_source_basename, old_source_basename_without_lnk = split_up_filename(get_link_source_file(filename))
 
         linkbasename_same_as_originalbasename = False
-        if IS_WINDOWS:
+        if is_lnk_file(basename):
             linkbasename_same_as_originalbasename = old_source_basename == basename[:-4]  # remove ending '.lnk'
         else:
             linkbasename_same_as_originalbasename = old_source_basename == basename
 
         if linkbasename_same_as_originalbasename:
-            logging.debug('handle_file_and_symlink_source_if_found: symlink "' + filename +
-                          '" has same basename as its source file "' + old_source_filename + '"')
+            logging.debug('handle_file_and_optional_link: link "' + filename +
+                          '" has same basename as its source file "' + old_source_filename + '"  ' + 'v' * 20)
 
-            new_source_basename = handle_file_and_symlink_source_if_found(old_source_filename, tags, do_remove, do_filter, dryrun)
+            logging.debug('handle_file_and_optional_link: invoking handle_file_and_optional_link("' +
+                          old_source_filename + '")  '  + 'v' * 20)
+            new_source_basename = handle_file_and_optional_link(old_source_filename, tags, do_remove, do_filter, dryrun)
+            logging.debug('handle_file_and_optional_link: RETURNED handle_file_and_optional_link("' +
+                          old_source_filename + '")  '  + 'v' * 20)
+
             new_source_filename = os.path.join(old_source_dirname, new_source_basename)
+            new_source_filename, new_source_dirname, new_source_basename, new_source_basename_without_lnk = split_up_filename(new_source_filename)
 
             if old_source_basename != new_source_basename:
-                logging.debug('handle_file_and_symlink_source_if_found: Tagging the symlink-destination file of "' + basename + '" ("' +
+                logging.debug('handle_file_and_optional_link: Tagging the symlink-destination file of "' + basename + '" ("' +
                              old_source_filename + '") as well …')
 
                 if options.dryrun:
-                    logging.debug('handle_file_and_symlink_source_if_found: I would re-link the old sourcefilename "'
+                    logging.debug('handle_file_and_optional_link: I would re-link the old sourcefilename "'
                                   + old_source_filename +
                                   '" to the new one "' + new_source_filename + '"')
                 else:
-                    logging.debug('handle_file_and_symlink_source_if_found: re-linking symlink "' + os.path.join(dirname, basename) +
+                    new_filename = os.path.join(dirname, new_source_basename_without_lnk)
+                    logging.debug('handle_file_and_optional_link: re-linking link "' + new_filename +
                                   '" from the old sourcefilename "' +
                                   old_source_filename + '" to the new one "' + new_source_filename + '"')
                     os.remove(filename)
-                    create_link(new_source_filename, filename)
+                    create_link(new_source_filename, new_filename)
+                # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
+                os.chdir(dirname)  # go back to original dir after handling links of different directories
+                return new_filename
             else:
-                logging.debug('handle_file_and_symlink_source_if_found: The old sourcefilename "' + old_source_filename +
+                logging.debug('handle_file_and_optional_link: The old sourcefilename "' + old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
+                # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
+                os.chdir(dirname)  # go back to original dir after handling links of different directories
+                return old_source_filename
         else:
-            logging.debug('handle_file_and_symlink_source_if_found: The file "' + filename +
-                          '" is a symlink to "' + old_source_filename +
+            logging.debug('handle_file_and_optional_link: The file "' + filename +
+                          '" is a link to "' + old_source_filename +
                           '" but they two do have different basenames. Therefore I ignore the original file.')
-        os.chdir(dirname)  # go back to original dir after handling symlinks of different directories
+        os.chdir(dirname)  # go back to original dir after handling links of different directories
     else:
-        logging.debug('handle_file_and_symlink_source_if_found: file is not a non-broken symlink (' +
-                      repr(is_nonbroken_symlink_file(basename)) + ') or TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS is not set')
+        logging.debug('handle_file_and_optional_link: file is not a non-broken link (' +
+                      repr(is_nonbroken_link(basename)) + ') or TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS is not set')
 
-    # after handling potential symlink originals, I now handle the file we were talking about in the first place:
+    logging.debug('handle_file_and_optional_link: after handling potential link originals, I now handle ' +
+                  'the file we were talking about in the first place: ' + filename)
+
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
+    logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") FINISHED  " + '★' * 20)
     return new_filename
 
 
@@ -818,10 +921,16 @@ def create_link(source, destination):
     @param destination: a file name for the link which is about to be created
     """
 
+    logging.debug('create_link(' + source + ', ' + destination + ') called')
     if IS_WINDOWS:
         # do lnk-files instead of symlinks:
         shell = win32com.client.Dispatch('WScript.Shell')
-        shortcut = shell.CreateShortCut(destination + '.lnk')
+        if is_lnk_file(destination):
+            # prevent multiple '.lnk' extensions from happening
+            # FIXXME: I'm not sure whether or not multiple '.lnk' extensions are a valid use-case: check!
+            shortcut = shell.CreateShortCut(destination)
+        else:
+            shortcut = shell.CreateShortCut(destination + '.lnk')
         shortcut.Targetpath = source
         shortcut.WorkingDirectory = os.path.dirname(destination)
         # shortcut.IconLocation: is derived from the source file
@@ -850,14 +959,16 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
     if dryrun:
         assert(dryrun.__class__ == bool)
 
-    filename, dirname, basename = split_up_filename(orig_filename)
+    global chosen_tagtrees_dir
 
-    logging.debug("handle_file(\"" + filename + "\") …   with working dir \"" + os.getcwd() + "\"")
+    filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
+
+    logging.debug("handle_file(\"" + filename + "\") " + '#' * 10 + "  … with working dir \"" + os.getcwd() + "\"")
 
     if do_filter:
-        print_item_transition(dirname, basename, TAGFILTER_DIRECTORY, transition='link')
+        print_item_transition(dirname, basename, chosen_tagtrees_dir, transition='link')
         if not dryrun:
-            create_link(filename, os.path.join(TAGFILTER_DIRECTORY, basename))
+            create_link(filename, os.path.join(chosen_tagtrees_dir, basename))
 
     else:  # add or remove tags:
         new_basename = basename
@@ -901,9 +1012,9 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
         if basename != new_basename:
 
-            list_of_symlink_directories.append(dirname)
+            list_of_link_directories.append(dirname)
 
-            if len(list_of_symlink_directories) > 1:
+            if len(list_of_link_directories) > 1:
                 logging.debug('new_filename is a symlink. Screen output of transistion gets postponed to later on.')
             elif not options.quiet:
                 print_item_transition(dirname, basename, new_basename, transition=transition)
@@ -911,6 +1022,7 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
             if not dryrun:
                 os.rename(filename, new_filename)
 
+        logging.debug("handle_file(\"" + filename + "\") " + '#' * 10 + "  finished")
         return new_filename
 
 
@@ -1362,35 +1474,36 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     @param return: file name found
     """
 
+    logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' % (startfile, filename))
     if startfile and os.path.isfile(startfile) and os.path.isfile(
             os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
-        logging.debug('found \"%s\" in directory of \"%s\" ..' % (filename, startfile))
+        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory of \"%s\" ..' % (filename, startfile))
         return filename
     elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
-        logging.debug('found \"%s\" in directory \"%s\" ...' % (filename, startfile))
+        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ...' % (filename, startfile))
         return filename
     else:
         if os.path.isfile(startfile):
             starting_dir = os.path.dirname(os.path.abspath(startfile))
-            logging.debug('startfile [%s] found, using it as starting_dir [%s] ....' % (str(startfile), starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] found, using it as starting_dir [%s] ....' % (str(startfile), starting_dir))
         elif os.path.isdir(startfile):
             starting_dir = startfile
-            logging.debug('startfile [%s] is a directory, using it as starting_dir [%s] .....' % (str(startfile), starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] is a directory, using it as starting_dir [%s] .....' % (str(startfile), starting_dir))
         else:
             starting_dir = os.getcwd()
-            logging.debug('no startfile found; using cwd as starting_dir [%s] ......' % (starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: no startfile found; using cwd as starting_dir [%s] ......' % (starting_dir))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
-        logging.debug('looking for \"%s\" in directory \"%s\" .......' % (filename, parent_dir))
+        logging.debug('locate_file_in_cwd_and_parent_directories: looking for \"%s\" in directory \"%s\" .......' % (filename, parent_dir))
         while parent_dir != os.getcwd():
             os.chdir(parent_dir)
             filename_to_look_for = os.path.abspath(os.path.join(os.getcwd(), filename))
             if os.path.isfile(filename_to_look_for):
-                logging.debug('found \"%s\" in directory \"%s\" ........' % (filename, parent_dir))
+                logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ........' % (filename, parent_dir))
                 os.chdir(starting_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
         os.chdir(starting_dir)
-        logging.debug('did NOT find \"%s\" in current directory or any parent directory' % filename)
+        logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' % filename)
         return False
 
 
@@ -1406,16 +1519,44 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     """
 
+    logging.debug('locate_and_parse_controlled_vocabulary: called with startfile: ' + str(startfile) + ' and cwd = ' + str(os.getcwd()))
     if startfile:
         filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
     else:
         filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
 
+    if IS_WINDOWS:
+        # searching for and handling of lnk files:
+        logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: also look out for lnk-files that link to .filetags files ...')
+        if startfile:
+            lnk_filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME + '.lnk')
+        else:
+            lnk_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME + '.lnk')
+
+        if lnk_filename and filename:
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: both (non-lnk and lnk) .filetags found. Taking the one with the longer path')
+            if os.path.dirname(lnk_filename) > os.path.dirname(filename) and is_nonbroken_link(lnk_filename):
+                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: taking the lnk .filetags')
+                filename = lnk_filename
+            elif not is_nonbroken_link(lnk_filename):
+                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: taking the non-lnk .filetags since the found lnk is a broken link')
+        elif lnk_filename and not filename:
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: only a lnk of .filetags was found')
+            filename = lnk_filename
+        else:
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: .filetags (non-lnk) was found')
+
+        if filename and is_lnk_file(filename) and os.path.isfile(get_link_source_file(filename)):
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: set filename to source file for lnk .filetags')
+            filename = get_link_source_file(filename)
+
     global unique_tags
 
     if filename:
+        logging.debug('locate_and_parse_controlled_vocabulary: .filetags found: ' + filename)
         if os.path.isfile(filename):
-            logging.debug('locate_and_parse_controlled_vocabulary: found controlled vocabulary in folder of startfile')
+            logging.debug('locate_and_parse_controlled_vocabulary: found controlled vocabulary')
+
             tags = []
             with codecs.open(filename, encoding='utf-8') as filehandle:
                 logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' % filename)
@@ -1436,10 +1577,10 @@ def locate_and_parse_controlled_vocabulary(startfile):
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' % (len(unique_tags) - 1))
             return tags
         else:
-            logging.debug('locate_and_parse_controlled_vocabulary: could not find controlled vocabulary in folder of startfile')
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
             return []
     else:
-        logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary in folder of startfile')
+        logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary')
         return []
 
 
@@ -1684,6 +1825,7 @@ def assert_empty_tagfilter_directory(directory):
         if not options.dryrun:
             os.makedirs(directory)
     else:
+        # FIXXME 2018-04-04: I guess this is never reached because this script does never rm -r on that directory: check it and add overwrite parameter
         logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(directory))
         if not options.dryrun:
             save_import('shutil')  # for removing directories with shutil.rmtree()
@@ -1824,7 +1966,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     else:
         logging.debug('I did not find a controlled_vocabulary_filename')
 
-    logging.info('Creating tagtrees and their symlinks. It may take a while …  (exponentially with respect to number of tags)')
+    logging.info('Creating tagtrees and their links. It may take a while …  (exponentially with respect to number of tags)')
 
     tags = get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True)
 
@@ -1852,7 +1994,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     for currentfile in enumerate(files):
 
         tags_of_currentfile = tags_of_files[currentfile[0]]
-        filename, dirname, basename = split_up_filename(currentfile[1])
+        filename, dirname, basename, basename_without_lnk = split_up_filename(currentfile[1])
 
 
         logging.debug('generate_tagtrees: handling file "' + filename + '" …')
@@ -1945,7 +2087,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     # runtime was that long. The number of links grows exponentially
     # with the number of tags. Keep this in mind when tempering with
     # the maxdepth!
-    logging.info('Number of symbolic links created in "' + directory + '" for the ' + str(len(files)) + ' files: ' +
+    logging.info('Number of links created in "' + directory + '" for the ' + str(len(files)) + ' files: ' +
                  str(num_of_links) + '  (tagtrees depth is ' + str(maxdepth) + ')')
 
 
@@ -1969,7 +2111,7 @@ def start_filebrowser(directory):
             chosen_filebrowser = options.filebrowser  # override if given
 
         if options.dryrun:
-            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '"')
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '" with dir "' + directory + '"')
         else:
             subprocess.call([chosen_filebrowser, directory])
 
@@ -1978,8 +2120,12 @@ def start_filebrowser(directory):
         if options.filebrowser:
             chosen_filebrowser = options.filebrowser  # override if given
 
+        if '\\' in directory:
+            logging.debug('removing double backslashes from directory name')
+            directory = directory.replace('\\\\', '\\')
+
         if options.dryrun:
-            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '"')
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '" with dir "' + directory + '"')
         else:
             if chosen_filebrowser == 'explorer':
                 os.system(r'start explorer.exe "' + directory + '"')
@@ -1990,9 +2136,9 @@ def start_filebrowser(directory):
         logging.info('No (default) file browser defined for platform \"' + current_platform + '\".')
         logging.info('Please visit ' + directory + ' to view filtered items.')
 
-def all_files_are_symlink_to_same_directory(files):
+def all_files_are_links_to_same_directory(files):
     """
-    This function returns True when: all files in "files" are symbolic links with same
+    This function returns True when: all files in "files" are links with same
     filenames in one single directory to a matching set of original filenames in a
     different directory.
 
@@ -2002,8 +2148,8 @@ def all_files_are_symlink_to_same_directory(files):
     @param return: boolean
     """
 
-    if files and is_nonbroken_symlink_file(files[0]):
-        first_symlink_file_components = split_up_filename(files[0])
+    if files and is_nonbroken_link(files[0]):
+        first_link_file_components = split_up_filename(files[0])
         first_original_file_components = split_up_filename(get_link_source_file(files[0]))
     else:
         return False
@@ -2015,10 +2161,10 @@ def all_files_are_symlink_to_same_directory(files):
         if not os.path.exists(current_file):
             logging.info('not path exists')
             return False
-        current_symlink_components = split_up_filename(current_file)  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
+        current_link_components = split_up_filename(current_file)  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
         current_original_components = split_up_filename(get_link_source_file(current_file))
         if current_original_components[1] != first_original_file_components[1] or \
-           current_symlink_components[2] != current_original_components[2]:
+           current_link_components[2] != current_original_components[2]:
             logging.info('non matching')
             return False
     return True
@@ -2082,12 +2228,16 @@ def main():
 
     files = extract_filenames_from_argument(options.files)
 
-    global list_of_symlink_directories
+    global list_of_link_directories
+    global chosen_tagtrees_dir
 
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
     logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
-    vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
+    if files:
+        vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
+    else:
+        vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
     if len(options.files) < 1 and not (options.tagtrees or options.tagfilter or options.list_tags_by_alphabet or
                                        options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
@@ -2146,6 +2296,7 @@ def main():
                 logging.warning('The chosen tagtrees depth of ' + str(chosen_maxdepth) + ' is rather high.')
                 logging.warning('When linking more than a few files, this might take a long time using many filesystem inodes.')
 
+        # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagfilter: unify accordingly!
         chosen_tagtrees_dir = TAGFILTER_DIRECTORY
         if options.tagtrees_directory:
             chosen_tagtrees_dir = options.tagtrees_directory[0]
@@ -2180,6 +2331,13 @@ def main():
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
 
         elif options.tagfilter:
+
+            # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagtagtrees: unify accordingly!
+            chosen_tagtrees_dir = TAGFILTER_DIRECTORY
+            if options.tagtrees_directory:
+                chosen_tagtrees_dir = options.tagtrees_directory[0]
+                logging.debug('User overrides the default tagtrees directory to: ' + str(chosen_tagtrees_dir))
+
             for tag in get_tags_from_files_and_subfolders(startdir=os.getcwd()):
                 add_tag_to_countdict(tag, tags_for_vocabulary)
 
@@ -2190,20 +2348,20 @@ def main():
         else:
             if files:
 
-                # if it is only one file which is a symlink to the same basename
+                # if it is only one file which is a link to the same basename
                 # in a different directory, show the original directory:
-                if len(files) == 1 and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and os.path.islink(files[0]):
-                    symlink_file = split_up_filename(files[0])
+                if len(files) == 1 and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and is_nonbroken_link(files[0]):
+                    link_file = split_up_filename(files[0])
                     original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
-                    if symlink_file[1] != original_file[1] and symlink_file[2] == original_file[2]:
+                    if link_file[1] != original_file[1] and link_file[2] == original_file[2]:
                         # basenames are same, dirs are different
-                        print("     ... symlink: tagging also matching filename in " + original_file[1])
-                # do the same but for a list of symlink files whose paths have to match:
-                if len(files) > 1 and TAG_SYMLINK_ORIGINALS_WHEN_TAGGING_SYMLINKS and all_files_are_symlink_to_same_directory(files):
+                        print("     ... link: tagging also matching filename in " + original_file[1])
+                # do the same but for a list of link files whose paths have to match:
+                if len(files) > 1 and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and all_files_are_links_to_same_directory(files):
                     # using first file for determining directories:
-                    symlink_file = split_up_filename(files[0])
+                    link_file = split_up_filename(files[0])
                     original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
-                    print("     ... symlinks: tagging also matching filenames in " + original_file[1])
+                    print("     ... links: tagging also matching filenames in " + original_file[1])
 
                 # remove given (shared) tags from the vocabulary:
                 tags_intersection_of_files = get_common_tags_from_files(files)
@@ -2252,12 +2410,12 @@ def main():
         logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
     elif options.tagfilter:
         logging.info("filtering items with tag(s) \"%s\" and linking to directory \"%s\" ..." %
-                     (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)), str(TAGFILTER_DIRECTORY)))
+                     (str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)), str(chosen_tagtrees_dir)))
     elif options.interactive:
         logging.info("processing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
     if options.tagfilter and not files:
-        assert_empty_tagfilter_directory(TAGFILTER_DIRECTORY)
+        assert_empty_tagfilter_directory(chosen_tagtrees_dir)
         files = filter_files_matching_tags(get_files_of_directory(os.getcwd()), tags_from_userinput)
 
     logging.debug("iterate over files ...")
@@ -2270,26 +2428,29 @@ def main():
 
     for filename in files:
 
-        if is_broken_link(filename):
+        if not os.path.exists(filename):
+            logging.error('File "' + filename + '" does not exist. Skipping this one …')
 
+        elif is_broken_link(filename):
             # skip broken links completely and write error message:
-            logging.error('File "' + filename + '" is a broken symbolic link. Skipping this one …')
+            logging.error('File "' + filename + '" is a broken link. Skipping this one …')
 
         else:
 
-            # if filename is a symbolic link, tag the source file as well:
-            handle_file_and_symlink_source_if_found(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
-            logging.debug('list_of_symlink_directories: ' + repr(list_of_symlink_directories))
+            # if filename is a link, tag the source file as well:
+            handle_file_and_optional_link(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
+            logging.debug('list_of_link_directories: ' + repr(list_of_link_directories))
 
-            if len(list_of_symlink_directories) > 1:
-                logging.debug('Seems like we\'ve found symlinks and renamed their source as well. Print out the those directories as well:')
-                print('      This symbolic link has a link source with a matching basename. I renamed it there as well:')
-                for directory in list_of_symlink_directories[:-1]:
+            if len(list_of_link_directories) > 1:
+                logging.debug('Seems like we\'ve found links and renamed their source as well. Print out the those directories as well:')
+                print('      This link has a link source with a matching basename. I renamed it there as well:')
+                for directory in list_of_link_directories[:-1]:
                     print('      · ' + directory)
-            list_of_symlink_directories = []
+            list_of_link_directories = []
 
     if options.tagfilter:
-        start_filebrowser(TAGFILTER_DIRECTORY)
+        logging.debug('Now openeing filebrowser for dir "' + chosen_tagtrees_dir + '"')
+        start_filebrowser(chosen_tagtrees_dir)
 
     successful_exit()
 
