@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-04-05 14:52:54 karl.voit>
+# Time-stamp: <2018-04-05 15:03:07 karl.voit>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -123,9 +123,14 @@ class TestMethods(unittest.TestCase):
 
     def test_find_similar_tags(self):
 
-        self.assertEqual(filetags.find_similar_tags('xxx', ['foobar', 'bar', 'baz', 'Frankenstein', 'parabol', 'Bah', 'paR', 'por', 'Schneewittchen']), [])
+        self.assertEqual(filetags.find_similar_tags('xxx',
+                                                    ['foobar', 'bar', 'baz', 'Frankenstein', 'parabol', 'Bah',
+                                                     'paR', 'por', 'Schneewittchen']),
+                         [])
 
-        self.assertEqual(filetags.find_similar_tags('Simpson', ['foobar', 'Simson', 'simpson', 'Frankenstein', 'sumpson', 'Simpso', 'impson', 'mpson', 'Schneewittchen']),
+        self.assertEqual(filetags.find_similar_tags('Simpson', ['foobar', 'Simson', 'simpson', 'Frankenstein',
+                                                                'sumpson', 'Simpso', 'impson', 'mpson',
+                                                                'Schneewittchen']),
                          ['impson', 'Simson', 'Simpso', 'simpson', 'mpson', 'sumpson'])
 
     def test_check_for_possible_shortcuts_in_entered_tags(self):
@@ -135,28 +140,34 @@ class TestMethods(unittest.TestCase):
                          ['bar'])
 
         self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags(['34'],
-                                                                               ['Frankenstein', 'Schneewittchen', 'baz', 'bar']),
+                                                                               ['Frankenstein', 'Schneewittchen',
+                                                                                'baz', 'bar']),
                          ['baz', 'bar'])
 
         self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags(['12'],
-                                                                               ['Frankenstein', 'Schneewittchen', 'baz', 'bar']),
+                                                                               ['Frankenstein', 'Schneewittchen',
+                                                                                'baz', 'bar']),
                          ['Frankenstein', 'Schneewittchen'])
 
         self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags(['59'],
-                                                                               ['Frankenstein', 'Schneewittchen', 'baz', 'bar']),
+                                                                               ['Frankenstein', 'Schneewittchen',
+                                                                                'baz', 'bar']),
                          ['59'])
 
         self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags(['baz', '12', '88'],
-                                                                               ['Frankenstein', 'Schneewittchen', 'baz', 'bar']),
+                                                                               ['Frankenstein', 'Schneewittchen',
+                                                                                'baz', 'bar']),
                          ['baz', 'Frankenstein', 'Schneewittchen', '88'])
 
         self.assertEqual(filetags.check_for_possible_shortcuts_in_entered_tags(['19', '88', 'baz'],
-                                                                               ['Frankenstein', 'Schneewittchen', 'baz', 'bar']),
+                                                                               ['Frankenstein', 'Schneewittchen',
+                                                                                'baz', 'bar']),
                          ['19', '88', 'baz'])
 
     def test_get_upto_nine_keys_of_dict_with_highest_value(self):
 
-        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({"key2": 45, "key1": 33}), ["key1", "key2"])
+        self.assertEqual(filetags.get_upto_nine_keys_of_dict_with_highest_value({"key2": 45, "key1": 33}),
+                         ["key1", "key2"])
 
         mydict = {"key1": 45, "key2": 33, "key3": 3, "key4": 1, "key5": 5, "key6": 159,
                   "key7": 0, "key8": 999, "key9": 42, "key10": 4242}
@@ -186,12 +197,14 @@ class TestMethods(unittest.TestCase):
         self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt',
                                                                      'file2 -- common foo bar.txt'
                                                                      'file3 -- common foo bar baz.txt'
-                                                                     'file4 -- common foo bar jodel.txt'])), set(['common', 'foo']))
+                                                                     'file4 -- common foo bar jodel.txt'])),
+                            set(['common', 'foo']))
         # ignoring Windows .lnk extension as extension:
         self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- common baz foo.txt.lnk',
                                                                      'file2 -- common foo bar.txt.lnk'
                                                                      'file3 -- common foo bar baz.txt.lnk'
-                                                                     'file4 -- common foo bar jodel.txt.lnk'])), set(['common', 'foo']))
+                                                                     'file4 -- common foo bar jodel.txt.lnk'])),
+                            set(['common', 'foo']))
 
     def test_extract_tags_from_path(self):
         self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
@@ -207,7 +220,8 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18 foo bar'), ['2018', '03', '18'])
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18_foo bar'), ['2018', '03', '18'])
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18-foo bar'), ['2018', '03', '18'])
-        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18T23.59 foo bar'), ['2018', '03', '18'])
+        self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18T23.59 foo bar'),
+                         ['2018', '03', '18'])
 
     def tearDown(self):
 
@@ -247,7 +261,9 @@ class TestFileWithoutTags(unittest.TestCase):
     def test_add_and_remove_tags(self):
 
         # adding a tag to a file without any tags:
-        filetags.handle_file(os.path.join(self.tempdir, self.testfilename), ['bar'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, self.testfilename),
+                             ['bar'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists('a test file . for you -- bar.txt'), True)
 
         # adding a second tag:
@@ -280,7 +296,9 @@ class TestFileWithoutTags(unittest.TestCase):
         # Note: default unique_tags is a hard-coded list of u'teststring1' and u'teststring2'
 
         # adding a unique tag to a file without any tags:
-        dummy_filename = filetags.handle_file(os.path.join(self.tempdir, self.testfilename), ['teststring1'], do_remove=False, do_filter=False, dryrun=False)
+        dummy_filename = filetags.handle_file(os.path.join(self.tempdir, self.testfilename),
+                                              ['teststring1'],
+                                              do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists('a test file . for you -- teststring1.txt'), True)
 
         # adding a second unique tag - first one should be gone:
@@ -302,7 +320,9 @@ class TestFileWithoutTags(unittest.TestCase):
 
         filename = "file without extension"
         self.create_tmp_file(filename)
-        filetags.handle_file(os.path.join(self.tempdir, filename), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, filename),
+                             ['foo'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists(filename + ' -- foo'), True)
 
     # there is no such function: filetags.list_tags_by_number()
@@ -312,18 +332,24 @@ class TestFileWithoutTags(unittest.TestCase):
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {})
 
         # adding a file tag:
-        filetags.handle_file(os.path.join(self.tempdir, self.testfilename), ['bar'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, self.testfilename),
+                             ['bar'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {'bar': 1})
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=0), {'bar': 1})
 
         # adding a another file tag:
-        filetags.handle_file(os.path.join(self.tempdir, 'a test file . for you -- bar.txt'), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, 'a test file . for you -- bar.txt'),
+                             ['foo'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {'bar': 1, 'foo': 1})
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=0), {'bar': 1, 'foo': 1})
 
         # adding a another file:
         self.create_tmp_file('a second file')
-        filetags.handle_file(os.path.join(self.tempdir, 'a second file'), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, 'a second file'),
+                             ['foo'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {'bar': 1})
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=1), {'bar': 1})
         self.assertEqual(filetags.list_tags_by_number(max_tag_count=0), {'bar': 1, 'foo': 2})
@@ -335,25 +361,37 @@ class TestFileWithoutTags(unittest.TestCase):
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {})
 
         # adding a file tag:
-        filetags.handle_file(os.path.join(self.tempdir, self.testfilename), ['similar1'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, self.testfilename),
+                             ['similar1'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {})
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False), {'similar1': 1})
 
         # adding a file tag:
-        filetags.handle_file(os.path.join(self.tempdir, 'a test file . for you -- similar1.txt'), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, 'a test file . for you -- similar1.txt'),
+                             ['foo'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {})
-        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False), {'foo': 1, 'similar1': 1})
+        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False),
+                         {'foo': 1, 'similar1': 1})
 
         # adding a another file:
         self.create_tmp_file('a second file')
-        filetags.handle_file(os.path.join(self.tempdir, 'a second file'), ['foo'], do_remove=False, do_filter=False, dryrun=False)
+        filetags.handle_file(os.path.join(self.tempdir, 'a second file'),
+                             ['foo'],
+                             do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {})
-        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False), {'foo': 2, 'similar1': 1})
+        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False),
+                         {'foo': 2, 'similar1': 1})
 
         # adding similar tag:
-        filetags.handle_file(os.path.join(self.tempdir, 'a second file -- foo'), ['similar2'], do_remove=False, do_filter=False, dryrun=False)
-        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True), {'similar1': 1, 'similar2': 1})
-        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False), {'foo': 2, 'similar1': 1, 'similar2': 1})
+        filetags.handle_file(os.path.join(self.tempdir, 'a second file -- foo'),
+                             ['similar2'],
+                             do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=True),
+                         {'similar1': 1, 'similar2': 1})
+        self.assertEqual(filetags.list_tags_by_alphabet(only_with_similar_tags=False),
+                         {'foo': 2, 'similar1': 1, 'similar2': 1})
 
     def tearDown(self):
 
@@ -454,7 +492,8 @@ class TestReplacingLinkSourceAndTarget(unittest.TestCase):
         self.linkdir = tempfile.mkdtemp(prefix='links')
 
         os.chdir(self.sourcedir)
-        logging.info("\nTestReplacingLinkSourceAndTarget: sourcedir: " + self.sourcedir + " and linkdir: " + self.linkdir)
+        logging.info("\nTestReplacingLinkSourceAndTarget: sourcedir: " + self.sourcedir +
+                     " and linkdir: " + self.linkdir)
 
         # create set of test files:
         self.create_source_file(self.SOURCEFILE1)

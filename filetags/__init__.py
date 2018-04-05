@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-04 17:30:30 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-04-05 15:16:14 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -34,7 +34,8 @@ def save_import(library):
     try:
         globals()[library] = import_module(library)
     except ImportError:
-        print("Could not find Python module \"" + library + "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
+        print("Could not find Python module \"" + library +
+              "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
         sys.exit(2)
 
 
@@ -57,7 +58,8 @@ if platform.system() == 'Windows':
     try:
         import win32com.client
     except ImportError:
-        print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., with \"sudo pip install pypiwin32\".")
+        print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., " +
+              "with \"sudo pip install pypiwin32\".")
         sys.exit(2)
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
@@ -168,22 +170,24 @@ parser.add_argument("-i", "--interactive", action="store_true", dest="interactiv
                     help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
 parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
-                    help="recursively go through the current directory and all of its subdirectories. Implemented for --tag-gardening and --tagtrees")
+                    help="recursively go through the current directory and all of its subdirectories. " +
+                    "Implemented for --tag-gardening and --tagtrees")
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="enable dryrun mode: just simulate what would happen, do not modify files")
 
 parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
                     help="ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
-                    "containing links to all files with matching tags and start the filebrowser. Target directory " +
-                    "can be overridden by --tagtrees-dir.")
+                    "containing links to all files with matching tags and start the filebrowser. " +
+                    "Target directory can be overridden by --tagtrees-dir.")
 
 parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
                     help="use this option to override the tool to view/manage files (for --filter; default: " +
                     DEFAULT_IMAGE_VIEWER_LINUX + "). Use \"none\" to omit the default one.")
 
 parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
-                    help="This generates nested directories in \"" + TAGFILTER_DIRECTORY + "\" for each combination of tags " +
+                    help="This generates nested directories in \"" + TAGFILTER_DIRECTORY +
+                    "\" for each combination of tags " +
                     "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". Target directory " +
                     "can be overridden by --tagtrees-dir. " +
                     "Please note that this may take long since it relates " +
@@ -196,12 +200,17 @@ parser.add_argument("--tagtrees-handle-no-tag",
                     type=str,
                     metavar='"treeroot" | "ignore" | "FOLDERNAME"',
                     required=False,
-                    help="When tagtrees are created, this parameter defines how to handle items that got no tag at all. " +
-                    "The value \"treeroot\" is the default behavior: items without a tag are linked to the tagtrees root. " +
+                    help="When tagtrees are created, this parameter defines how to handle items that got " +
+                    "no tag at all. " +
+                    "The value \"treeroot\" is the default behavior: items without a tag are linked to " +
+                    "the tagtrees root. " +
                     "The value \"ignore\" will not link any non-tagged items at all. " +
-                    "Any other value is interpreted as a folder name within the tagreees which is used to link all non-tagged items to.")
+                    "Any other value is interpreted as a folder name within the tagreees which is used " +
+                    "to link all non-tagged items to.")
 
-parser.add_argument("--tagtrees-link-missing-mutual-tagged-items", dest="tagtrees_link_missing_mutual_tagged_items", action="store_true",
+parser.add_argument("--tagtrees-link-missing-mutual-tagged-items",
+                    dest="tagtrees_link_missing_mutual_tagged_items",
+                    action="store_true",
                     help="When the controlled vocabulary holds mutual exclusive tags (multiple tags in one line) " +
                     "this option generates directories in the tagtrees root that hold links to items that have no " +
                     "single tag from those mutual exclusive sets. For example, when \"draft final\" is defined in the vocabulary, " +
@@ -213,8 +222,10 @@ parser.add_argument("--tagtrees-dir",
                     type=str,
                     metavar='<existing_directory>',
                     required=False,
-                    help="When tagtrees are created, this parameter overrides the default target directory \"" + TAGFILTER_DIRECTORY +
-                    "\" with a user-defined one. It has to be an empty directory or a non-existing directory which will be created. " +
+                    help="When tagtrees are created, this parameter overrides the default " +
+                    "target directory \"" + TAGFILTER_DIRECTORY +
+                    "\" with a user-defined one. It has to be an empty directory or a " +
+                    "non-existing directory which will be created. " +
                     "This also overrides the default directory for --filter.")
 
 parser.add_argument("--tagtrees-depht",
@@ -222,31 +233,41 @@ parser.add_argument("--tagtrees-depht",
                     nargs=1,
                     type=int,
                     required=False,
-                    help="When tagtrees are created, this parameter defines the level of depth of the tagtree hierarchy. " +
-                    "The default value is 2. Please note that increasing the depth increases the number of links exponentially. " +
-                    "Especially when running Windows (using lnk-files instead of symbolic links) the performance is really slow. " +
+                    help="When tagtrees are created, this parameter defines the level of " +
+                    "depth of the tagtree hierarchy. " +
+                    "The default value is 2. Please note that increasing the depth " +
+                    "increases the number of links exponentially. " +
+                    "Especially when running Windows (using lnk-files instead of " +
+                    "symbolic links) the performance is really slow. " +
                     "Choose wisely.")
 
-parser.add_argument("--ln", "--list-tags-by-number", dest="list_tags_by_number", action="store_true",
+parser.add_argument("--ln", "--list-tags-by-number",
+                    dest="list_tags_by_number", action="store_true",
                     help="list all file-tags sorted by their number of use")
 
-parser.add_argument("--la", "--list-tags-by-alphabet", dest="list_tags_by_alphabet", action="store_true",
+parser.add_argument("--la", "--list-tags-by-alphabet",
+                    dest="list_tags_by_alphabet", action="store_true",
                     help="list all file-tags sorted by their name")
 
-parser.add_argument("--lu", "--list-tags-unknown-to-vocabulary", dest="list_unknown_tags", action="store_true",
+parser.add_argument("--lu", "--list-tags-unknown-to-vocabulary",
+                    dest="list_unknown_tags", action="store_true",
                     help="list all file-tags which are found in file names but are not part of .filetags")
 
-parser.add_argument("--tag-gardening", dest="tag_gardening", action="store_true",
+parser.add_argument("--tag-gardening",
+                    dest="tag_gardening", action="store_true",
                     help="This is for getting an overview on tags that might require to be renamed (typos, " +
                     "singular/plural, ...). See also http://www.webology.org/2008/v5n3/a58.html")
 
-parser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
+parser.add_argument("-v", "--verbose",
+                    dest="verbose", action="store_true",
                     help="enable verbose mode")
 
-parser.add_argument("-q", "--quiet", dest="quiet", action="store_true",
+parser.add_argument("-q", "--quiet",
+                    dest="quiet", action="store_true",
                     help="enable quiet mode")
 
-parser.add_argument("--version", dest="version", action="store_true",
+parser.add_argument("--version",
+                    dest="version", action="store_true",
                     help="display version and exit")
 
 options = parser.parse_args()
@@ -440,9 +461,11 @@ def adding_tag_to_filename(filename, tagname):
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
             if is_lnk_file(filename):
-                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension + '.lnk')
+                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR +
+                                    tagname + '.' + extension + '.lnk')
             else:
-                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR + tagname + '.' + extension)
+                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR +
+                                    tagname + '.' + extension)
         else:
             # filename has no extension
             if is_lnk_file(filename):
@@ -464,7 +487,8 @@ def adding_tag_to_filename(filename, tagname):
         if components:
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
-            new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR + tagname + '.' + extension)
+            new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR +
+                                        tagname + '.' + extension)
         else:
             new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
         if is_lnk_file(filename):
@@ -606,13 +630,22 @@ def print_item_transition(path, source, destination, transition):
         source = source
         arrow_left = colorama.Style.DIM + '――'
         arrow_right = '―→'
-        print("  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source, arrow_left, transition_description, arrow_right, destination, width=source_width))
+        print("  {0:<{width}s}   {1:s}{2:s}{3:s}   {4:s}".format(source,
+                                                                 arrow_left,
+                                                                 transition_description,
+                                                                 arrow_right,
+                                                                 destination,
+                                                                 width=source_width))
 
     else:
         # for narrow screens (and long file names): split up item source/destination in two lines
 
-        print(" {0:<{width}s}  \"{1:s}\"".format(transition_description, source, width=len(transition_description)))
-        print(" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ', destination, width=len(transition_description)))
+        print(" {0:<{width}s}  \"{1:s}\"".format(transition_description,
+                                                 source,
+                                                 width=len(transition_description)))
+        print(" {0:<{width}s}     ⤷   \"{1:s}\"".format(' ',
+                                                        destination,
+                                                        width=len(transition_description)))
 
 
 def find_unique_alternative_to_file(filename):
@@ -622,7 +655,10 @@ def find_unique_alternative_to_file(filename):
     """
 
     logging.debug("file type error for file [%s] in folder [%s]: file type: is file? %s  -  is dir? %s  -  is mount? %s" %
-                  (filename, os.getcwd(), str(os.path.isfile(filename)), str(os.path.isdir(filename)), str(os.path.islink(filename))))
+                  (filename, os.getcwd(),
+                   str(os.path.isfile(filename)),
+                   str(os.path.isdir(filename)),
+                   str(os.path.islink(filename))))
     logging.debug("trying to find a unique file starting with the same characters ...")
 
     path = os.path.dirname(filename)
@@ -645,7 +681,8 @@ def find_unique_alternative_to_file(filename):
             if existingfilename.startswith(filenamesubstring):
                 matchingfilenames.append(existingfilename)
         if matchingfilenames:
-            logging.debug('For substring [%s] I found existing filenames: %s' % (filenamesubstring, str(matchingfilenames)))
+            logging.debug('For substring [%s] I found existing filenames: %s' % (filenamesubstring,
+                                                                                 str(matchingfilenames)))
             if len(matchingfilenames) > 1:
                 logging.debug('Can not use an alternative filename since it is not unique')
             break
@@ -704,10 +741,12 @@ def get_link_source_file(filename):
         original_file = shortcut.Targetpath
         assert(len(shortcut.Targetpath)>0)  # only continue if it is a lnk file
         if os.path.exists(original_file):
-            logging.debug('get_link_source_file(' + filename + ') == ' + original_file + '  which does exist -> non-broken link')
+            logging.debug('get_link_source_file(' + filename + ') == ' +
+                          original_file + '  which does exist -> non-broken link')
             return(original_file)
         else:
-            logging.debug('get_link_source_file(' + filename + ') == ' + original_file + '  which does NOT exist -> broken link')
+            logging.debug('get_link_source_file(' + filename + ') == ' +
+                          original_file + '  which does NOT exist -> broken link')
             return(False)
 
     else:
@@ -733,10 +772,12 @@ def is_broken_link(filename):
             assert(len(shortcut.Targetpath)>0)  # only continue if it is a valid lnk file
 
             if os.path.exists(original_file):
-                logging.debug('is_broken_link(' + filename + ') == ' + original_file + '  which does exist -> non-broken link')
+                logging.debug('is_broken_link(' + filename + ') == ' +
+                              original_file + '  which does exist -> non-broken link')
                 return(False)
             else:
-                logging.debug('is_broken_link(' + filename + ') == ' + original_file + '  which does NOT exist -> broken link')
+                logging.debug('is_broken_link(' + filename + ') == ' +
+                              original_file + '  which does NOT exist -> broken link')
                 return(True)
         else:
             logging.debug('is_broken_link(' + filename + ')  is not a lnk file at all; thus: not a broken link')
@@ -781,7 +822,8 @@ def split_up_filename(filename):
 
     if not os.path.exists(filename):
         # This does make sense for splitting up filenames that are about to be created for example:
-        logging.debug('split_up_filename(' + filename + ') does NOT exist. Playing along and returning non-existent filename parts.')
+        logging.debug('split_up_filename(' + filename +
+                      ') does NOT exist. Playing along and returning non-existent filename parts.')
         dirname = os.path.dirname(filename)
     else:
         dirname = os.path.dirname(os.path.abspath(filename))
@@ -815,13 +857,15 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     global list_of_link_directories
 
     if not (os.path.isfile(filename) or os.path.islink(filename)):
-        logging.debug('handle_file_and_optional_link: this is no regular file nor a link; looking for an alternative file that starts with same substring …')
+        logging.debug('handle_file_and_optional_link: this is no regular file nor a link; ' +
+                      'looking for an alternative file that starts with same substring …')
 
         # try to find unique alternative file:
         alternative_filename = find_unique_alternative_to_file(filename)
 
         if not alternative_filename:
-            logging.debug('handle_file_and_optional_link: Could not locate alternative basename that starts with same substring')
+            logging.debug('handle_file_and_optional_link: Could not locate alternative ' +
+                          'basename that starts with same substring')
             logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
             return
         else:
@@ -837,9 +881,12 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
     # if basename is a link and has same basename, tag the source file as well:
     if TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and is_nonbroken_link(filename):
-        logging.debug('handle_file_and_optional_link: file is a non-broken link (and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS is set)')
+        logging.debug('handle_file_and_optional_link: file is a non-broken link (and ' +
+                      'TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS is set)')
 
-        old_source_filename, old_source_dirname, old_source_basename, old_source_basename_without_lnk = split_up_filename(get_link_source_file(filename))
+        old_source_filename, old_source_dirname, \
+            old_source_basename, old_source_basename_without_lnk = \
+                split_up_filename(get_link_source_file(filename))
 
         linkbasename_same_as_originalbasename = False
         if is_lnk_file(basename):
@@ -849,20 +896,26 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
         if linkbasename_same_as_originalbasename:
             logging.debug('handle_file_and_optional_link: link "' + filename +
-                          '" has same basename as its source file "' + old_source_filename + '"  ' + 'v' * 20)
+                          '" has same basename as its source file "' +
+                          old_source_filename + '"  ' + 'v' * 20)
 
             logging.debug('handle_file_and_optional_link: invoking handle_file_and_optional_link("' +
                           old_source_filename + '")  '  + 'v' * 20)
-            new_source_basename = handle_file_and_optional_link(old_source_filename, tags, do_remove, do_filter, dryrun)
+            new_source_basename = handle_file_and_optional_link(old_source_filename,
+                                                                tags,
+                                                                do_remove, do_filter, dryrun)
             logging.debug('handle_file_and_optional_link: RETURNED handle_file_and_optional_link("' +
                           old_source_filename + '")  '  + 'v' * 20)
 
             new_source_filename = os.path.join(old_source_dirname, new_source_basename)
-            new_source_filename, new_source_dirname, new_source_basename, new_source_basename_without_lnk = split_up_filename(new_source_filename)
+            new_source_filename, new_source_dirname, \
+                new_source_basename, new_source_basename_without_lnk = \
+                    split_up_filename(new_source_filename)
 
             if old_source_basename != new_source_basename:
-                logging.debug('handle_file_and_optional_link: Tagging the symlink-destination file of "' + basename + '" ("' +
-                             old_source_filename + '") as well …')
+                logging.debug('handle_file_and_optional_link: Tagging the symlink-destination file of "' +
+                              basename + '" ("' +
+                              old_source_filename + '") as well …')
 
                 if options.dryrun:
                     logging.debug('handle_file_and_optional_link: I would re-link the old sourcefilename "'
@@ -879,7 +932,8 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
                 return new_filename
             else:
-                logging.debug('handle_file_and_optional_link: The old sourcefilename "' + old_source_filename +
+                logging.debug('handle_file_and_optional_link: The old sourcefilename "' +
+                              old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
                 # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
@@ -963,7 +1017,8 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
     filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
 
-    logging.debug("handle_file(\"" + filename + "\") " + '#' * 10 + "  … with working dir \"" + os.getcwd() + "\"")
+    logging.debug("handle_file(\"" + filename + "\") " + '#' * 10 +
+                  "  … with working dir \"" + os.getcwd() + "\"")
 
     if do_filter:
         print_item_transition(dirname, basename, chosen_tagtrees_dir, transition='link')
@@ -972,7 +1027,8 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
     else:  # add or remove tags:
         new_basename = basename
-        logging.debug('handle_file: set new_basename [' + new_basename + '] according to parameters (initialization)')
+        logging.debug('handle_file: set new_basename [' + new_basename +
+                      '] according to parameters (initialization)')
 
         for tagname in tags:
             if do_remove:
@@ -983,11 +1039,13 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
                 logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
             else:
                 # FIXXME: not performance optimized for large number of unique tags in many lists:
-                tag_in_unique_tags, matching_unique_tag_list = item_contained_in_list_of_lists(tagname, unique_tags)
+                tag_in_unique_tags, matching_unique_tag_list = \
+                    item_contained_in_list_of_lists(tagname, unique_tags)
 
                 if tagname != tag_in_unique_tags:
                     new_basename = adding_tag_to_filename(new_basename, tagname)
-                    logging.debug('handle_file: set new_basename [' + new_basename + '] when tagname != tag_in_unique_tags')
+                    logging.debug('handle_file: set new_basename [' + new_basename +
+                                  '] when tagname != tag_in_unique_tags')
                 else:
                     # if tag within unique_tags found, and new unique tag is given, remove old tag:
                     # e.g.: unique_tags = (u'yes', u'no') -> if 'no' should be added, remove existing tag 'yes' (and vice versa)
@@ -996,12 +1054,15 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
                     current_filename_tags = extract_tags_from_filename(new_basename)
                     conflicting_tags = list(set(current_filename_tags).intersection(matching_unique_tag_list))
-                    logging.debug("handle_file: found unique tag %s which require old unique tag(s) to be removed: %s" % (tagname, repr(conflicting_tags)))
+                    logging.debug("handle_file: found unique tag %s which require old unique tag(s) to be removed: %s" %
+                                  (tagname, repr(conflicting_tags)))
                     for conflicting_tag in conflicting_tags:
                         new_basename = removing_tag_from_filename(new_basename, conflicting_tag)
-                        logging.debug('handle_file: set new_basename [' + new_basename + '] when conflicting_tag in conflicting_tags')
+                        logging.debug('handle_file: set new_basename [' + new_basename +
+                                      '] when conflicting_tag in conflicting_tags')
                     new_basename = adding_tag_to_filename(new_basename, tagname)
-                    logging.debug('handle_file: set new_basename [' + new_basename + '] after adding_tag_to_filename()')
+                    logging.debug('handle_file: set new_basename [' + new_basename +
+                                  '] after adding_tag_to_filename()')
 
         new_filename = os.path.join(dirname, new_basename)
 
@@ -1081,7 +1142,8 @@ def get_files_with_metadata(startdir=os.getcwd(), use_cache=True):
 
     assert(os.path.isdir(startdir))
 
-    logging.debug('get_files_with_metadata called with startdir [%s], cached startdirs [%s]' % (startdir, str(len(list(cache_of_files_with_metadata.keys())))))
+    logging.debug('get_files_with_metadata called with startdir [%s], cached startdirs [%s]' %
+                  (startdir, str(len(list(cache_of_files_with_metadata.keys())))))
 
     if use_cache and len(cache_of_files_with_metadata) > 0:
         logging.debug("found " + str(len(cache_of_files_with_metadata)) + " files in cache for files")
@@ -1154,10 +1216,12 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
 
     global cache_of_tags_by_folder
 
-    logging.debug('get_tags_from_files_and_subfolders called with startdir [%s], cached startdirs [%s]' % (startdir, str(len(list(cache_of_tags_by_folder.keys())))))
+    logging.debug('get_tags_from_files_and_subfolders called with startdir [%s], cached startdirs [%s]' %
+                  (startdir, str(len(list(cache_of_tags_by_folder.keys())))))
 
     if use_cache and startdir in list(cache_of_tags_by_folder.keys()):
-        logging.debug("found " + str(len(cache_of_tags_by_folder[startdir])) + " tags in cache for directory: " + startdir)
+        logging.debug("found " + str(len(cache_of_tags_by_folder[startdir])) +
+                      " tags in cache for directory: " + startdir)
         return cache_of_tags_by_folder[startdir]
 
     elif use_cache and startdir in cache_of_files_with_metadata.keys():
@@ -1191,7 +1255,8 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
                                            options.tag_gardening)):
                 break  # do not loop
 
-    logging.debug("Writing " + str(len(list(tags.keys()))) + " tags in cache for directory: " + startdir)
+    logging.debug("Writing " + str(len(list(tags.keys()))) +
+                  " tags in cache for directory: " + startdir)
     if use_cache:
         cache_of_tags_by_folder[startdir] = tags
     return tags
@@ -1220,7 +1285,8 @@ def find_similar_tags(tag, tags):
     return close_but_not_exact_matches
 
 
-def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_similar_vocabulary_tags=False, print_only_tags_with_similar_tags=False):
+def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0,
+                   print_similar_vocabulary_tags=False, print_only_tags_with_similar_tags=False):
     """
     Takes a dictionary which holds tag names and their occurrence and prints it to stdout.
     Tags that appear also in the vocabulary get marked in the output.
@@ -1234,7 +1300,8 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
 
     # determine maximum length of strings for formatting:
     if len(tag_dict) > 0:
-        maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
+        maxlength_tags = max(len(s) for s in list(tag_dict.keys())) + \
+            len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
         maxlength_count = len(str(abs(max(tag_dict.values()))))
     else:
         maxlength_tags = len(HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE)
@@ -1246,7 +1313,8 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
     hint_for_being_in_vocabulary = ''
     similar_tags = ''
     if vocabulary:
-        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)")
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE +
+              "\" appear in your vocabulary.)")
     print("\n {0:{1}} : {2:{3}}".format('count', maxlength_count, 'tag', maxlength_tags))
     print(" " + '-' * (maxlength_tags + maxlength_count + 7))
     for tuple in sorted(list(tag_dict.items()), key=operator.itemgetter(sort_index)):
@@ -1269,7 +1337,11 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0, print_sim
             similar_tags = ''
 
         if (print_only_tags_with_similar_tags and similar_tags_list) or not print_only_tags_with_similar_tags:
-            print(" {0:{1}} : {2:{3}}   {4}".format(tuple[1], maxlength_count, tuple[0] + hint_for_being_in_vocabulary, maxlength_tags, similar_tags))
+            print(" {0:{1}} : {2:{3}}   {4}".format(tuple[1],
+                                                    maxlength_count,
+                                                    tuple[0] + hint_for_being_in_vocabulary,
+                                                    maxlength_tags,
+                                                    similar_tags))
 
     print('')
 
@@ -1289,7 +1361,8 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
 
     hint_for_being_in_vocabulary = ''
     if vocabulary:
-        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE + "\" appear in your vocabulary.)\n")
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE +
+              "\" appear in your vocabulary.)\n")
 
     for tag in sorted(tag_set):
 
@@ -1315,7 +1388,8 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
 
 def list_unknown_tags(file_tag_dict):
     """
-    Traverses the file system, extracts all tags, prints tags that are found in file names which are not found in the controlled vocabulary file .filetags
+    Traverses the file system, extracts all tags, prints tags that are found
+    in file names which are not found in the controlled vocabulary file .filetags
 
     @param return: dict of tags (if max_tag_count is set, returned entries are set accordingly)
     """
@@ -1440,7 +1514,8 @@ def handle_tag_gardening(vocabulary):
                                 len(longest_tagname),
                                 str(num_files_with_tag_from_taggroup),
                                 len(str(num_files_with_any_tag_from_taggroup)),
-                                str_percentage(num_files_with_tag_from_taggroup, num_files_with_any_tag_from_taggroup)))
+                                str_percentage(num_files_with_tag_from_taggroup,
+                                               num_files_with_any_tag_from_taggroup)))
                         else:
                             print('   "' + tag + '": Not used')
                 else:
@@ -1461,8 +1536,11 @@ def handle_tag_gardening(vocabulary):
     tags_in_both_outputs = tags_only_used_once_set.intersection(only_similar_tags_by_alphabet_set)
 
     if tags_in_both_outputs != set([]):
-        print("\nIf tags appear in both lists from above (only once and similar to others), they most likely\nrequire your attention:")
-        print_tag_set(tags_in_both_outputs, vocabulary=vocabulary, print_similar_vocabulary_tags=True)
+        print("\nIf tags appear in both lists from above (only once and similar to " +
+              "others), they most likely\nrequire your attention:")
+        print_tag_set(tags_in_both_outputs,
+                      vocabulary=vocabulary,
+                      print_similar_vocabulary_tags=True)
 
 
 def locate_file_in_cwd_and_parent_directories(startfile, filename):
@@ -1474,36 +1552,45 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     @param return: file name found
     """
 
-    logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' % (startfile, filename))
+    logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' %
+                  (startfile, filename))
     if startfile and os.path.isfile(startfile) and os.path.isfile(
             os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
-        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory of \"%s\" ..' % (filename, startfile))
+        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory of \"%s\" ..' %
+                      (filename, startfile))
         return filename
     elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
-        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ...' % (filename, startfile))
+        logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ...' %
+                      (filename, startfile))
         return filename
     else:
         if os.path.isfile(startfile):
             starting_dir = os.path.dirname(os.path.abspath(startfile))
-            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] found, using it as starting_dir [%s] ....' % (str(startfile), starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] found, using it as starting_dir [%s] ....' %
+                          (str(startfile), starting_dir))
         elif os.path.isdir(startfile):
             starting_dir = startfile
-            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] is a directory, using it as starting_dir [%s] .....' % (str(startfile), starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] is a directory, using it as starting_dir [%s] .....' %
+                          (str(startfile), starting_dir))
         else:
             starting_dir = os.getcwd()
-            logging.debug('locate_file_in_cwd_and_parent_directories: no startfile found; using cwd as starting_dir [%s] ......' % (starting_dir))
+            logging.debug('locate_file_in_cwd_and_parent_directories: no startfile found; using cwd as starting_dir [%s] ......' %
+                          (starting_dir))
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
-        logging.debug('locate_file_in_cwd_and_parent_directories: looking for \"%s\" in directory \"%s\" .......' % (filename, parent_dir))
+        logging.debug('locate_file_in_cwd_and_parent_directories: looking for \"%s\" in directory \"%s\" .......' %
+                      (filename, parent_dir))
         while parent_dir != os.getcwd():
             os.chdir(parent_dir)
             filename_to_look_for = os.path.abspath(os.path.join(os.getcwd(), filename))
             if os.path.isfile(filename_to_look_for):
-                logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ........' % (filename, parent_dir))
+                logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ........' %
+                              (filename, parent_dir))
                 os.chdir(starting_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
         os.chdir(starting_dir)
-        logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' % filename)
+        logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' %
+                      filename)
         return False
 
 
@@ -1519,7 +1606,8 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     """
 
-    logging.debug('locate_and_parse_controlled_vocabulary: called with startfile: ' + str(startfile) + ' and cwd = ' + str(os.getcwd()))
+    logging.debug('locate_and_parse_controlled_vocabulary: called with startfile: ' +
+                  str(startfile) + ' and cwd = ' + str(os.getcwd()))
     if startfile:
         filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
     else:
@@ -1527,27 +1615,36 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     if IS_WINDOWS:
         # searching for and handling of lnk files:
-        logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: also look out for lnk-files that link to .filetags files ...')
+        logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                      'also look out for lnk-files that link to .filetags files ...')
         if startfile:
-            lnk_filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME + '.lnk')
+            lnk_filename = locate_file_in_cwd_and_parent_directories(startfile,
+                                                                     CONTROLLED_VOCABULARY_FILENAME + '.lnk')
         else:
-            lnk_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME + '.lnk')
+            lnk_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(),
+                                                                     CONTROLLED_VOCABULARY_FILENAME + '.lnk')
 
         if lnk_filename and filename:
-            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: both (non-lnk and lnk) .filetags found. Taking the one with the longer path')
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                          'both (non-lnk and lnk) .filetags found. Taking the one with the longer path')
             if os.path.dirname(lnk_filename) > os.path.dirname(filename) and is_nonbroken_link(lnk_filename):
-                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: taking the lnk .filetags')
+                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                              'taking the lnk .filetags')
                 filename = lnk_filename
             elif not is_nonbroken_link(lnk_filename):
-                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: taking the non-lnk .filetags since the found lnk is a broken link')
+                logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                              'taking the non-lnk .filetags since the found lnk is a broken link')
         elif lnk_filename and not filename:
-            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: only a lnk of .filetags was found')
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                          'only a lnk of .filetags was found')
             filename = lnk_filename
         else:
-            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: .filetags (non-lnk) was found')
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                          '.filetags (non-lnk) was found')
 
         if filename and is_lnk_file(filename) and os.path.isfile(get_link_source_file(filename)):
-            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: set filename to source file for lnk .filetags')
+            logging.debug('locate_and_parse_controlled_vocabulary: this is Windows: ' +
+                          'set filename to source file for lnk .filetags')
             filename = get_link_source_file(filename)
 
     global unique_tags
@@ -1559,22 +1656,26 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
             tags = []
             with codecs.open(filename, encoding='utf-8') as filehandle:
-                logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' % filename)
+                logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
+                              filename)
                 global controlled_vocabulary_filename
                 controlled_vocabulary_filename = filename
                 for rawline in filehandle:
                     line = rawline.strip()
                     if BETWEEN_TAG_SEPARATOR in line:
                         ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
-                        logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' % (line))
+                        logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
+                                      (line))
                         unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
                         for tag in line.split(BETWEEN_TAG_SEPARATOR):
                             # *also* append unique tags to general tag list:
                             tags.append(tag)
                     else:
                         tags.append(line)
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' % len(tags))
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' % (len(unique_tags) - 1))
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' %
+                          len(tags))
+            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
+                          (len(unique_tags) - 1))
             return tags
         else:
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
@@ -1692,9 +1793,11 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
 
     complete_list = sorted(mydict, key=mydict.get, reverse=True)
 
-    logging.debug("get_upto_nine_keys_of_dict_with_highest_value: complete_list: " + ", ".join(complete_list))
+    logging.debug("get_upto_nine_keys_of_dict_with_highest_value: complete_list: " +
+                  ", ".join(complete_list))
     if list_of_tags_to_omit:
-        logging.debug("get_upto_nine_keys_of_dict_with_highest_value: omitting tags: " + ", ".join(list_of_tags_to_omit))
+        logging.debug("get_upto_nine_keys_of_dict_with_highest_value: omitting tags: " +
+                      ", ".join(list_of_tags_to_omit))
         complete_list = [x for x in complete_list if x not in list_of_tags_to_omit]
 
     return sorted(complete_list[:9])
@@ -1718,7 +1821,8 @@ def _get_tag_visual(tags_for_visual=None):
 
     length = len(tags)
     visual = "         " + style + ".---" + '-' * length + "--," + colorama.Style.RESET_ALL + " \n" + \
-             "        " + style + "| o  " + colorama.Style.BRIGHT + tags + colorama.Style.NORMAL + "  |" + colorama.Style.RESET_ALL + " \n" + \
+             "        " + style + "| o  " + colorama.Style.BRIGHT + tags + \
+             colorama.Style.NORMAL + "  |" + colorama.Style.RESET_ALL + " \n" + \
              "         " + style + "`---" + '-' * length + "--'" + colorama.Style.RESET_ALL + " "
 
     return visual
@@ -1752,7 +1856,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     logging.debug("files: %s" % str(options.files))
 
     print("                 ")
-    print("Please enter tags" + colorama.Style.DIM + ", separated by \"" + BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
+    print("Please enter tags" + colorama.Style.DIM + ", separated by \"" +
+          BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
           completionhint + colorama.Style.RESET_ALL)
     print("                     ")
     print(_get_tag_visual(tags_for_visual))
@@ -1774,7 +1879,8 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     else:
         if len(upto9_tags_for_shortcuts) > 0:
             # check if user entered number shortcuts for tags to be removed:
-            tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(tags_from_userinput, upto9_tags_for_shortcuts)
+            tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(
+                tags_from_userinput, upto9_tags_for_shortcuts)
         return tags_from_userinput
 
 
@@ -1817,7 +1923,8 @@ def assert_empty_tagfilter_directory(directory):
     """
 
     if options.tagtrees_directory and os.path.isdir(directory) and os.listdir(directory):
-        error_exit(13, 'The given tagtrees directory ' + directory + ' is not empty. Aborting here instead ' +
+        error_exit(13, 'The given tagtrees directory ' + directory +
+                   ' is not empty. Aborting here instead ' +
                    'of removing its content without asking. Please free it up yourself and try again.')
 
     if not os.path.isdir(directory):
@@ -1957,16 +2064,22 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     # should be generated for, we link this file to the resulting tagtrees root
     # directory as well. This way, adding tags using tag completion also works for
     # the linked items.
-    controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
+    controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(),
+                                                                               CONTROLLED_VOCABULARY_FILENAME)
     if controlled_vocabulary_filename:
-        logging.debug('I found controlled_vocabulary_filename "' + controlled_vocabulary_filename + '" which I\'m going to link to the tagtrees folder')
+        logging.debug('I found controlled_vocabulary_filename "' +
+                      controlled_vocabulary_filename +
+                      '" which I\'m going to link to the tagtrees folder')
         if not options.dryrun:
-            create_link(os.path.abspath(controlled_vocabulary_filename), os.path.join(directory, CONTROLLED_VOCABULARY_FILENAME))
+            create_link(os.path.abspath(controlled_vocabulary_filename),
+                        os.path.join(directory,
+                                     CONTROLLED_VOCABULARY_FILENAME))
 
     else:
         logging.debug('I did not find a controlled_vocabulary_filename')
 
-    logging.info('Creating tagtrees and their links. It may take a while …  (exponentially with respect to number of tags)')
+    logging.info('Creating tagtrees and their links. It may take a while …  ' +
+                 '(exponentially with respect to number of tags)')
 
     tags = get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True)
 
@@ -1994,7 +2107,8 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     for currentfile in enumerate(files):
 
         tags_of_currentfile = tags_of_files[currentfile[0]]
-        filename, dirname, basename, basename_without_lnk = split_up_filename(currentfile[1])
+        filename, dirname, \
+            basename, basename_without_lnk = split_up_filename(currentfile[1])
 
 
         logging.debug('generate_tagtrees: handling file "' + filename + '" …')
@@ -2005,17 +2119,22 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
             # which are - you guessed right - not tagged yet ;-)
 
             if ignore_nontagged:
-                logging.debug('generate_tagtrees: file "' + filename + '" has no tags and will be ignores because of command line switch.')
+                logging.debug('generate_tagtrees: file "' + filename +
+                              '" has no tags and will be ignores because of command line switch.')
             else:
-                logging.debug('generate_tagtrees: file "' + filename + '" has no tags. Linking to "' +
+                logging.debug('generate_tagtrees: file "' + filename +
+                              '" has no tags. Linking to "' +
                               nontagged_item_dest_dir + '"')
                 if not options.dryrun:
                     try:
                         create_link(filename, os.path.join(nontagged_item_dest_dir, basename))
                     except FileExistsError:
-                        logging.warning('Untagged file \"' + filename + '\" is already linked: \"' +
-                                        os.path.join(nontagged_item_dest_dir, basename) + '\". You must have used the recursive ' +
-                                        'option and the sub-tree you\'re generating a tagtree from has two times the ' +
+                        logging.warning('Untagged file \"' + filename +
+                                        '\" is already linked: \"' +
+                                        os.path.join(nontagged_item_dest_dir, basename) +
+                                        '\". You must have used the recursive ' +
+                                        'option and the sub-tree you\'re generating a ' +
+                                        'tagtree from has two times the ' +
                                         'same filename. I stick with the first one.')
                 num_of_links += 1
 
@@ -2049,9 +2168,12 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                         try:
                             create_link(filename, os.path.join(current_directory, basename))
                         except FileExistsError:
-                            logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
-                                            os.path.join(current_directory, basename) + '\". You must have used the recursive ' +
-                                            'option and the sub-tree you\'re generating a tagtree from has two times the same ' +
+                            logging.warning('Tagged file \"' + filename +
+                                            '\" is already linked: \"' +
+                                            os.path.join(current_directory, basename) +
+                                            '\". You must have used the recursive ' +
+                                            'option and the sub-tree you\'re generating ' +
+                                            'a tagtree from has two times the same ' +
                                             'filename. I stick with the first one.')
                     num_of_links += 1
 
@@ -2067,9 +2189,11 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                     if not set(tags_of_currentfile).intersection(set(unique_tagset)):
 
                         # ... generate a no-$unique_tagset directory ...
-                        no_uniqueset_tag_found_dir = os.path.join(directory, 'no-' + ("-").join(unique_tagset))  # example: "no-draft-final"
+                        no_uniqueset_tag_found_dir = os.path.join(directory,
+                                                                  'no-' + ("-").join(unique_tagset))  # example: "no-draft-final"
                         if not os.path.isdir(no_uniqueset_tag_found_dir):
-                            logging.debug('creating non-existent no_uniqueset_tag_found_dir "%s" ...' % str(no_uniqueset_tag_found_dir))
+                            logging.debug('creating non-existent no_uniqueset_tag_found_dir "%s" ...' %
+                                          str(no_uniqueset_tag_found_dir))
                             if not options.dryrun:
                                 os.makedirs(no_uniqueset_tag_found_dir)
 
@@ -2079,7 +2203,8 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                                 create_link(filename, os.path.join(no_uniqueset_tag_found_dir, basename))
                             except FileExistsError:
                                 logging.warning('Tagged file \"' + filename + '\" is already linked: \"' +
-                                                os.path.join(no_uniqueset_tag_found_dir, basename) + '\". I stick with the first one.')
+                                                os.path.join(no_uniqueset_tag_found_dir, basename) +
+                                                '\". I stick with the first one.')
                         num_of_links += 1
 
 
@@ -2111,7 +2236,8 @@ def start_filebrowser(directory):
             chosen_filebrowser = options.filebrowser  # override if given
 
         if options.dryrun:
-            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '" with dir "' + directory + '"')
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser +
+                         '" with dir "' + directory + '"')
         else:
             subprocess.call([chosen_filebrowser, directory])
 
@@ -2125,15 +2251,18 @@ def start_filebrowser(directory):
             directory = directory.replace('\\\\', '\\')
 
         if options.dryrun:
-            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser + '" with dir "' + directory + '"')
+            logging.info('DRYRUN: I would now open the file browser "' + chosen_filebrowser +
+                         '" with dir "' + directory + '"')
         else:
             if chosen_filebrowser == 'explorer':
                 os.system(r'start explorer.exe "' + directory + '"')
             else:
-                logging.warning('FIXXME: for Windows, this script only supports the default file browser which is the file explorer.')
+                logging.warning('FIXXME: for Windows, this script only supports the ' +
+                                'default file browser which is the file explorer.')
 
     else:
-        logging.info('No (default) file browser defined for platform \"' + current_platform + '\".')
+        logging.info('No (default) file browser defined for platform \"' +
+                     current_platform + '\".')
         logging.info('Please visit ' + directory + ' to view filtered items.')
 
 def all_files_are_links_to_same_directory(files):
@@ -2232,18 +2361,25 @@ def main():
     global chosen_tagtrees_dir
 
     logging.debug("%s filenames found: [%s]" % (str(len(files)), '], ['.join(files)))
-    logging.debug('reported console width: ' + str(TTY_WIDTH) + ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
+    logging.debug('reported console width: ' + str(TTY_WIDTH) +
+                  ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
     if files:
         vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
     else:
         vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
 
-    if len(options.files) < 1 and not (options.tagtrees or options.tagfilter or options.list_tags_by_alphabet or
-                                       options.list_tags_by_number or options.list_unknown_tags or options.tag_gardening):
+    if len(options.files) < 1 and not (options.tagtrees or
+                                       options.tagfilter or
+                                       options.list_tags_by_alphabet or
+                                       options.list_tags_by_number or
+                                       options.list_unknown_tags or
+                                       options.tag_gardening):
         error_exit(5, "Please add at least one file name as argument")
 
-    if options.list_tags_by_alphabet or options.list_tags_by_number or options.list_unknown_tags:
+    if options.list_tags_by_alphabet or \
+       options.list_tags_by_number or \
+       options.list_unknown_tags:
 
         tag_dict = get_tags_from_files_and_subfolders(startdir=os.getcwd())
         if not tag_dict:
@@ -2252,12 +2388,14 @@ def main():
 
         if options.list_tags_by_alphabet:
             logging.debug("handling option list_tags_by_alphabet")
-            print_tag_dict(tag_dict, vocabulary=vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
+            print_tag_dict(tag_dict, vocabulary=vocabulary,
+                           sort_index=0, print_similar_vocabulary_tags=True)
             successful_exit()
 
         elif options.list_tags_by_number:
             logging.debug("handling option list_tags_by_number")
-            print_tag_dict(tag_dict, vocabulary=vocabulary, sort_index=1, print_similar_vocabulary_tags=True)
+            print_tag_dict(tag_dict, vocabulary=vocabulary,
+                           sort_index=1, print_similar_vocabulary_tags=True)
             successful_exit()
 
         elif options.list_unknown_tags:
@@ -2286,24 +2424,33 @@ def main():
             else:
                 ignore_nontagged = False
                 nontagged_subdir = options.tagtrees_handle_no_tag[0]
-                logging.debug("options.tagtrees_handle_no_tag found: use foldername [" + repr(options.tagtrees_handle_no_tag) + "]")
+                logging.debug("options.tagtrees_handle_no_tag found: use foldername [" +
+                              repr(options.tagtrees_handle_no_tag) + "]")
 
         chosen_maxdepth = DEFAULT_TAGTREES_MAXDEPTH
         if options.tagtrees_depth:
             chosen_maxdepth = options.tagtrees_depth[0]
-            logging.debug('User overrides the default tagtrees depth to: ' + str(chosen_maxdepth))
+            logging.debug('User overrides the default tagtrees depth to: ' +
+                          str(chosen_maxdepth))
             if chosen_maxdepth > 4:
-                logging.warning('The chosen tagtrees depth of ' + str(chosen_maxdepth) + ' is rather high.')
-                logging.warning('When linking more than a few files, this might take a long time using many filesystem inodes.')
+                logging.warning('The chosen tagtrees depth of ' +
+                                str(chosen_maxdepth) + ' is rather high.')
+                logging.warning('When linking more than a few files, this ' +
+                                'might take a long time using many filesystem inodes.')
 
         # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagfilter: unify accordingly!
         chosen_tagtrees_dir = TAGFILTER_DIRECTORY
         if options.tagtrees_directory:
             chosen_tagtrees_dir = options.tagtrees_directory[0]
-            logging.debug('User overrides the default tagtrees directory to: ' + str(chosen_tagtrees_dir))
+            logging.debug('User overrides the default tagtrees directory to: ' +
+                          str(chosen_tagtrees_dir))
 
         start = time.time()
-        generate_tagtrees(chosen_tagtrees_dir, chosen_maxdepth, ignore_nontagged, nontagged_subdir, options.tagtrees_link_missing_mutual_tagged_items)
+        generate_tagtrees(chosen_tagtrees_dir,
+                          chosen_maxdepth,
+                          ignore_nontagged,
+                          nontagged_subdir,
+                          options.tagtrees_link_missing_mutual_tagged_items)
         delta = time.time() - start  # it's a float
         if delta > 3:
             logging.info("Generated tagtrees in %.2f seconds" % delta)
@@ -2336,7 +2483,8 @@ def main():
             chosen_tagtrees_dir = TAGFILTER_DIRECTORY
             if options.tagtrees_directory:
                 chosen_tagtrees_dir = options.tagtrees_directory[0]
-                logging.debug('User overrides the default tagtrees directory to: ' + str(chosen_tagtrees_dir))
+                logging.debug('User overrides the default tagtrees directory to: ' +
+                              str(chosen_tagtrees_dir))
 
             for tag in get_tags_from_files_and_subfolders(startdir=os.getcwd()):
                 add_tag_to_countdict(tag, tags_for_vocabulary)
@@ -2350,23 +2498,30 @@ def main():
 
                 # if it is only one file which is a link to the same basename
                 # in a different directory, show the original directory:
-                if len(files) == 1 and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and is_nonbroken_link(files[0]):
+                if len(files) == 1 and \
+                   TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and \
+                   is_nonbroken_link(files[0]):
                     link_file = split_up_filename(files[0])
                     original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
                     if link_file[1] != original_file[1] and link_file[2] == original_file[2]:
                         # basenames are same, dirs are different
-                        print("     ... link: tagging also matching filename in " + original_file[1])
+                        print("     ... link: tagging also matching filename in " +
+                              original_file[1])
                 # do the same but for a list of link files whose paths have to match:
-                if len(files) > 1 and TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and all_files_are_links_to_same_directory(files):
+                if len(files) > 1 and \
+                   TAG_LINK_ORIGINALS_WHEN_TAGGING_LINKS and \
+                   all_files_are_links_to_same_directory(files):
                     # using first file for determining directories:
                     link_file = split_up_filename(files[0])
                     original_file = split_up_filename(get_link_source_file(files[0]))  # 0 = absolute path incl. filename; 1 = dir; 2 = filename
-                    print("     ... links: tagging also matching filenames in " + original_file[1])
+                    print("     ... links: tagging also matching filenames in " +
+                          original_file[1])
 
                 # remove given (shared) tags from the vocabulary:
                 tags_intersection_of_files = get_common_tags_from_files(files)
                 tags_for_visual = tags_intersection_of_files
-                logging.debug("found common tags: tags_intersection_of_files[%s]" % '], ['.join(tags_intersection_of_files))
+                logging.debug("found common tags: tags_intersection_of_files[%s]" %
+                              '], ['.join(tags_intersection_of_files))
 
                 # append current filetags with a prepended '-' in order to allow tag completion for removing tags via '-tagname'
                 tags_from_filenames = set()
@@ -2376,7 +2531,8 @@ def main():
                 for currenttag in list(tags_from_filenames):
                     negative_tags_from_filenames.add('-' + currenttag)
 
-                vocabulary = list(set(vocabulary).union(negative_tags_from_filenames) - set(tags_intersection_of_files))
+                vocabulary = list(set(vocabulary).union(negative_tags_from_filenames) -
+                                  set(tags_intersection_of_files))
 
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
                 upto9_tags_for_shortcuts = sorted(
@@ -2438,11 +2594,16 @@ def main():
         else:
 
             # if filename is a link, tag the source file as well:
-            handle_file_and_optional_link(filename, tags_from_userinput, options.remove, options.tagfilter, options.dryrun)
+            handle_file_and_optional_link(filename,
+                                          tags_from_userinput,
+                                          options.remove,
+                                          options.tagfilter,
+                                          options.dryrun)
             logging.debug('list_of_link_directories: ' + repr(list_of_link_directories))
 
             if len(list_of_link_directories) > 1:
-                logging.debug('Seems like we\'ve found links and renamed their source as well. Print out the those directories as well:')
+                logging.debug('Seems like we\'ve found links and renamed their source ' +
+                              'as well. Print out the those directories as well:')
                 print('      This link has a link source with a matching basename. I renamed it there as well:')
                 for directory in list_of_link_directories[:-1]:
                     print('      · ' + directory)
