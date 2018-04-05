@@ -298,6 +298,12 @@ tags that are most likely typos or abandoned
 - 2018-03-18:
   - added more detailed statistics on usage of tag groups when doing tag gardening
   - added internal data structure =cache_of_files_with_metadata=
+- 2018-04-05:
+  - =--tagtrees-dir= can now be used for =--filter=
+  - much deeper support for Windows =.lnk= files:
+    - tagging lnk files within tagtrees also tag their original files
+    - .filetags files can now be .lnk files as well
+    - the unit tests now work on Windows and test some Windows specialities
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
