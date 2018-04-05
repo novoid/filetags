@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-04-05 15:03:07 karl.voit>
+# Time-stamp: <2018-04-05 18:13:07 karl.voit>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -223,8 +223,208 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18T23.59 foo bar'),
                          ['2018', '03', '18'])
 
+
     def tearDown(self):
 
+        pass
+
+
+class TestLocateAndParseControlledVocabulary(unittest.TestCase):
+
+    """
+    The following directory structure applies:
+
+    tempdir
+          |
+          `- .filetags [4]
+           - .filetags [5] (symlink to subdir2/.filetags)
+           - .filetags.lnk [6] (Windows only)
+           - subdir1
+                   |
+                   `- test file for tagging.txt
+                    - .filetags [1]
+                    - .filetags [2] (symlink to subdir2/.filetags)
+                    - .filetags.lnk [3] (Windows only)
+           - subdir2
+                   |
+                   `- .filetags
+           - subdir3   --> the working directory
+
+    The numbers in the brackets reflect the priority of the controlled
+    vocabulary (CV) file found. Of course, symbolic link files only apply to
+    non-Windows platforms and .lnk files only apply to Windows.
+
+    setUp creates:
+
+    tempdir
+          |
+          `- .filetags [2]
+           - subdir1
+                   |
+                   `- test file for tagging.txt
+                    - .filetags [1]
+           - subdir2
+                   |
+                   `- .filetags  --> the link destination (original file)
+           - subdir3   --> the working directory
+
+    In the test routine, the other .filetags link files are
+    created (or deleted) accordingly.
+    """
+
+    # the temporary direcories holding the files for these tests:
+    tempdir = None
+    subdir1 = None
+    subdir2 = None
+
+    # each .filetags file gets one unique tag so that I can
+    # check which controlled vocabulary was used:
+    tempdir_cv = 'tag_from_tempdir_CV'
+    subdir1_cv = 'tag_from_subdir1_CV'
+    subdir2_cv = 'tag_from_subdir2_CV'
+    subdir2b_cv = 'tag_from_subdir2b_CV'
+
+    tempdir_file = None
+    subdir1_file = None
+    subdir2_file = None
+    subdir2b_file = None
+
+    # we need this for specifying a file to tag in a subdir:
+    subdir1_test_file = None
+    tagging_test_file = 'test file for tagging.txt'
+
+    def setUp(self):
+
+        # create temporary directories:
+        self.tempdir = tempfile.mkdtemp(prefix='TextControlledVocabulary_')
+        print("\nTextControlledVocabulary: tempdir: " + self.tempdir + '  <<<' + '#' * 10)
+        self.subdir1 = os.path.join(self.tempdir, 'subdir1')
+        os.makedirs(self.subdir1)
+        self.subdir2 = os.path.join(self.tempdir, 'subdir2')
+        os.makedirs(self.subdir2)
+        self.subdir3 = os.path.join(self.tempdir, 'subdir3')
+        os.makedirs(self.subdir3)
+        os.chdir(self.subdir3)
+
+        assert(os.path.isdir(self.tempdir))
+        assert(os.path.isdir(self.subdir1))
+        assert(os.path.isdir(self.subdir2))
+
+        # create Controlled vocabulary files:
+        self.tempdir_file = os.path.join(self.tempdir, '.filetags')
+        self.subdir1_file = os.path.join(self.subdir1, '.filetags')
+        self.subdir2_file = os.path.join(self.subdir2, 'filetags_subdir2')
+        self.subdir2b_file = os.path.join(self.subdir2, 'filetags_subdir2b')
+        self.create_file(self.tempdir_file, self.tempdir_cv)
+        self.create_file(self.subdir1_file, self.subdir1_cv)
+        self.create_file(self.subdir2_file, self.subdir2_cv)
+        self.create_file(self.subdir2b_file, self.subdir2b_cv)
+        assert(os.path.isfile(self.tempdir_file))
+        assert(os.path.isfile(self.subdir1_file))
+        assert(os.path.isfile(self.subdir2_file))
+        assert(os.path.isfile(self.subdir2b_file))
+
+        # one normal file:
+        self.subdir1_test_file = os.path.join(self.subdir1, self.tagging_test_file)
+        self.create_file(self.subdir1_test_file, 'this is a test file')
+        assert(os.path.isfile(self.subdir1_test_file))
+
+        if platform.system() != 'Windows':
+            os.sync()
+
+    def tearDown(self):
+
+        if platform.system() != 'Windows':
+            # 2018-04-05: disabled until I find a solution for:
+            # PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\KARL~1.VOI\\AppData\\Local\\Temp\\tmprfwup13z'
+            rmtree(self.tempdir)
+
+    def create_file(self, name, content):
+
+        assert(os.path.isdir(os.path.dirname(name)))
+        with open(name, 'w') as outputhandle:
+            outputhandle.write(content)
+
+    def test_find_cv_in_startfile_dir_instead_of_cwd(self):
+
+        # Note: cwd = subdir3
+
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir1_cv])
+
+    def test_find_cv_as_link_in_startfile_dir_when_there_is_no_cv_as_file(self):
+
+        # Note: cwd = subdir3
+
+        os.remove(self.subdir1_file)  # removing the .filetags from the subdir1
+        filetags.create_link(self.subdir2_file, self.subdir1_file)  # create link
+
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir2_cv])
+
+    def test_find_cv_as_file_in_tempdir_when_startfile_dir_has_nothing(self):
+
+        # Note: cwd = subdir3
+
+        os.remove(self.subdir1_file)  # removing the .filetags from the subdir1
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.tempdir_cv])
+
+    def test_find_cv_as_link_in_tempdir_when_startfile_dir_has_nothing(self):
+
+        # Note: cwd = subdir3
+
+        os.remove(self.subdir1_file)  # removing the .filetags from the subdir1
+        os.remove(self.tempdir_file)  # removing the .filetags from the tempdir
+        filetags.create_link(self.subdir2_file, self.tempdir_file)  # create link
+
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir2_cv])
+
+    def test_find_cv_in_cwd_as_first_fallback_when_no_startfile_is_given(self):
+
+        # Note: cwd = subdir3
+
+        os.remove(self.subdir1_file)  # removing the .filetags from the subdir1
+        os.remove(self.tempdir_file)  # removing the .filetags from the tempdir
+        filetags.create_link(self.subdir2_file, os.path.join(self.subdir3, '.filetags'))  # create link
+
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(False),
+                         [self.subdir2_cv])
+
+    def test_Windows_piority_of_cv_files_as_files_and_lnk_files(self):
+
+        if platform.system() != 'Windows':
+            # This test only makes sense on Windows where .filetags can exist in same dir as .filetags.lnk
+            return
+
+        # Note: cwd = subdir3
+        # Let's create all missing files in all dirs:
+        filetags.create_link(self.subdir2_file, self.subdir1_file)  # create link
+        filetags.create_link(self.subdir2b_file, self.tempdir_file)  # create link
+
+        # prio 1 = .filetag file in startfile directory
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir1_cv])
+
+        # prio 2 = .filetag.lnk file in startfile directory
+        os.remove(self.subdir1_file)  # removing the .filetags from the subdir1
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir2_cv])
+
+        # prio 3 = .filetag file in tempdir
+        os.remove(self.subdir1_file + '.lnk')  # removing the .filetags link file from the subdir1
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.tempdir_cv])
+
+        # prio 4 = .filetag.lnk file in tempdir
+        os.remove(self.tempdir_file)  # removing the .filetags link file from the subdir1
+        self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
+                         [self.subdir2b_cv])
+
+    def NOtest_find_cv_in_home_as_last_fallback_when_no_other_cv_is_around(self):
+
+        # I don't want to mess around in $HOME for testing purposes.
         pass
 
 

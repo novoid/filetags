@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-05 15:16:14 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-04-05 17:37:15 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1554,31 +1554,41 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
 
     logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' %
                   (startfile, filename))
-    if startfile and os.path.isfile(startfile) and os.path.isfile(
-            os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)):
+
+    filename_in_startfile_dir = os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)
+    filename_in_startdir = os.path.join(startfile, filename)
+    if startfile and os.path.isfile(startfile) and os.path.isfile(filename_in_startfile_dir):
+        # startfile=file: try to find the file within the dir where startfile lies:
         logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory of \"%s\" ..' %
-                      (filename, startfile))
-        return filename
-    elif startfile and os.path.isdir(startfile) and os.path.isfile(os.path.join(startfile, filename)):
+                      (os.path.basename(filename_in_startfile_dir), os.path.dirname(filename_in_startfile_dir)))
+        return filename_in_startfile_dir
+    elif startfile and os.path.isdir(startfile) and os.path.isfile(filename_in_startdir):
+        # startfile=dir: try to find the file within the startfile dir:
         logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ...' %
-                      (filename, startfile))
-        return filename
+                      (os.path.basename(filename_in_startdir), startfile))
+        return filename_in_startdir
     else:
+        # no luck with the first guesses, trying to locate the file by traversing the parent directories:
         if os.path.isfile(startfile):
+            # startfile=file: set starting_dir to it dirname:
             starting_dir = os.path.dirname(os.path.abspath(startfile))
             logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] found, using it as starting_dir [%s] ....' %
                           (str(startfile), starting_dir))
         elif os.path.isdir(startfile):
+            # startfile=dir: set starting_dir to it:
             starting_dir = startfile
             logging.debug('locate_file_in_cwd_and_parent_directories: startfile [%s] is a directory, using it as starting_dir [%s] .....' %
                           (str(startfile), starting_dir))
         else:
+            # startfile is no dir nor file: using cwd as a fall-back:
             starting_dir = os.getcwd()
             logging.debug('locate_file_in_cwd_and_parent_directories: no startfile found; using cwd as starting_dir [%s] ......' %
                           (starting_dir))
+
         parent_dir = os.path.abspath(os.path.join(starting_dir, os.pardir))
         logging.debug('locate_file_in_cwd_and_parent_directories: looking for \"%s\" in directory \"%s\" .......' %
                       (filename, parent_dir))
+
         while parent_dir != os.getcwd():
             os.chdir(parent_dir)
             filename_to_look_for = os.path.abspath(os.path.join(os.getcwd(), filename))
@@ -1606,12 +1616,18 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     """
 
-    logging.debug('locate_and_parse_controlled_vocabulary: called with startfile: ' +
-                  str(startfile) + ' and cwd = ' + str(os.getcwd()))
+    logging.debug('locate_and_parse_controlled_vocabulary: called with startfile: "' +
+                  str(startfile) + '"')
+    logging.debug('locate_and_parse_controlled_vocabulary: called in cwd: ' + str(os.getcwd()))
     if startfile:
         filename = locate_file_in_cwd_and_parent_directories(startfile, CONTROLLED_VOCABULARY_FILENAME)
     else:
         filename = locate_file_in_cwd_and_parent_directories(os.getcwd(), CONTROLLED_VOCABULARY_FILENAME)
+
+    if filename:
+        logging.debug('locate_and_parse_controlled_vocabulary: locate_file_in_cwd_and_parent_directories returned: ' + filename)
+    else:
+        logging.debug('locate_and_parse_controlled_vocabulary: locate_file_in_cwd_and_parent_directories did NOT find any filename')
 
     if IS_WINDOWS:
         # searching for and handling of lnk files:
