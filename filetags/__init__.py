@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-05 17:37:15 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-04-14 13:28:25 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1519,7 +1519,7 @@ def handle_tag_gardening(vocabulary):
                         else:
                             print('   "' + tag + '": Not used')
                 else:
-                    print('Tag group ' + str(taggroup) + ': Not used')
+                    print('\nTag group ' + str(taggroup) + ': Not used')
 
     print("\nTags that appear only once are most probably typos or you have forgotten them:")
     tags_only_used_once_dict = {key: value for key, value in list(tag_dict.items()) if value < 2}
