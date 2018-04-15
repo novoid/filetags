@@ -85,7 +85,7 @@ usage: ./filetags/__init__.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i]
                               [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
                               [--tagtrees-link-missing-mutual-tagged-items]
                               [--tagtrees-dir <existing_directory>]
-                              [--tagtrees-depht TAGTREES_DEPTH] [--ln] [--la]
+                              [--tagtrees-depth TAGTREES_DEPTH] [--ln] [--la]
                               [--lu] [--tag-gardening] [-v] [-q] [--version]
                               [FILE [FILE ...]]
 
@@ -172,7 +172,7 @@ optional arguments:
                         "/home/vk/.filetags_tagfilter" with a user-defined
                         one. It has to be an empty directory or a non-existing
                         directory which will be created.
-  --tagtrees-depht TAGTREES_DEPTH
+  --tagtrees-depth TAGTREES_DEPTH
                         When tagtrees are created, this parameter defines the
                         level of depth of the tagtree hierarchy. The default
                         value is 2. Please note that increasing the depth
@@ -286,8 +286,8 @@ tags that are most likely typos or abandoned
 - 2017-12-30:
   - added =--tagtrees-dir <existing_directory>=
     - overriding the default target directory for the tagtrees result
-  - added =--tagtrees-depht TAGTREES_DEPTH=
-    - allowing to override the default depht of tagtrees
+  - added =--tagtrees-depth TAGTREES_DEPTH=
+    - allowing to override the default depth of tagtrees
     - use with care: especially on Windows a larger depth than 2 takes very long
   - tagtrees now work with Windows using =lnk= files
     - in contrast to symbolic links, that have rather poor performance
@@ -355,7 +355,7 @@ the average person is perfectly well able to follow.
 
 In short: this function takes the files of the current directory and
 generates hierarchies up to level of =$maxdepth= (by default 2, can be
-overridden via =--tagtrees-depht=) of all combinations of tags,
+overridden via =--tagtrees-depth=) of all combinations of tags,
 [[https://en.wikipedia.org/wiki/Symbolic_link][linking]] all files according to their tags.
 
 Consider having a file like:

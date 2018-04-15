@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-14 13:28:25 vk>"
+PROG_VERSION = "Time-stamp: <2018-04-15 11:47:48 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -228,7 +228,7 @@ parser.add_argument("--tagtrees-dir",
                     "non-existing directory which will be created. " +
                     "This also overrides the default directory for --filter.")
 
-parser.add_argument("--tagtrees-depht",
+parser.add_argument("--tagtrees-depth",
                     dest="tagtrees_depth",
                     nargs=1,
                     type=int,
@@ -2166,11 +2166,11 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
 
                     # WHAT I THOUGHT:
                     # Creating the directories does not require to iterate
-                    # over the different level of depht because
+                    # over the different level of depth because
                     # "os.makedirs()" is able to create all parent folders
                     # that are necessary. This spares us a loop.
                     # WHAT I LEARNED:
-                    # We *have* to iterate over the depht as well
+                    # We *have* to iterate over the depth as well
                     # because when a file has only one tag and the
                     # maxdepth is more than one, we are forgetting
                     # to create all those tagtree directories for this
