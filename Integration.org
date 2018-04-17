@@ -1,0 +1,273 @@
+* Integration of filetags Into Common Tools
+
+If your system has Python 3 installed, you can start using filetags
+right away in any command line environment.
+
+However, users do want to integrate tools like filetags also in
+various GUI tools.
+
+This chapter explains integration in some tools that allow external
+commands being added.
+
+If you have integrated filetags in additional commonly used tools,
+please send me a short how-to so that others are able to get the most
+out of filetags as well.
+
+** Integrating into Geeqie
+
+I am using [[http://geeqie.sourceforge.net/][geeqie]] for browsing/presenting image files. After I
+mark a set of images for adding one or more tags, I just have to
+press ~t~ and I get asked for the tags. After entering the tags and
+RETURN, the tags are added to the image files. With ~T~ I can remove
+tags accordingly.
+
+Using GNU/Linux, this is quite easy accomplished. The only thing that
+is not straight forward is the need for a wrapper script. The wrapper
+script does provide a shell window for entering the tags.
+
+~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
+: #!/bin/sh
+:
+: /usr/bin/gnome-terminal \
+:     --geometry=73x5+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetags/filetags/__init__.py --interactive "${@}"
+:
+: #end
+
+~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
+looks like:
+: #!/bin/sh
+:
+: /usr/bin/gnome-terminal \
+:     --geometry=73x5+330+5  \
+:     --tab-with-profile=big \
+:     --hide-menubar \
+:     -x /home/vk/src/filetags/filetags/__init__.py --interactive --remove "${@}"
+:
+: #end
+
+In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
+that geeqie shows the wrapper scripts as external editors to its
+image files:
+
+~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
+: [Desktop Entry]
+: Name=filetags
+: GenericName=filetags
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
+
+~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
+: [Desktop Entry]
+: Name=filetags
+: GenericName=filetags
+: Comment=
+: Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
+: Icon=
+: Terminal=true
+: Type=Application
+: Categories=Application;Graphics;
+: hidden=false
+: MimeType=image/*;video/*;image/mpo;image/thm
+: Categories=X-Geeqie;
+
+In order to be able to use the keyboard shortcuts ~t~ (adding tags)
+and ~T~ (removing tags), you can define them in geeqie:
+1. Edit > Preferences > Preferences ... > Keyboard.
+2. Scroll to the bottom of the list.
+3. Double click in the ~KEY~-column of ~filetags~ and ~filetags-remove~
+   and choose your desired keyboard shortcut accordingly.
+
+I hope this method is as handy for you as it is for me :-)
+
+** Integration into Thunar
+
+[[https://en.wikipedia.org/wiki/Thunar][Thunar]] is a popular GNU/Linux file browser for the xfce environment.
+
+Unfortunately, it is rather complicated to add custom commands to
+Thunar. I found [[https://askubuntu.com/questions/403922/keyboard-shortcut-for-thunar-custom-actions][a good description]] which you might want to follow.
+
+To my disappoinment, even this manual confguration is not stable
+somehow. From time to time, the IDs of ~$HOME/.config/Thunar/uca.xml~
+and ~$HOME/.config/Thunar/accels.scm~ differ.
+
+For people using Org-mode, I automated the updating process (not the
+initial adding process) to match IDs again:
+
+Script for checking "tag": do it ~tag-ID~ and path in ~accels.scm~ match?
+: #+BEGIN_SRC sh :var myname="tag"
+: ID=`egrep -A 2 "<name>$myname" $HOME/.config/Thunar/uca.xml | grep unique-id | sed 's#.*<unique-id>##' | sed 's#<.*$##'`
+: echo "$myname-ID of uca.xml: $ID"
+: echo "In accels.scm: "`grep -i "$ID" $HOME/.config/Thunar/accels.scm`
+: #+END_SRC
+
+If they don't match, following script re-writes ~accels.scm~ with the current ID:
+: #+BEGIN_SRC sh :var myname="tag" :var myshortcut="<Alt>t"
+: ID=`egrep -A 2 "<name>$myname" $HOME/.config/Thunar/uca.xml | grep unique-id | sed 's#.*<unique-id>##' | sed 's#<.*$##'`
+: echo "appending $myname-ID of uca.xml to accels.scm: $ID"
+: mv $HOME/.config/Thunar/accels.scm $HOME/.config/Thunar/accels.scm.OLD
+: grep -v "\"$myshortcut\"" $HOME/.config/Thunar/accels.scm.OLD > $HOME/.config/Thunar/accels.scm
+: rm $HOME/.config/Thunar/accels.scm.OLD
+: echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
+: #+END_SRC
+
+** Integration into Windows Explorer
+:PROPERTIES:
+:CREATED:  [2018-03-07 Wed 21:42]
+:END:
+
+You do have two independent options to integrate filetags to your
+Windows Explorer.
+
+The first one integrates it directly into the context menu of a file.
+This has the advantage, that you can tag a file very quickly. Howver,
+the downside is that this only works for a single file.
+
+If you want to tag multiple files at once, you have to integrate
+filetags using the second method. This does add filetags into your
+"Sent to" context sub-menu. This allows for multiple file tagging but
+is one mouse click further away.
+
+You can do both and choose one or the other, depending on how many
+files you have selected.
+
+*** Integration into Windows Explorer for single files
+
+Create a registry file =add_filetags_to_context_menu.reg= and edit it
+to meet the following template. Please make sure to replace the paths
+(python, =USERNAME=) accordingly:
+
+To get the correct path to =filetags.exe= open =cmd.exe= (via Win-key
+and typing "cmd" + ENTER):
+
+1. invoke =where filetags.exe=
+2. mark the resulting line and copy it to the clipboard via ENTER
+
+Then write the following lines together with the pasted path into the
+file =add_filetags_to_context_menu.reg= so that it looks similar to:
+
+#+BEGIN_EXAMPLE
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\shell\filetags]
+@="filetags (single file)"
+
+[HKEY_CLASSES_ROOT\*\shell\filetags\command]
+@="C:\\Users\\USERNAME\\AppData\\Local\\Programs\\Python\\Python36\\Scripts\\filetags.exe -i \"%1\""
+#+END_EXAMPLE
+
+Note that you have to double all backslashes in the path to =filetags.exe=.
+
+If did install filetags via source code (and not via pip), the line
+should look similar to:
+
+: @="C:\\Python36\\python.exe C:\\Users\\USERNAME\\src\\filetags\\filetags\\__init__.py -i \"%1\""
+
+Execute the registry-file, confirm the warnings (you are modifying
+your Windows registry after all) and cheer up when you notice
+"filetags (single file)" in the context menu of your Windows Explorer.
+
+As mentioned above: [[https://stackoverflow.com/questions/6440715/how-to-pass-multiple-filenames-to-a-context-menu-shell-command][this method works on single files]]. So if you
+select three files and invoke this context menu item, you will get
+three different filetag-windows to tag one file each. Therefore, you
+might want to check out the following section for multiple files.
+
+The following python source generates a proper registry file, if you
+prefer it not to write it manually:
+
+#+BEGIN_SRC python :results output
+import subprocess
+myresult = subprocess.run(["where", "filetags.exe"], stdout=subprocess.PIPE)
+myfiletags = str(myresult.stdout.strip()).replace('\\', '\\')[2:-1]
+with open("register_filetags_for_single_files.reg", "w") as out:
+    out.write("Windows Registry Editor Version 5.00\n\n")
+    out.write("[HKEY_CLASSES_ROOT\\*\\shell\\filetags]\n@=\"filetags\"\n\n")
+    out.write("[HKEY_CLASSES_ROOT\\*\\shell\\filetags\\command]\n")
+    out.write("@=\"" + myfiletags + " -i \\\"%1\\\"\"\n\n")
+print("Successfully written registry file \"register_filetags_for_single_files.reg\".")
+print("Please check content before executing.")
+#+END_SRC
+
+*** Integration into Windows Explorer for single and multiple selected files
+
+Follow the instructions:
+
+- Open =cmd.exe= (via Win-key and typing "cmd" + ENTER)
+  - Invoke =where filetags.exe=
+    - If you did not use pip to install filetags, locate the python
+      executable via =where python= instead.
+  - Mark the resulting line and copy it to the clipboard via ENTER.
+- Create a new text file named =filetags.bat=
+- Edit this new file named =filetags.bat=, e.g., with Notepad.exe
+  - Paste the clipboard to the file
+  - At the end of the line, add " -i %*"
+  - The line now should look similar to: =C:\[...]\Scripts\filetags.exe  -i %*=
+    - If you did not use pip to install filetags, you have to paste
+      the path to =python.exe= followed by the path to the
+      =filetags/__init__.py= file of the source code.
+  - If you want to confirm the tagging process (and see error messages
+    and so forth), you might want to append as well following line:
+    : set /p DUMMY=Hit ENTER to continue ...
+  - Save the file and close the editor.
+
+The =filetags.bat= now contains something like this:
+
+: C:\Users\USERNAME\AppData\Local\Programs\Python\Python36\Scripts\filetags.exe  -i %*
+
+If you did not use pip to install, it looks like this:
+
+: C:\Python36\python.exe C:\Users\USERNAME\src\filetags\filetags\__init__.py -i %*
+
+- Now create a link to the file =filetags.bat=
+  - This can be done using drag and drop in the same folder while
+    holding the Shift and Ctrl keys.
+- Move the link to the following folder:
+  - In your user folder, go to the sub-folder
+    =AppData/Roaming/Microsoft/Windows/SendTo= and place the link file
+    here.
+  - Rename the link file to simply "filetags".
+
+This way, you got a nice entry in your context sub-menu "Send to"
+which is also correctly tagging multiple files at once.
+
+** Integration into FreeCommander
+
+[[http://freecommander.com/en/summary/][FreeCommander]] is a [[https://en.wikipedia.org/wiki/File_manager#Orthodox_file_managers][orthodox file manager]] for Windows. You can add
+filetags as an favorite command:
+
+- Tools → Favorite tools → Favorite tools edit... (S-C-y)
+  - Create new toolbar (if none is present)
+  - Icon for "Add new item"
+    - Name: filetags
+    - Program or folder: <Path to filetags.bar>
+	- =filetags.bat= looks like: (please do modify the paths to meet your requirement)
+        : C:\Python36\python.exe C:\Users\YOURUSERNAME\src\filetags\filetags %*
+	  : REM optionally: set /p DUMMY=Hit ENTER to continue...
+    - Start folder: =%ActivDir%=
+    - Parameter: =%ActivSel%=
+    - [X] Enclose each selected item with ="=
+    - Hotkey: select next available one such as =Ctrl-1= (it gets overwritten below)
+	- remember its name such as "Favorite tool 01"
+  - OK
+
+So far, we've got =filetags= added as a favorite command which can be
+accessed via menu or icon toolbar and the selected keyboard shortcut.
+If you want to assign a different keyboard shortcut than =Ctrl-1= like
+=Alt-t= you might as well follow following procedure:
+
+- Tools → Define keyboard shortcuts...
+  - Scroll down to the last section "Favorite tools"
+  - locate the name such as "Favorite tool 01"
+  - Define your shortcut of choice like =Alt-t= in the right hand side of the window
+    - If your shortcut is taken, you'll get a notification. Don't
+      overwrite essential shortcuts you're using.
+  - OK
