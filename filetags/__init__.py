@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-15 11:47:48 vk>"
+PROG_VERSION = "Time-stamp: <2018-04-18 09:51:07 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1677,7 +1677,14 @@ def locate_and_parse_controlled_vocabulary(startfile):
                 global controlled_vocabulary_filename
                 controlled_vocabulary_filename = filename
                 for rawline in filehandle:
-                    line = rawline.strip()
+
+                    # remove everyting after the first hash character (which is a comment separator)
+                    line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
+
+                    if len(line) == 0:
+                        # nothing left, line consisted only of a comment or was empty
+                        continue
+
                     if BETWEEN_TAG_SEPARATOR in line:
                         ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
                         logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
@@ -1688,10 +1695,12 @@ def locate_and_parse_controlled_vocabulary(startfile):
                             tags.append(tag)
                     else:
                         tags.append(line)
+
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' %
                           len(tags))
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
                           (len(unique_tags) - 1))
+
             return tags
         else:
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary is a non-existing file')

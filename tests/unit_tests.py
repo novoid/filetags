@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-04-05 18:13:07 karl.voit>
+# Time-stamp: <2018-04-17 19:16:42 karl.voit>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -296,8 +296,8 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
     def setUp(self):
 
         # create temporary directories:
-        self.tempdir = tempfile.mkdtemp(prefix='TextControlledVocabulary_')
-        print("\nTextControlledVocabulary: tempdir: " + self.tempdir + '  <<<' + '#' * 10)
+        self.tempdir = tempfile.mkdtemp(prefix='TestControlledVocabulary_')
+        print("\nTestControlledVocabulary: tempdir: " + self.tempdir + '  <<<' + '#' * 10)
         self.subdir1 = os.path.join(self.tempdir, 'subdir1')
         os.makedirs(self.subdir1)
         self.subdir2 = os.path.join(self.tempdir, 'subdir2')
@@ -424,8 +424,60 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
 
     def NOtest_find_cv_in_home_as_last_fallback_when_no_other_cv_is_around(self):
 
-        # I don't want to mess around in $HOME for testing purposes.
+        # Currently disabled because I don't want to mess around in $HOME for testing purposes.
         pass
+
+    def test_comment_line_in_cv(self):
+        """
+        This tests does not use the setup from the test class. However, it does use several
+        other util functions defined in this class. Therefore, I set up a different test
+        case here and re-use the util functions.
+
+        Test CV file looks like:
+
+        foo
+        # comment
+        bar
+        ## another comment
+        baz
+        #
+        tag #inline-comment
+
+        This should result in following CV: ["foo", "bar", "baz", "tag"] and not more.
+
+        """
+
+        tempdir = tempfile.mkdtemp(prefix='TestControlledVocabulary_Comments_line_')
+        print("\ntempdir: " + tempdir + '  <<<' + '#' * 10)
+        assert(os.path.isdir(tempdir))
+
+        # create Controlled vocabulary files:
+        cv_file = os.path.join(tempdir, '.filetags')
+        self.create_file(cv_file, "foo\n# comment\nbar\n## another comment\nbaz\n#\ntag #inline-comment\n\n")
+        assert(os.path.isfile(cv_file))
+
+        # setup complete
+
+        cv = filetags.locate_and_parse_controlled_vocabulary(cv_file)
+        self.assertEqual(set(cv), set(["foo", "bar", "baz", "tag"]))
+
+
+    def test_include_lines_in_cv(self):
+        """
+        This tests does not use the setup from the test class. However, it does use several
+        other util functions defined in this class. Therefore, I set up a different test
+        case here and re-use the util functions.
+
+        Setup looks like this:
+        tmpdir
+             `- subdir1
+                      |
+                       `- .filetags with a reference to subdir2/included_filetags
+              - subdir2
+                      |
+                       `- included_filetags with additional tags
+        """
+        pass  # FIXXME: implement
 
 
 class TestFileWithoutTags(unittest.TestCase):

@@ -304,6 +304,8 @@ tags that are most likely typos or abandoned
     - tagging lnk files within tagtrees also tag their original files
     - .filetags files can now be .lnk files as well
     - the unit tests now work on Windows and test some Windows specialities
+- 2018-04-18:
+  - comments in =.filetags= files that contain the controlled vocabulary
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
@@ -325,6 +327,10 @@ efficiently you are going to tag things! :-)
 Of course, you can remove existing tags by prepending a =-= character
 to the tag: =-tagname=. This also works interactively using the tab
 completion feature.
+
+You can use comments in =.filetags= files: everything after a =#=
+character is considered a comment. You can even add a comment after a
+tag like "=mytag   # this is a test tag=".
 
 ** Mutually exclusive tags
 
