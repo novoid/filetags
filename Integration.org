@@ -200,9 +200,9 @@ print("Please check content before executing.")
 
 *** Integration into Windows Explorer for single and multiple selected files
 
-[[https://github.com/novoid/integratethis][The tool =integratethis=]] does the following steps for you. Install it
-via =pip3 install integratethis=. You can have a look at its options
-by starting a =cmd.exe= shell and typing in:
+The tool =integratethis= ([[https://github.com/novoid/integratethis][link]]) does the following steps for you.
+Install it via =pip3 install integratethis=. You can have a look at
+its options by starting a =cmd.exe= shell and typing in:
 
 : integratethis -h
 
