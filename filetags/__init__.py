@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-18 09:51:07 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-04-25 14:29:48 karl.voit>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -124,7 +124,7 @@ Verbose description: http://Karl-Voit.at/managing-digital-photographs/"
 EPILOG = u"\n\
 :copyright: (c) by Karl Voit <tools@Karl-Voit.at>\n\
 :license: GPL v3 or any later version\n\
-:URL: https://github.com/novoid/filetag\n\
+:URL: https://github.com/novoid/filetags\n\
 :bugreports: via github or <tools@Karl-Voit.at>\n\
 :version: " + PROG_VERSION_DATE + "\n·\n"
 
