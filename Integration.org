@@ -129,8 +129,9 @@ You do have two independent options to integrate filetags to your
 Windows Explorer.
 
 The first one integrates it directly into the context menu of a file.
-This has the advantage, that you can tag a file very quickly. Howver,
-the downside is that this only works for a single file.
+This has the advantage, that you can tag a file very quickly. However,
+the downside is that this only works for a single file and not all
+marked files.
 
 If you want to tag multiple files at once, you have to integrate
 filetags using the second method. This does add filetags into your
@@ -199,7 +200,13 @@ print("Please check content before executing.")
 
 *** Integration into Windows Explorer for single and multiple selected files
 
-Follow the instructions:
+The command =register_filetags_for_send_to_folder= does the following
+steps for you. You can have a look at its options by starting a
+=cmd.exe= shell and typing in:
+
+: register_filetags_for_send_to_folder -h
+
+If you want to do it manually, follow the instructions:
 
 - Open =cmd.exe= (via Win-key and typing "cmd" + ENTER)
   - Invoke =where filetags.exe=
