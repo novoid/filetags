@@ -307,8 +307,8 @@ tags that are most likely typos or abandoned
 - 2018-04-18:
   - comments in =.filetags= files that contain the controlled vocabulary
 - 2018-04-25:
-  - added =register_filetags_for_send_to_folder= to ease the Windows
-    Explorer integration
+  - added hints to [[https://github.com/novoid/integratethis][=integratethis=]] to ease the Windows Explorer
+    integration
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:

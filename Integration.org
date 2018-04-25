@@ -200,11 +200,16 @@ print("Please check content before executing.")
 
 *** Integration into Windows Explorer for single and multiple selected files
 
-The command =register_filetags_for_send_to_folder= does the following
-steps for you. You can have a look at its options by starting a
-=cmd.exe= shell and typing in:
+[[https://github.com/novoid/integratethis][The tool =integratethis=]] does the following steps for you. Install it
+via =pip3 install integratethis=. You can have a look at its options
+by starting a =cmd.exe= shell and typing in:
 
-: register_filetags_for_send_to_folder -h
+: integratethis -h
+
+You might want to use one of the following commands:
+
+: integratethis filetags --confirm
+: integratethis filetags --parameter="--tagtrees --tagtrees-depth 3" --displayname "re-generate TagTrees"
 
 If you want to do it manually, follow the instructions:
 
