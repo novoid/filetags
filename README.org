@@ -1,6 +1,6 @@
 * filetags
 
-[[file:screencast.gif]]
+[[file:bin/screencast.gif]]
 
 ... filetags example demonstrating: controlled vocabulary file
 =~/.filetags=, tagging multiple files at once, removing tags by
@@ -11,11 +11,11 @@ tags (switching from =draft= to =final= without removing =draft=).
 This Python script adds or removes tags to file names in the following
 form:
 
-: file without time stamp in name -- tag2.txt
-: file name with several tags -- tag1 tag2.jpeg
-: another example file name with multiple example tags -- fun videos kids.mpeg
-: 2013-05-09 a file name with ISO date stamp in name -- tag1.jpg
-: 2013-05-09T16.17 file name with time stamp -- tag3.csv
+- "file without time stamp in name -- *tag2*.txt
+- "file name with several tags -- *tag1 tag2*.jpeg
+- "another example file name with multiple example tags -- *fun videos kids*.mpeg
+- "2013-05-09 a file name with ISO date stamp in name -- *tag1*.jpg
+- "2013-05-09T16.17 file name with time stamp -- *tag3*.csv
 
 The script accepts an arbitrary number of files (see your shell for
 possible length limitations).
@@ -44,6 +44,12 @@ tags as simple as possible.
 You may like to add this tool to your image or file manager of
 choice. I added mine to [[http://geeqie.sourceforge.net/][geeqie]] which is my favorite image viewer on
 GNU/Linux.
+
+Here is a 45 minute talk I gave at [[https://glt18.linuxtage.at/][Linuxtage Graz 2018]] presenting the
+idea of and workflows related to filetags and other handy tools for
+file management:
+
+[[https://media.ccc.de/v/GLT18_-_321_-_en_-_g_ap147_004_-_201804281550_-_the_advantages_of_file_name_conventions_and_tagging_-_karl_voit/][bin/2018-05-06 filetags demo slide for video preview with video button -- screenshots.png]]
 
 ** Installation
 
@@ -79,15 +85,15 @@ If you use the GitHub sources (and not pip), the executable is
 #+END_SRC
 
 #+BEGIN_src
-usage: ./filetags/__init__.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i]
-                              [-R] [-s] [-f]
-                              [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees]
-                              [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
-                              [--tagtrees-link-missing-mutual-tagged-items]
-                              [--tagtrees-dir <existing_directory>]
-                              [--tagtrees-depth TAGTREES_DEPTH] [--ln] [--la]
-                              [--lu] [--tag-gardening] [-v] [-q] [--version]
-                              [FILE [FILE ...]]
+usage: filetags [-h] [-t "STRING WITH TAGS"] [--remove] [-i]
+                [-R] [-s] [-f]
+                [--filebrowser PATH_TO_FILEBROWSER] [--tagtrees]
+                [--tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"]
+                [--tagtrees-link-missing-mutual-tagged-items]
+                [--tagtrees-dir <existing_directory>]
+                [--tagtrees-depth TAGTREES_DEPTH] [--ln] [--la]
+                [--lu] [--tag-gardening] [-v] [-q] [--version]
+                [FILE [FILE ...]]
 
 This tool adds or removes simple tags to/from file names.
 
@@ -102,13 +108,13 @@ set of files with the same tag, you have to rename each file
 separately. With this tool, this only requires one step.
 
 Example usages:
-  ./filetags/__init__.py --tags="presentation projectA" *.pptx
+  filetags --tags="presentation projectA" *.pptx
       … adds the tags "presentation" and "projectA" to all PPTX-files
-  ./filetags/__init__.py --tags="presentation -projectA" *.pptx
+  filetags --tags="presentation -projectA" *.pptx
       … adds the tag "presentation" to and removes tag "projectA" from all PPTX-files
-  ./filetags/__init__.py -i *
+  filetags -i *
       … ask for tag(s) and add them to all files in current folder
-  ./filetags/__init__.py -r draft *report*
+  filetags -r draft *report*
       … removes the tag "draft" from all files containing the word "report"
 
 This tools is looking for the optional first text file named ".filetags" in
@@ -134,18 +140,19 @@ optional arguments:
   -s, --dryrun          enable dryrun mode: just simulate what would happen,
                         do not modify files
   -f, --filter          ask for list of tags and generate links in
-                        "/home/vk/.filetags_tagfilter" containing symbolic
-                        links to all files with matching tags and start the
-                        filebrowser
+                        "/home/vk/.filetags_tagfilter" containing links to all
+                        files with matching tags and start the filebrowser.
+                        Target directory can be overridden by --tagtrees-dir.
   --filebrowser PATH_TO_FILEBROWSER
                         use this option to override the tool to view/manage
                         files (for --filter; default: geeqie). Use "none" to
                         omit the default one.
   --tagtrees            This generates nested directories in
                         "/home/vk/.filetags_tagfilter" for each combination of
-                        tags up to a limit of 2. Please note that this may
-                        take long since it relates exponentially to the number
-                        of tags involved. See also http://Karl-
+                        tags up to a limit of 2. Target directory can be
+                        overridden by --tagtrees-dir. Please note that this
+                        may take long since it relates exponentially to the
+                        number of tags involved. See also http://Karl-
                         Voit.at/tagstore/ and http://Karl-
                         Voit.at/tagstore/downloads/Voit2012b.pdf
   --tagtrees-handle-no-tag "treeroot" | "ignore" | "FOLDERNAME"
@@ -171,7 +178,8 @@ optional arguments:
                         the default target directory
                         "/home/vk/.filetags_tagfilter" with a user-defined
                         one. It has to be an empty directory or a non-existing
-                        directory which will be created.
+                        directory which will be created. This also overrides
+                        the default directory for --filter.
   --tagtrees-depth TAGTREES_DEPTH
                         When tagtrees are created, this parameter defines the
                         level of depth of the tagtree hierarchy. The default
@@ -196,11 +204,12 @@ optional arguments:
 
 :copyright: (c) by Karl Voit <tools@Karl-Voit.at>
 :license: GPL v3 or any later version
-:URL: https://github.com/novoid/filetag
+:URL: https://github.com/novoid/filetags
 :bugreports: via github or <tools@Karl-Voit.at>
-:version: 2018-01-26
+:version: 2018-04-25
 ·
 #+END_src
+
 
 *** Examples:
 
