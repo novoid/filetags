@@ -45,7 +45,7 @@ You may like to add this tool to your image or file manager of
 choice. I added mine to [[http://geeqie.sourceforge.net/][geeqie]] which is my favorite image viewer on
 GNU/Linux.
 
-Here is a 45 minute talk I gave at [[https://glt18.linuxtage.at/][Linuxtage Graz 2018]] presenting the
+Here is [[https://glt18-programm.linuxtage.at/events/321.html][a 45 minute talk I gave]] at [[https://glt18.linuxtage.at/][Linuxtage Graz 2018]] presenting the
 idea of and workflows related to filetags and other handy tools for
 file management:
 
@@ -428,99 +428,28 @@ tags.
 
 ** Bonus: Using tags to specify a sub-set of photographs
 
-FIXXME 2018-03-07: filetags now has the command line option of
-filtering files according to a tag. The method described below is the
-previous/old method. The new one requires only calling filetags with
-the =--filter= parameter. This has the advantage, that you can filter
-to any tag you like and not only to the =sel= tag as described below.
-
 You know the problem: got back from Paris and you can not show 937
 image files to your friends. It's just too much.
 
-My solution: I tag to define selections. For example, I am using
-~sel~ for the ultimate cool photographs using ~filetags~, of course.
+My solution: I tag to define selections. For example, I am using ~sel~
+("selection") for the ultimate cool photographs using ~filetags~, of
+course.
 
-Within geeqie, I redefined ~S~ (usually mapped to "sort manager") to
-an external shell script (below) which creates a temporary folder
-(within ~/tmp/~), symbolic links to all photographs of the current
-folder that contain the tag ~sel~, and start a new instance of
-geeqie.
+Within geeqie, which is my preferred image viewer, I redefined ~F~ to
+call filetags with its =--filter= parameter. Now I get asked to enter
+one or more tags to filter the current folder. For presenting only the
+files that were tagged with ~sel~, I enter ~sel~ and confirm with
+~Enter~.
+
+This creates a temporary folder with symbolic links to all photographs
+of the current folder that contain the tag ~sel~ and it starts a new
+(additional) instance of geeqie.
 
 In short: after returning from a trip, I mark all "cool" photographs
 within geeqie, choose ~t~ and tag them with ~sel~ (described in
-previous section). For showing only ~sel~ images, I just press ~S~
-in geeqie and instead of 937 photographs, my friends just have to
+previous section). For showing only ~sel~ images, I just press ~F~,
+enter ~sel~ and instead of 937 photographs, my friends just have to
 watch the best 50 or so. :-)
-
-The script ~vksel.sh~ looks like this:
-
-#+BEGIN_EXAMPLE
-#!/bin/sh
-
-TMPDIR="/tmp/imageselection"
-IMAGEDIR="${1}"
-IMAGEVIEWER="geeqie"
-FILENAME=$(basename $0)
-
-print_usage()
-{
-        echo
-        echo "usage:   ${FILENAME} <directory>"
-        echo
-        echo "... starts a image viewer containing files tagged with \"sel\" in the current"
-        echo "folder or the folder given as parameter 1."
-        echo
-}
-
-STARTDIR=`pwd`
-
-if [ "x${IMAGEDIR}" = "x-h" -o "x${IMAGEDIR}" = "x--help" ]; then
-    print_usage
-    exit 0
-fi
-
-if [ "x${IMAGEDIR}" = "x" ]; then
-    IMAGEDIR="${STARTDIR}"
-fi
-
-if [ ! -d ${IMAGEIDIR} ]; then
-    echo
-    echo "  Please specify a folder containing the <directory>."
-    echo
-    print_usage
-    exit 1
-fi
-
-
-## remove (old) TMPDIR if exists:
-test -d "${TMPDIR}" && rm -rf "${TMPDIR}"
-
-## create fresh TMPDIR
-mkdir "${TMPDIR}"
-cd "${TMPDIR}"
-
-
-find "${IMAGEDIR}" -name '* -- *sel*' -print0 | xargs -0 -I {} ln -s {} . --
-${IMAGEVIEWER}
-
-cd "${STARTDIR}"
-
-#end
-#+END_EXAMPLE
-
-Integration in geeqie is done with ~$HOME/.config/geeqie/applications/show-sel.desktop~
-: [Desktop Entry]
-: Name=show-sel
-: GenericName=show-sel
-: Comment=
-: Exec=/home/vk/bin/vksel.sh
-: Icon=
-: Terminal=true
-: Type=Application
-: Categories=Application;Graphics;
-: hidden=false
-: MimeType=image/*;video/*;image/mpo;image/thm
-: Categories=X-Geeqie;
 
 * Integration Into Common Tools
 
@@ -546,7 +475,7 @@ out of filetags as well.
 
 This tool is part of a tool-set which I use to manage my digital files
 such as photographs. My work-flows are described in [[http://karl-voit.at/managing-digital-photographs/][this blog posting]]
-you might like to read.
+you might like to read and in the video which is linked above.
 
 In short:
 
