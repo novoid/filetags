@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-04-25 14:29:48 karl.voit>"
+PROG_VERSION = "Time-stamp: <2018-06-02 13:58:30 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -900,17 +900,20 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
                           old_source_filename + '"  ' + 'v' * 20)
 
             logging.debug('handle_file_and_optional_link: invoking handle_file_and_optional_link("' +
-                          old_source_filename + '")  '  + 'v' * 20)
+                          old_source_filename + '")  ' + 'v' * 20)
             new_source_basename = handle_file_and_optional_link(old_source_filename,
                                                                 tags,
                                                                 do_remove, do_filter, dryrun)
             logging.debug('handle_file_and_optional_link: RETURNED handle_file_and_optional_link("' +
-                          old_source_filename + '")  '  + 'v' * 20)
+                          old_source_filename + '")  ' + 'v' * 20)
+
+            # FIXXME: 2018-06-02: introduced to debug https://github.com/novoid/filetags/issues/22
+            logging.debug('old_source_dirname: [' + old_source_dirname + ']')
+            logging.debug('new_source_basename: [' + new_source_basename + ']')
 
             new_source_filename = os.path.join(old_source_dirname, new_source_basename)
             new_source_filename, new_source_dirname, \
-                new_source_basename, new_source_basename_without_lnk = \
-                    split_up_filename(new_source_filename)
+                new_source_basename, new_source_basename_without_lnk = split_up_filename(new_source_filename)
 
             if old_source_basename != new_source_basename:
                 logging.debug('handle_file_and_optional_link: Tagging the symlink-destination file of "' +
