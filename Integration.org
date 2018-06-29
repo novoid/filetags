@@ -283,3 +283,34 @@ If you want to assign a different keyboard shortcut than =Ctrl-1= like
     - If your shortcut is taken, you'll get a notification. Don't
       overwrite essential shortcuts you're using.
   - OK
+
+** Integration into Dired
+:PROPERTIES:
+:CREATED:  [2018-06-30 Sat 00:00]
+:END:
+
+[[https://en.wikipedia.org/wiki/Dired][Dired]] is the oldest file manager. It started in 1974 and offers a wide
+range of efficient functionality. Here, we add filetags to Dired.
+
+#+BEGIN_SRC emacs-lisp
+(defun my-dired-filetags ()
+  "Run \"filetags\" on current or marked files"
+  (interactive)
+  (let* ((marked-files (f-uniquify (dired-get-marked-files)))) ;; apply to single file or marked files
+    (when (my-system-type-is-windows)
+      (dired-do-shell-command "wrapper-script-for-filetags.bat *" nil marked-files)
+      )
+    (when (my-system-type-is-gnu)
+      ;; --disable-server → provides a blocking terminal window (instead of a non-blocking one which swallows the revert-buffer afterward)
+      (dired-do-shell-command "xfce4-terminal --disable-server --geometry=100x20+330+5 --hide-menubar -x /home/vk/bin/filetags --interactive *" nil marked-files)
+      )
+    )
+  (revert-buffer nil t t) ;; refresh listing of files
+  )
+#+END_SRC
+
+I mapped it to =M-t= in my dired buffers:
+
+#+BEGIN_SRC emacs-lisp
+(define-key dired-mode-map (kbd "M-t") 'my-dired-filetags)
+#+END_SRC

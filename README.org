@@ -466,6 +466,7 @@ external commands being added:
 - [[https://en.wikipedia.org/wiki/Thunar][Thunar]] is a popular GNU/Linux file browser for the xfce environment
 - Windows Explorer
 - [[http://freecommander.com/en/summary/][FreeCommander]], my recommendated alternative to Windows explorer
+- [[https://en.wikipedia.org/wiki/Dired][Dired]], the GNU/Emacs file manager
 
 If you have integrated filetags in additional commonly used tools,
 please send me a short how-to so that others are able to get the most
