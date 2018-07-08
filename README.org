@@ -210,7 +210,6 @@ optional arguments:
 ·
 #+END_src
 
-
 *** Examples:
 
 : filetags --tags foo a_file_name.txt
@@ -321,6 +320,7 @@ tags that are most likely typos or abandoned
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
+:ID: 2018-07-08-cv
 :CREATED:  [2015-01-02 Fri 17:12]
 :END:
 
@@ -345,6 +345,9 @@ character is considered a comment. You can even add a comment after a
 tag like "=mytag   # this is a test tag=".
 
 ** Mutually exclusive tags
+:PROPERTIES:
+:ID:       2018-07-08-mutually-exclusive-tags
+:END:
 
 If you enter multiple tags in the same line in ~.filetags~, they are
 interpreted as *mutually exclusive tags*. For example, if your
@@ -362,7 +365,10 @@ replaces any season-tag with the new one. So if you tag the file …
 Common mutually exclusive tags are =draft final= or =confidential
 internal public=.
 
-** tagtrees
+** TagTrees
+:PROPERTIES:
+:ID:       2018-07-08-tagtrees
+:END:
 
 This functions is somewhat sophisticated with regards to the
 background. If you're really interested in the whole story behind the
@@ -427,6 +433,9 @@ and tag files that don't participate in this set of mutually exclusive
 tags.
 
 ** Bonus: Using tags to specify a sub-set of photographs
+:PROPERTIES:
+:ID:       2018-07-08-sel-photos
+:END:
 
 You know the problem: got back from Paris and you can not show 937
 image files to your friends. It's just too much.
@@ -450,6 +459,8 @@ within geeqie, choose ~t~ and tag them with ~sel~ (described in
 previous section). For showing only ~sel~ images, I just press ~F~,
 enter ~sel~ and instead of 937 photographs, my friends just have to
 watch the best 50 or so. :-)
+
+Watch [[https://media.ccc.de/v/GLT18_-_321_-_en_-_g_ap147_004_-_201804281550_-_the_advantages_of_file_name_conventions_and_tagging_-_karl_voit][this 45 minute talk]] on how I am using this (and other) features.
 
 * Integration Into Common Tools
 
@@ -513,6 +524,156 @@ I'm glad you like my tools. If you want to support me:
 - Create issues on GitHub for bugs
 - Contribute merge requests for bug fixes
 - Check out my other cool [[https://github.com/novoid][projects on GitHub]]
+
+* Exhaustive List of All Features
+:PROPERTIES:
+:CREATED:  [2018-07-08 Sun 13:09]
+:END:
+
+This section is an exhaustive list of features of =filetags=. You
+might skip this when you're a first-time user in order *not* to get
+irritated for simple use-cases only.
+
+This section is particularily helpful for re-implementing =filetags=
+functionality and for power-users which are interested in the advanced
+functions provided by this tool.
+
+** General
+
+| *Before*                         | *When*             | *After*                          | *Note*                                     |
+|----------------------------------+--------------------+----------------------------------+--------------------------------------------|
+| =Some file name.jpeg=            | tagging with =foo= | =Some file name -- foo.jpeg=     | Tag separator is added automatically       |
+| =Some file name=                 | tagging with =foo= | =Some file name -- foo=          | There is no need for a file extension      |
+| =Some file name -- foo.jpeg=     | tagging with =bar= | =Some file name -- foo bar.jpeg= | =bar= becomes last tag                     |
+| =Some file name.jpeg.lnk=        | tagging with =bar= | =Some file name -- bar.jpeg.lnk= | The =.lnk= extension is taken into account |
+| =Some file name -- bar.jpeg=     | untagging =bar=    | =Some file name.jpeg=            | Tag separator is removed                   |
+| =Some file name -- foo bar.jpeg= | untagging =foo=    | =Some file name -- bar.jpeg=     | Tag order stays same when removing         |
+
+- =filetags= may be used
+  1. interactively (via =--interactive= or missing "action" command
+     line parameters) from command line or
+  2. in a script using command line parameters.
+- =filetags= offers a =--dryrun= option which does not modify any file
+  or directory.
+- Added tag(s) get appended as last tag(s).
+- When removing tags, their relative order is preserved.
+- When modifying any file that is a symbolic link or a Windows =.LNK=
+  file to a file that has the same basename (file name without path),
+  the linked/original file gets modified as well.
+  - This comes very handy when working within TagTrees (see below).
+  - However, when modifying links which do not share the same
+    base-name with its link source, the link might become a broken one
+    (depending on the link technology used).
+- When un-tagging tags from files that do not have those tags, it is silently ignored.
+- [ ] FIXXME: describe =find_unique_alternative_to_file(filename)= and implications
+
+- FUTURE: [[https://github.com/novoid/filetags/issues/13][support for tagging folders/directories · Issue #13 · novoid/filetags · GitHub]]
+- FUTURE: [[https://github.com/novoid/filetags/issues/14][Files within tagged directories do inherit the tags for all relevant features · Issue #14 · novoid/f…]]
+  - Inheritance applies to many features such as "don't tag a file
+    with a tag from any parent directory" and so forth.
+  - Not that simple to decide each use-case. This is a hard nut to
+    crack with many complex things to take care of.
+- FUTURE: [[https://github.com/novoid/filetags/issues/18][CV: add CLI option that prevents users from using tags that are not part of the used .filetags file …]]
+  - Enforcing CVs is a good practice IMHO.
+
+** Interactive Mode
+
+- Print used tags of selected file(s).
+  - For multiple files, show only the tags that are used within all
+    selected files.
+- =filetags= dialog shows up to nine topmost used tags (sorted by
+  number of usage) used for files within the current directory.
+  - E.g., =draft(1) projectX(2) customer(3) bill(4)=
+  - You can use =0-9= as shortcuts to select those tags.
+    - You can concatenate shortcut numbers without spaces in-between:
+      =143 foo= tags with the shortcuts number 1, 3 and 4 and adds new
+      tag =foo=.
+      - With the example above, it is equivalent to tagging with:
+        =draft bill customer foo= or =draft 4 3 foo=.
+- You can un-tag tags that appear in file name using the minus prefix.
+  - E.g., =-foo= un-tags the tag =foo=.
+  - Auto-completion is provided to un-tag existing tags.
+- Tags from the CV (within =.filetags= files) and from tags used in
+  the current directory can be auto-completed via =TAB=.
+  - Already used tags are not available for completion.
+- Multiple Files
+  - You can tag/un-tag multiple selected files at once.
+    - Selected files containing the tag(s) to tag are not modified and no tags get duplicated.
+    - Selected files not containing the tag(s) to un-tag are not modified.
+  - Tag suggestions for un-tagging contain the common tags of selected files.
+- Tagging dialog can be aborted any time via =Ctrl-c=.
+
+** Controlled Vocabulary (CV)
+
+Please read [[id:2018-07-08-cv][this]] first in order to understand CVs.
+
+- CV is read from =.filetags= files.
+  - One tag per line: simple tag
+  - Multiple tags per line, separated via spaces: a group of [[id:2018-07-08-mutually-exclusive-tags][mutually exclusive tags]]
+    - E.g., =draft final approved=
+      - When tagging =My report -- draft.txt= with =final=, =draft=
+        gets replaced by =final= without the user un-tagging it
+        before.
+      - =filetags= does not prevent user from manually tagging files
+        with two or more mutually exclusive tags.
+  - The order of priority to locate "matching" =.filetags= files is:
+    1. Current directory of the first file to tag/un-tag.
+    2. Any higher-level directory from the current directory of the first file to tag/un-tag.
+    3. =.filetags= file from the HOME directory.
+       - FUTURE: may be changed to: [[https://github.com/novoid/filetags/issues/16][Use "$HOME/.config/filetags" for overriding default options · Issue #16 · novoid/filetags · GitHub]]
+  - =.filetags= files may be links (hardlinks, symbolic links or even Windows =.LNK= files)
+- Comments within =.filetags= files begin with one or more =#= characters that may be prepended by one or more spaces.
+- PLANNED: =.filetags= files may include other =.filetags= files via =#include <relative or absolute path to another file>=
+  - [[https://github.com/novoid/filetags/issues/7][.filetags CV-file: include other files · Issue #7 · novoid/filetags · GitHub]]
+- FUTURE: [[https://github.com/novoid/filetags/issues/17][CV: .filetags may contain mandatory options · Issue #17 · novoid/filetags · GitHub]]
+  - Probably a nice to have for different default-behavior in different sub-hierarchies of the file system.
+
+** Filter
+
+This function is very handy for filtering groups of photographs within
+a large set of photographs as described [[id:2018-07-08-sel-photos][here]].
+
+- The user defines one or more tags whose files are linked to a target
+  directory.
+  - When more than one tag is given, only files that got tagged by all
+    given tags are linked.
+  - FUTURE: [[https://github.com/novoid/filetags/issues/10][CLI parameter to switch between: use symlink, hardlink, or copy · Issue #10 · novoid/filetags · GitH…]]
+    - This would allow for copying files instead of linking them.
+- Any "matching" =.filetags= file is linked to the target directory.
+- A populated target directory is never overwritten.
+- The default target directory is =.filetags_tagfilter= and might be
+  changed by =--tagtrees-dir=.
+- When started interactively, a file browser is opened showing the
+  target directory.
+  - The file browser tool might be overwritten with =--filebrowser=.
+- The =--recursive= option is taken into account accordingly.
+
+** Features Related to TagTrees
+
+[[id:2018-07-08-tagtrees][The TagTrees concept]] was developed by me during my PhD thesis ([[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][PDF]])
+when developing with the [[http://Karl-Voit.at/tagstore/][tagstore research platform]].
+
+Please note that in future, all functions related to TagTrees will be
+*moved into a separate tool* named =tagtrees=.
+
+- TagTrees are generated according to the tags found in tagged files.
+- The =--recursive= option is taken into account accordingly.
+- FUTURE: [[https://github.com/novoid/filetags/issues/21][Generate something like TagTrees but for ctime/mtime · Issue #21 · novoid/filetags · GitHub]]
+- FUTURE: [[https://github.com/novoid/filetags/issues/9][--filter options also works when generating tagtrees · Issue #9 · novoid/filetags · GitHub]]
+
+** Tag Gardening
+
+Just invoke =filetags --tag-gardening= or =filetags --recursive
+--tag-gardening= and read its output to learn about helpful analysis
+results to curate your tags. My personal favorites are:
+
+- I am able to find typos in tags (tag count is low and similar tags are found).
+- I can determine tags I seldom use and therefore might be removed from CVs.
+- Statistics on tag usage like, e.g.:
+  - Distribution of mutually exclusive tag options.
+  - Fraction of files that are not tagged.
+- Tags I have used which are not in my CVs.
+- Unused tags.
 
 * Local Variables                                                  :noexport:
 # Local Variables:
