@@ -474,6 +474,11 @@ out of filetags as well.
 
 * Related tools and workflows
 
+Alternative implementations of my concept:
+- [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
+
+-----------
+
 This tool is part of a tool-set which I use to manage my digital files
 such as photographs. My work-flows are described in [[http://karl-voit.at/managing-digital-photographs/][this blog posting]]
 you might like to read and in the video which is linked above.
