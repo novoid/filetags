@@ -30,7 +30,6 @@ script does provide a shell window for entering the tags.
 :
 : /usr/bin/gnome-terminal \
 :     --geometry=73x5+330+5  \
-:     --tab-with-profile=big \
 :     --hide-menubar \
 :     -x /home/vk/src/filetags/filetags/__init__.py --interactive "${@}"
 :
@@ -42,7 +41,6 @@ looks like:
 :
 : /usr/bin/gnome-terminal \
 :     --geometry=73x5+330+5  \
-:     --tab-with-profile=big \
 :     --hide-menubar \
 :     -x /home/vk/src/filetags/filetags/__init__.py --interactive --remove "${@}"
 :
