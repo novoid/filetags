@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-06-02 13:58:30 vk>"
+PROG_VERSION = "Time-stamp: <2018-07-23 19:38:12 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -191,7 +191,7 @@ parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
                     "up to a limit of " + str(DEFAULT_TAGTREES_MAXDEPTH) + ". Target directory " +
                     "can be overridden by --tagtrees-dir. " +
                     "Please note that this may take long since it relates " +
-                    "exponentially to the number of tags involved. " +
+                    "exponentially to the number of tags involved. Can be combined with --filter. " +
                     "See also http://Karl-Voit.at/tagstore/ and http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf")
 
 parser.add_argument("--tagtrees-handle-no-tag",
@@ -1986,7 +1986,7 @@ def get_common_tags_from_files(files):
     return list(set.intersection(*list_of_tags_per_file))
 
 
-def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, link_missing_mutual_tagged_items):
+def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, link_missing_mutual_tagged_items, filtertags=None):
     """
     This functions is somewhat sophisticated with regards to the background.
     If you're really interested in the whole story behind the
@@ -2056,6 +2056,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     @param ignore_nontagged: (bool) if True, non-tagged items are ignored and not linked
     @param nontagged_subdir: (string) holds a string containing the sub-directory name to link non-tagged items to
     @param link_missing_mutual_tagged_items: (bool) if True, any item that has a missing tag of any unique_tags entry is linked to a separate directory which is auto-generated from the unique_tags set names
+    @param filtertags: (list) if options.tagfilter is used, this list holds the tags to filter for (AND)
     """
 
     assert_empty_tagfilter_directory(directory)
@@ -2084,9 +2085,12 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                    'So it looks like we\'ve got a shot-yourself-in-the-foot situation here … You can imagine that this was not ' + \
                    'even simple to find and catch while testing for me either. Or was it? Make an educated guess. :-)')
 
+    if filtertags:
+        files = filter_files_matching_tags(files, filtertags)
+
     if len(files) == 0 and not options.recursive:
         error_exit(10, 'There is no single file in the current directory "' + os.getcwd() + '". I can\'t create ' + \
-                   'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
+                'tagtrees from nothing. You gotta give me at least something to work with here, dude.')
 
     # If a controlled vocabulary file is found for the directory where the tagtree
     # should be generated for, we link this file to the resulting tagtrees root
@@ -2293,6 +2297,7 @@ def start_filebrowser(directory):
                      current_platform + '\".')
         logging.info('Please visit ' + directory + ' to view filtered items.')
 
+
 def all_files_are_links_to_same_directory(files):
     """
     This function returns True when: all files in "files" are links with same
@@ -2326,6 +2331,64 @@ def all_files_are_links_to_same_directory(files):
             return False
     return True
 
+
+def handle_option_tagtrees(filtertags=None):
+    """
+    Handles the options and preprocessing for generating tagtrees.
+
+    @param: filtertags: (list) if options.tagfilter is used, this list contains the user-entered list of tags to filter for
+    """
+
+    logging.debug("handling option for tagtrees")
+
+    # The command line options for tagtrees_handle_no_tag is checked:
+    ignore_nontagged = False
+    nontagged_subdir = False
+    if options.tagtrees_handle_no_tag:
+        if options.tagtrees_handle_no_tag[0] == 'treeroot':
+            logging.debug("options.tagtrees_handle_no_tag found: treeroot (default)")
+            pass  # keep defaults
+        elif options.tagtrees_handle_no_tag[0] == 'ignore':
+            logging.debug("options.tagtrees_handle_no_tag found: ignore")
+            ignore_nontagged = True
+        else:
+            ignore_nontagged = False
+            nontagged_subdir = options.tagtrees_handle_no_tag[0]
+            logging.debug("options.tagtrees_handle_no_tag found: use foldername [" +
+                          repr(options.tagtrees_handle_no_tag) + "]")
+
+    chosen_maxdepth = DEFAULT_TAGTREES_MAXDEPTH
+    if options.tagtrees_depth:
+        chosen_maxdepth = options.tagtrees_depth[0]
+        logging.debug('User overrides the default tagtrees depth to: ' +
+                      str(chosen_maxdepth))
+        if chosen_maxdepth > 4:
+            logging.warning('The chosen tagtrees depth of ' +
+                            str(chosen_maxdepth) + ' is rather high.')
+            logging.warning('When linking more than a few files, this ' +
+                            'might take a long time using many filesystem inodes.')
+
+    # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagfilter: unify accordingly!
+    chosen_tagtrees_dir = TAGFILTER_DIRECTORY
+    if options.tagtrees_directory:
+        chosen_tagtrees_dir = options.tagtrees_directory[0]
+        logging.debug('User overrides the default tagtrees directory to: ' +
+                      str(chosen_tagtrees_dir))
+
+    start = time.time()
+    generate_tagtrees(chosen_tagtrees_dir,
+                      chosen_maxdepth,
+                      ignore_nontagged,
+                      nontagged_subdir,
+                      options.tagtrees_link_missing_mutual_tagged_items,
+                      filtertags)
+    delta = time.time() - start  # it's a float
+    if delta > 3:
+        logging.info("Generated tagtrees in %.2f seconds" % delta)
+    start_filebrowser(chosen_tagtrees_dir)
+    successful_exit()
+
+
 def successful_exit():
     logging.debug("successfully finished.")
     sys.stdout.flush()
@@ -2358,7 +2421,7 @@ def main():
         error_exit(7, "Please don't use that gardening option together with any other option.")
 
     if options.tagfilter and (options.list_tags_by_number or options.list_tags_by_alphabet or
-                              options.tags or options.tagtrees or options.tag_gardening):
+                              options.tags or options.tag_gardening):
         error_exit(14, "Please don't use that filter option together with any other option.")
 
     if options.list_tags_by_number and (options.tagfilter or options.list_tags_by_alphabet or
@@ -2373,7 +2436,7 @@ def main():
                          options.list_tags_by_alphabet or options.tagtrees or options.tag_gardening):
         error_exit(17, "Please don't use that tags option together with any other option.")
 
-    if options.tagtrees and (options.tagfilter or options.list_tags_by_number or
+    if options.tagtrees and (options.list_tags_by_number or
                              options.list_tags_by_alphabet or options.tags or options.tag_gardening):
         error_exit(18, "Please don't use the tagtrees option together with any other option.")
 
@@ -2436,54 +2499,8 @@ def main():
         handle_tag_gardening(vocabulary)
         successful_exit()
 
-    elif options.tagtrees:
-        logging.debug("handling option for tagtrees")
-
-        # The command line options for tagtrees_handle_no_tag is checked:
-        ignore_nontagged = False
-        nontagged_subdir = False
-        if options.tagtrees_handle_no_tag:
-            if options.tagtrees_handle_no_tag[0] == 'treeroot':
-                logging.debug("options.tagtrees_handle_no_tag found: treeroot (default)")
-                pass  # keep defaults
-            elif options.tagtrees_handle_no_tag[0] == 'ignore':
-                logging.debug("options.tagtrees_handle_no_tag found: ignore")
-                ignore_nontagged = True
-            else:
-                ignore_nontagged = False
-                nontagged_subdir = options.tagtrees_handle_no_tag[0]
-                logging.debug("options.tagtrees_handle_no_tag found: use foldername [" +
-                              repr(options.tagtrees_handle_no_tag) + "]")
-
-        chosen_maxdepth = DEFAULT_TAGTREES_MAXDEPTH
-        if options.tagtrees_depth:
-            chosen_maxdepth = options.tagtrees_depth[0]
-            logging.debug('User overrides the default tagtrees depth to: ' +
-                          str(chosen_maxdepth))
-            if chosen_maxdepth > 4:
-                logging.warning('The chosen tagtrees depth of ' +
-                                str(chosen_maxdepth) + ' is rather high.')
-                logging.warning('When linking more than a few files, this ' +
-                                'might take a long time using many filesystem inodes.')
-
-        # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagfilter: unify accordingly!
-        chosen_tagtrees_dir = TAGFILTER_DIRECTORY
-        if options.tagtrees_directory:
-            chosen_tagtrees_dir = options.tagtrees_directory[0]
-            logging.debug('User overrides the default tagtrees directory to: ' +
-                          str(chosen_tagtrees_dir))
-
-        start = time.time()
-        generate_tagtrees(chosen_tagtrees_dir,
-                          chosen_maxdepth,
-                          ignore_nontagged,
-                          nontagged_subdir,
-                          options.tagtrees_link_missing_mutual_tagged_items)
-        delta = time.time() - start  # it's a float
-        if delta > 3:
-            logging.info("Generated tagtrees in %.2f seconds" % delta)
-        start_filebrowser(chosen_tagtrees_dir)
-        successful_exit()
+    elif options.tagtrees and not options.tagfilter:
+        handle_option_tagtrees()
 
     elif options.interactive or not options.tags:
 
@@ -2507,7 +2524,7 @@ def main():
 
         elif options.tagfilter:
 
-            # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagtagtrees: unify accordingly!
+            # FIXXME 2018-04-04: following 4-lines block re-occurs for options.tagtrees: unify accordingly!
             chosen_tagtrees_dir = TAGFILTER_DIRECTORY
             if options.tagtrees_directory:
                 chosen_tagtrees_dir = options.tagtrees_directory[0]
@@ -2598,9 +2615,12 @@ def main():
     elif options.interactive:
         logging.info("processing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
 
-    if options.tagfilter and not files:
+    if options.tagfilter and not files and not options.tagtrees:
         assert_empty_tagfilter_directory(chosen_tagtrees_dir)
         files = filter_files_matching_tags(get_files_of_directory(os.getcwd()), tags_from_userinput)
+    elif options.tagfilter and not files and options.tagtrees:
+        # the combination of tagtrees and tagfilter requires user input of tags which was done above
+        handle_option_tagtrees(tags_from_userinput)
 
     logging.debug("iterate over files ...")
 

@@ -317,6 +317,7 @@ tags that are most likely typos or abandoned
 - 2018-04-25:
   - added hints to [[https://github.com/novoid/integratethis][=integratethis=]] to ease the Windows Explorer
     integration
+- 2018-07-23: =--tagtrees== can now be filtered with =--filter=
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:

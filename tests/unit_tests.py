@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-04-17 19:16:42 karl.voit>
+# Time-stamp: <2018-07-23 18:40:23 karl.voit>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -222,7 +222,6 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18-foo bar'), ['2018', '03', '18'])
         self.assertEqual(filetags.extract_iso_datestamp_from_filename('2018-03-18T23.59 foo bar'),
                          ['2018', '03', '18'])
-
 
     def tearDown(self):
 
@@ -656,8 +655,25 @@ class TestFileWithoutTags(unittest.TestCase):
 class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     tempdir = None
+    subdir1 = None
+    subdir2 = None
 
     def setUp(self):
+        """This setup function creates following dir/file structure:
+
+        tempdir   (via tempfile.mkdtemp())
+          |_ "foo1 -- bar.txt"
+          |_ "foo2 -- bar baz.txt"
+          |_ "foo3 -- baz teststring1.txt"
+          |_ sub dir 1/
+               |_ "foo4 -- bar.txt"
+               |_ "foo5.txt"
+               |_ "foo6 -- baz teststring1.txt"
+               |_ "foo7 -- teststring1.txt"
+               |_ "foo8 -- baz.txt"
+               |_ "foo9 -- baz bar.txt"
+          |_ sub dir 2/  (empty)
+        """
 
         # create temporary directory:
         self.tempdir = tempfile.mkdtemp()
@@ -668,16 +684,30 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, use_cache=False), {})
 
         # create set of test files:
-        self.create_tmp_file("foo1 -- bar.txt")
-        self.create_tmp_file("foo2 -- bar baz.txt")
-        self.create_tmp_file("foo3 -- bar baz teststring1.txt")
+        self.create_tmp_file(self.tempdir, "foo1 -- bar.txt")
+        self.create_tmp_file(self.tempdir, "foo2 -- bar baz.txt")
+        self.create_tmp_file(self.tempdir, "foo3 -- baz teststring1.txt")
+
+        # create first sub directory and its files:
+        self.subdir1 = os.path.join(self.tempdir, "sub dir 1")
+        os.makedirs(self.subdir1)
+        self.create_tmp_file(self.subdir1, "foo4 -- bar.txt")
+        self.create_tmp_file(self.subdir1, "foo5.txt")
+        self.create_tmp_file(self.subdir1, "foo6 -- baz teststring1.txt")
+        self.create_tmp_file(self.subdir1, "foo7 -- teststring1.txt")
+        self.create_tmp_file(self.subdir1, "foo8 -- baz.txt")
+        self.create_tmp_file(self.subdir1, "foo9 -- baz bar.txt")
+
+        # create second sub directory (empty)
+        self.subdir2 = os.path.join(self.tempdir, "sub dir 2")
+        os.makedirs(self.subdir2)
 
         if platform.system() != 'Windows':
             os.sync()
 
-    def create_tmp_file(self, name):
+    def create_tmp_file(self, directory, name):
 
-        with open(os.path.join(self.tempdir, name), 'w') as outputhandle:
+        with open(os.path.join(directory, name), 'w') as outputhandle:
             outputhandle.write('This is a test file for filetags unit testing')
 
     def file_exists(self, name):
@@ -691,7 +721,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
     def test_get_tags_from_files_and_subfolders(self):
 
         self.assertEqual(filetags.get_tags_from_files_and_subfolders(self.tempdir, use_cache=False),
-                         {'baz': 2, 'bar': 3, 'teststring1': 1})
+                         {'baz': 2, 'bar': 2, 'teststring1': 1})
 
         # FIXXME: write test which tests the cache
 
@@ -706,6 +736,79 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
     def test_locate_and_parse_controlled_vocabulary(self):
 
         print("FIXXME: test_locate_and_parse_controlled_vocabulary() not implemented yet")
+
+    def test_tagtrees_with_tagfilter_and_no_filtertag(self):
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=None)
+
+        self.assertEqual(len(os.listdir(self.subdir2)), 4)  # 4 entries in this directory
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'bar')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
+                         set(['baz', 'foo1 -- bar.txt', 'foo2 -- bar baz.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['bar', 'teststring1', 'foo2 -- bar baz.txt', 'foo3 -- baz teststring1.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
+
+
+    def test_tagtrees_with_tagfilter_and_one_filtertag(self):
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=['teststring1'])
+
+        self.assertEqual(len(os.listdir(self.subdir2)), 3)  # 3 entries in this directory
+
+        self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
+
+
+    def test_tagtrees_with_tagfilter_and_multiple_filtertags(self):
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=['teststring1', 'baz'])
+
+        self.assertEqual(set(os.listdir(self.subdir2)),
+                         set(['teststring1', 'baz', 'nontagged_items']))
+
+        self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
+        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt']))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
+
+        self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
+
 
     def tearDown(self):
 
