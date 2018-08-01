@@ -23,6 +23,8 @@ possible length limitations).
 - *Target group*: users who are able to use command line tools and who
   are using tags in file names.
 - Hosted on github: https://github.com/novoid/filetags
+- Note that [[https://en.wikipedia.org/wiki/Folder_(computing)#Folder_metaphor]["directories" are to "folders"]] what "files" are to
+  "documents".
 
 ** Why
 
@@ -140,7 +142,7 @@ optional arguments:
   -s, --dryrun          enable dryrun mode: just simulate what would happen,
                         do not modify files
   -f, --filter          ask for list of tags and generate links in
-                        "/home/vk/.filetags_tagfilter" containing links to all
+                        "/home/USER/.filetags_tagfilter" containing links to all
                         files with matching tags and start the filebrowser.
                         Target directory can be overridden by --tagtrees-dir.
   --filebrowser PATH_TO_FILEBROWSER
@@ -230,6 +232,8 @@ optional arguments:
 : filetags --tag-gardening
 ... prints out a summary of tags in current and sub-folders used and
 tags that are most likely typos or abandoned
+
+For =--filter= and =--tagtrees= examples see sections below.
 
 ** Changelog
 
@@ -366,6 +370,63 @@ replaces any season-tag with the new one. So if you tag the file …
 Common mutually exclusive tags are =draft final= or =confidential
 internal public=.
 
+** Filter
+:PROPERTIES:
+:CREATED:  [2018-08-01 Wed 11:44]
+:END:
+
+Consider you have a directory that contains hundreds of files.
+
+If you want to retrieve a file whose tags you know, you can skim
+through all the files. However, filetags offers you a more elegant
+possibility: you can filter the files according to one or more tags.
+
+For example, we take a look at following situation:
+
+: $HOME/my party/
+: |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+: |_ 2018-07-31 Guest list -- correspondence.txt
+: |_ 2018-08-01T11.51.44 Uncle Bob arrives.jpg
+: |_ 2018-08-01T12.31.42 Sheila with her new boyfriend -- friends.jpg
+: |_ 2018-08-01T14.12.23 Start of BBQ with the big steak.jpg
+: |_ ...
+: |_ 2018-08-01T23.53.19 Even uncle Bob desides to go home -- fun.jpg
+: |_ 2018-08-05 Lessons learned for planning a party -- scan.pdf
+: |_ 2018-08-06 Thank-you letter Bob -- scan.pdf
+: |_ Bills/
+:   |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:   |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+
+Following command and interaction would generate following temporal
+link structure:
+
+: filetags --filter
+
+User gets asked to enter one or more tags and she enters "scan":
+
+: $HOME/.filetags_tagfilter/
+: |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+: |_ 2018-08-05 Lessons learned for planning a party -- scan.pdf
+: |_ 2018-08-06 Thank-you letter Bob -- scan.pdf
+
+This way, our user is quickly able to skim through all scanned
+documents to locate the one desired to retrieve.
+
+To locate all matching files in all sub-directories as well, the user
+is able to add the parameter =--recursive= ...
+
+: filetags --filter --recursive
+
+... and chooses to enter the tag "scan" which would generate following
+temporal link structure:
+
+: $HOME/.filetags_tagfilter/
+: |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+: |_ 2018-08-05 Lessons learned for planning a party -- scan.pdf
+: |_ 2018-08-06 Thank-you letter Bob -- scan.pdf
+: |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+: |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+
 ** TagTrees
 :PROPERTIES:
 :ID:       2018-07-08-tagtrees
@@ -373,7 +434,7 @@ internal public=.
 
 This functions is somewhat sophisticated with regards to the
 background. If you're really interested in the whole story behind the
-visualization/navigation of tags using tagtrees, feel free to read [[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][my
+visualization/navigation of tags using TagTrees, feel free to read [[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][my
 PhD thesis]] about it on [[http://Karl-Voit.at/tagstore/][the tagstore webpage]]. It is surely a piece of
 work I am proud of and the general chapters of it are written so that
 the average person is perfectly well able to follow.
@@ -387,12 +448,12 @@ Consider having a file like:
 
 : My new car -- car hardware expensive.jpg
 
-Now you generate the tagtrees, you'll find [[https://en.wikipedia.org/wiki/Symbolic_link][links]] to this file within
+Now you generate the TagTrees, you'll find [[https://en.wikipedia.org/wiki/Symbolic_link][links]] to this file within
 sub-directories of =~/.filetags=, the default target directory: =new/=
 and =hardware/= and =expensive/= and =new/hardware/= and
 =new/expensive/= and =hardware/new/= and so on. You get the idea.
 
-The default target directory can be overrided via =--tagtrees-dir=.
+The default target directory can be overridden via =--tagtrees-dir=.
 
 Therefore, within the folder =new/expensive/= you will find all files
 that have at least the tags "new" and "expensive" in any order. This
@@ -405,33 +466,112 @@ easily.
 I personally, do use this feature within my image viewer of choice
 ([[http://geeqie.sourceforge.net/][geeqie]]). I mapped it to =Shift-T= because =Shift-t= is occupied by
 =filetags= for tagging of course. So when I am within my image viewer
-and I press =Shift-T=, tagtrees of the currently shown images are
+and I press =Shift-T=, TagTrees of the currently shown images are
 created. Then an additional image viewer window opens up for me,
-showing the resulting tagtrees. This way, I can quickly navigate
+showing the resulting TagTrees. This way, I can quickly navigate
 through the tag combinations to easily interactively filter according
 to tags.
 
-Please note: when you are tagging linked files within the tagtrees
+Please note: when you are tagging linked files within the TagTrees
 with filetags, only the current link gets updated with the new name.
 All other links to this modified filename within the other directories
-of the tagtrees gets broken. You have to re-create the tagtrees to
+of the TagTrees gets broken. You have to re-create the TagTrees to
 update all the links after tagging files.
 
 The option =--tagtrees-handle-no-tag= controls how files with no tags
 should be handled. When set to =treeroot=, untagged files are linked
-in the tagtrees target directory directly. The option =ignore= does
+in the TagTrees target directory directly. The option =ignore= does
 not link them at all. The option =FOLDERNAME= links them to a
 directory named accordingly to the value which is a sub-directory of
-the tagrees target directory.
+the TagTrees target directory.
 
 With the option =--tagtrees-link-missing-mutual-tagged-items= you can
-control, whether or not there will be an additional tagtrees folder
+control, whether or not there will be an additional TagTrees folder
 that contains all files which lack one of the mutually exclusive tags.
 Using the example ~winter spring summer autumn~ from above, all files
-that got none of those four tags get linked to a tagtrees directory
+that got none of those four tags get linked to a TagTrees directory
 named "no_winter_spring_summer_autumn". This way, you can easily find
 and tag files that don't participate in this set of mutually exclusive
 tags.
+
+Using the example files from above:
+
+: $HOME/my party/
+: |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+: |_ 2018-07-31 Guest list -- correspondence.txt
+: |_ 2018-08-01T11.51.44 Uncle Bob arrives.jpg
+: |_ 2018-08-01T12.31.42 Sheila with her new boyfriend -- friends.jpg
+: |_ 2018-08-01T14.12.23 Start of BBQ with the big steak.jpg
+: |_ ...
+: |_ 2018-08-01T23.53.19 Even uncle Bob desides to go home -- fun.jpg
+: |_ 2018-08-05 Lessons learned for planning a party -- scan.pdf
+: |_ 2018-08-06 Thank-you letter Bob -- scan.pdf
+: |_ Bills/
+:   |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:   |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+
+... and the command line ...
+
+: filetags --tagtrees --tagtrees-handle-no-tag "has_no_tag" --tagtrees-depth 2 --recursive
+
+... filetags generates the temporal link structure:
+
+: $HOME/.filetags_tagfilter/
+: |_ scan/
+:   |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+:   |_ 2018-08-05 Lessons learned for planning a party -- scan.pdf
+:   |_ 2018-08-06 Thank-you letter Bob -- scan.pdf
+:   |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:   |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+:   |_ correspondence/
+:     |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+:   |_ taxes/
+:     |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:     |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+: |_ correspondence/
+:   |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+:   |_ 2018-07-31 Guest list -- correspondence.txt
+:   |_ scan/
+:     |_ 2018-06-25 Party invitation -- scan correspondence.pdf
+: |_ friends/
+:   |_ 2018-08-01T12.31.42 Sheila with her new boyfriend -- friends.jpg
+: |_ fun/
+:   |_ 2018-08-01T23.53.19 Even uncle Bob desides to go home -- fun.jpg
+: |_ taxes/
+:   |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:   |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+:   |_ scan/
+:     |_ 2018-07-30 Beverages by FreshYouUp -- scan taxes.pdf
+:     |_ 2018-08-03 Bill of the butcher -- scan taxes.pdf
+: |_ has_no_tag/
+:   |_ 2018-08-01T11.51.44 Uncle Bob arrives.jpg
+:   |_ 2018-08-01T14.12.23 Start of BBQ with the big steak.jpg
+:   |_ ...
+
+This looks complicated because there are many links generated the user
+does not really need. The beauty of this solution is that the user is
+able to navigate to a file using a wide set of different paths (the
+TagTrees) and she is able to choose the one path that suits the
+current cognitive model.
+
+For example, she might want to retrieve "the one document from the
+last party which she remembers of having scanned and which she used
+for the invitation correspondence". With this mind-set, she most
+likely retrieves the document via
+=$HOME/.filetags_tagfilter/scan/correspondence/= or
+=$HOME/.filetags_tagfilter/correspondence/scan/= (does not matter
+which).
+
+The large number of other TagTrees can be ignored for this retrieval
+task.
+
+Another retrieval task example would be "all photos that do have no
+tag in order to continue tagging the photos". In this example, the
+user visits =$HOME/.filetags_tagfilter/has_no_tag/=, fires her image
+viewer (which has filetags integrated already - see below) and
+continues with the tagging activity. Since filetags synchronizes the
+tags within TagTrees linked files and the original files, the original
+files get renamed accordingly.
 
 ** Bonus: Using tags to specify a sub-set of photographs
 :PROPERTIES:
