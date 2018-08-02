@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-08-02 20:38:00 vk>"
+PROG_VERSION = "Time-stamp: <2018-08-02 21:15:14 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -175,6 +175,10 @@ parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="Enable dryrun mode: just simulate what would happen, do not modify files")
+
+parser.add_argument("--hardlinks", dest="hardlinks", action="store_true",
+                    help="Use hard links instead of symbolic links. This is ignored on Windows systems. " +
+                    "Note that renaming link originals when tagging does not work with hardlinks.")
 
 parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
                     help="Ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
@@ -960,8 +964,7 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
 
 def create_link(source, destination):
-    """
-    On non-Windows systems, a symbolic link is created that links
+    """On non-Windows systems, a symbolic link is created that links
     source (existing file) to destination (the new symlink). On
     Windows systems a lnk-file is created instead.
 
@@ -974,8 +977,12 @@ def create_link(source, destination):
     This is the reason why the "--tagrees" option does perform really bad
     on Windows. And "really bad" means factor 10 to 1000. I measured it.
 
+    The command link option "--hardlinks" switches to hardlinks. This
+    is ignored on Windows systems.
+
     @param source: a file name of the source, an existing file
     @param destination: a file name for the link which is about to be created
+
     """
 
     logging.debug('create_link(' + source + ', ' + destination + ') called')
@@ -994,8 +1001,16 @@ def create_link(source, destination):
         shortcut.save()
 
     else:
-        # for normal operating systems, use good old high-performing symbolic links:
-        os.symlink(source, destination)
+        # for normal operating systems:
+        if options.hardlinks:
+            try:
+                # use good old high-performing hard links:
+                os.link(source, destination)
+            except OSError:
+                logging.warning('Due to cross-device links, I had to use a symbolic link as a fall-back for: ' + source)
+        else:
+            # use good old high-performing symbolic links:
+            os.symlink(source, destination)
 
 
 def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
@@ -1223,12 +1238,12 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
                   (startdir, str(len(list(cache_of_tags_by_folder.keys())))))
 
     if use_cache and startdir in list(cache_of_tags_by_folder.keys()):
-        logging.debug("found " + str(len(cache_of_tags_by_folder[startdir])) +
+        logging.debug("get_tags_from_files_and_subfolders: found " + str(len(cache_of_tags_by_folder[startdir])) +
                       " tags in cache for directory: " + startdir)
         return cache_of_tags_by_folder[startdir]
 
     elif use_cache and startdir in cache_of_files_with_metadata.keys():
-        logging.debug('using cache_of_files_with_metadata instead of traversing file system again')
+        logging.debug('get_tags_from_files_and_subfolders: using cache_of_files_with_metadata instead of traversing file system again')
         cachedata = cache_of_files_with_metadata[startdir]
 
         # FIXXME: check if tags are extracted from dirnames as in traversal algorithm below
@@ -1258,7 +1273,7 @@ def get_tags_from_files_and_subfolders(startdir=os.getcwd(), use_cache=True):
                                            options.tag_gardening)):
                 break  # do not loop
 
-    logging.debug("Writing " + str(len(list(tags.keys()))) +
+    logging.debug("get_tags_from_files_and_subfolders: Writing " + str(len(list(tags.keys()))) +
                   " tags in cache for directory: " + startdir)
     if use_cache:
         cache_of_tags_by_folder[startdir] = tags
@@ -1921,12 +1936,17 @@ def get_files_of_directory(directory):
     """
 
     files = []
+    logging.debug('get_files_of_directory(' + directory + ') called and traversing file system ...')
     for (dirpath, dirnames, filenames) in os.walk(directory):
+        if len(files) % 5000 == 0 and len(files) > 0:
+            # while debugging a large hierarchy scan, I'd like to print out some stuff in-between scanning
+            logging.info('found ' + str(len(files)) + ' files so far ... counting ...')
         if options.recursive:
             files.extend([os.path.join(dirpath, x) for x in filenames])
         else:
             files.extend(filenames)
             break
+    logging.debug('get_files_of_directory(' + directory + ') finished with ' + str(len(files)) + ' items')
 
     return files
 
@@ -2086,6 +2106,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                    'even simple to find and catch while testing for me either. Or was it? Make an educated guess. :-)')
 
     if filtertags:
+        logging.debug('generate_tagtrees: filtering tags ...')
         files = filter_files_matching_tags(files, filtertags)
 
     if len(files) == 0 and not options.recursive:
@@ -2099,7 +2120,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
     controlled_vocabulary_filename = locate_file_in_cwd_and_parent_directories(os.getcwd(),
                                                                                CONTROLLED_VOCABULARY_FILENAME)
     if controlled_vocabulary_filename:
-        logging.debug('I found controlled_vocabulary_filename "' +
+        logging.debug('generate_tagtrees: I found controlled_vocabulary_filename "' +
                       controlled_vocabulary_filename +
                       '" which I\'m going to link to the tagtrees folder')
         if not options.dryrun:
@@ -2108,7 +2129,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                                      CONTROLLED_VOCABULARY_FILENAME))
 
     else:
-        logging.debug('I did not find a controlled_vocabulary_filename')
+        logging.debug('generate_tagtrees: I did not find a controlled_vocabulary_filename')
 
     logging.info('Creating tagtrees and their links. It may take a while …  ' +
                  '(exponentially with respect to number of tags)')
@@ -2141,7 +2162,6 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
         tags_of_currentfile = tags_of_files[currentfile[0]]
         filename, dirname, \
             basename, basename_without_lnk = split_up_filename(currentfile[1])
-
 
         logging.debug('generate_tagtrees: handling file "' + filename + '" …')
 
@@ -2224,7 +2244,7 @@ def generate_tagtrees(directory, maxdepth, ignore_nontagged, nontagged_subdir, l
                         no_uniqueset_tag_found_dir = os.path.join(directory,
                                                                   'no-' + ("-").join(unique_tagset))  # example: "no-draft-final"
                         if not os.path.isdir(no_uniqueset_tag_found_dir):
-                            logging.debug('creating non-existent no_uniqueset_tag_found_dir "%s" ...' %
+                            logging.debug('generate_tagtrees: creating non-existent no_uniqueset_tag_found_dir "%s" ...' %
                                           str(no_uniqueset_tag_found_dir))
                             if not options.dryrun:
                                 os.makedirs(no_uniqueset_tag_found_dir)
