@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-07-23 19:38:12 vk>"
+PROG_VERSION = "Time-stamp: <2018-08-02 20:38:00 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -161,28 +161,28 @@ parser.add_argument("-t", "--tags",
                     type=str,
                     metavar='"STRING WITH TAGS"',
                     required=False,
-                    help="one or more tags (in quotes, separated by spaces) to add/remove")
+                    help="One or more tags (in quotes, separated by spaces) to add/remove")
 
 parser.add_argument("--remove", action="store_true",
-                    help="remove tags from (instead of adding to) file name(s)")
+                    help="Remove tags from (instead of adding to) file name(s)")
 
 parser.add_argument("-i", "--interactive", action="store_true", dest="interactive",
-                    help="interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
+                    help="Interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
 
 parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
-                    help="recursively go through the current directory and all of its subdirectories. " +
+                    help="Recursively go through the current directory and all of its subdirectories. " +
                     "Implemented for --tag-gardening and --tagtrees")
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
-                    help="enable dryrun mode: just simulate what would happen, do not modify files")
+                    help="Enable dryrun mode: just simulate what would happen, do not modify files")
 
 parser.add_argument("-f", "--filter", dest="tagfilter", action="store_true",
-                    help="ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
+                    help="Ask for list of tags and generate links in \"" + TAGFILTER_DIRECTORY + "\" " +
                     "containing links to all files with matching tags and start the filebrowser. " +
                     "Target directory can be overridden by --tagtrees-dir.")
 
 parser.add_argument("--filebrowser", dest="filebrowser", metavar='PATH_TO_FILEBROWSER',
-                    help="use this option to override the tool to view/manage files (for --filter; default: " +
+                    help="Use this option to override the tool to view/manage files (for --filter; default: " +
                     DEFAULT_IMAGE_VIEWER_LINUX + "). Use \"none\" to omit the default one.")
 
 parser.add_argument("--tagtrees", dest="tagtrees", action="store_true",
@@ -243,15 +243,15 @@ parser.add_argument("--tagtrees-depth",
 
 parser.add_argument("--ln", "--list-tags-by-number",
                     dest="list_tags_by_number", action="store_true",
-                    help="list all file-tags sorted by their number of use")
+                    help="List all file-tags sorted by their number of use")
 
 parser.add_argument("--la", "--list-tags-by-alphabet",
                     dest="list_tags_by_alphabet", action="store_true",
-                    help="list all file-tags sorted by their name")
+                    help="List all file-tags sorted by their name")
 
 parser.add_argument("--lu", "--list-tags-unknown-to-vocabulary",
                     dest="list_unknown_tags", action="store_true",
-                    help="list all file-tags which are found in file names but are not part of .filetags")
+                    help="List all file-tags which are found in file names but are not part of .filetags")
 
 parser.add_argument("--tag-gardening",
                     dest="tag_gardening", action="store_true",
@@ -260,15 +260,15 @@ parser.add_argument("--tag-gardening",
 
 parser.add_argument("-v", "--verbose",
                     dest="verbose", action="store_true",
-                    help="enable verbose mode")
+                    help="Enable verbose mode")
 
 parser.add_argument("-q", "--quiet",
                     dest="quiet", action="store_true",
-                    help="enable quiet mode")
+                    help="Enable quiet mode")
 
 parser.add_argument("--version",
                     dest="version", action="store_true",
-                    help="display version and exit")
+                    help="Display version and exit")
 
 options = parser.parse_args()
 
