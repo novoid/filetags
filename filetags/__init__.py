@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-08-02 21:15:14 vk>"
+PROG_VERSION = "Time-stamp: <2018-08-31 19:37:34 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -43,9 +43,9 @@ import re
 import sys
 import os
 import platform
-save_import('argparse')   # for handling command line arguments
-save_import('time')
-save_import('logging')
+import argparse   # for handling command line arguments
+import time
+import logging
 save_import('operator')   # for sorting dicts
 save_import('difflib')    # for good enough matching words
 save_import('readline')   # for raw_input() reading from stdin
