@@ -35,7 +35,7 @@ separate tags from the file name, I am using the separator
 
 For people familiar with [[https://en.wikipedia.org/wiki/Regex][Regular Expressions]]:
 
-: (<ISO date/time stamp>)? <descriptive file name> -- <list of tags separated by spaces>.<file extension>
+: (<ISO date/time stamp>)?(?<descriptive file name>)?( -- <list of tags separated by spaces>)?.<file extension>
 
 Tagging files this way requires a file renaming process. Adding (or
 removing) tag(s) to a set of file results in multiple renaming
