@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2018-08-31 19:37:34 vk>"
+PROG_VERSION = "Time-stamp: <2019-12-22 13:23:52 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -38,7 +38,6 @@ def save_import(library):
               "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
         sys.exit(2)
 
-
 import re
 import sys
 import os
@@ -60,7 +59,8 @@ if platform.system() == 'Windows':
     except ImportError:
         print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., " +
               "with \"sudo pip install pypiwin32\".")
-        sys.exit(2)
+        sys.exit(3)
+    save_import('pathlib')
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -2467,6 +2467,22 @@ def main():
     logging.debug("len(options.files) [%s]" % str(len(options.files)))
 
     files = extract_filenames_from_argument(options.files)
+
+    if platform.system() == 'Windows' and len(files)==1:
+        # Windows CLI does not resolve wildcard globbing: https://github.com/novoid/filetags/issues/25
+        # Therefore, filetags has to do the business proper(TM) operating systems usually
+        # does: converting file globs to lists of files:
+
+        #logging.debug("WINDOWS: files[0] RAW [%s]" % str(files[0]))
+        path = pathlib.Path(files[0]).expanduser()
+        parts = path.parts[1:] if path.is_absolute() else path.parts
+        expandedfiles = pathlib.Path(path.root).glob(str(pathlib.Path("").joinpath(*parts)))
+        files = []
+        for file in expandedfiles:
+            #logging.debug("WINDOWS: file within expandedfiles [%s]" % str(file))
+            files.append(str(file))
+        logging.debug("WINDOWS: len(files) [%s]" % str(len(files)))
+        logging.debug("WINDOWS: files CONVERTED [%s]" % str(files))
 
     global list_of_link_directories
     global chosen_tagtrees_dir

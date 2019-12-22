@@ -76,15 +76,17 @@ You get updates by executing the very same pip command again.
 
 *** Installation Via Source Code
 
-If you use the GitHub sources (and not pip), the executable is
-~filetags/__init__.py~. You might want to create a symbolic link named
-"filetags" to that file.
+If you use the GitHub sources (and not pip):
+
+- You need to install depending packages via: ~pip install -r requirements.txt~
+- The executable is ~filetags/__init__.py~. You might want to create a
+  symbolic link named "filetags" to that file.
 
 ** Usage
 
-#+BEGIN_SRC sh :results output :wrap src
-./filetags/__init__.py --help | sed 'sX/home/vkX\$HOMEX'
-#+END_SRC
+ # #+BEGIN_SRC sh :results output :wrap src
+ # ./filetags/__init__.py --help | sed 'sX/home/vkX\$HOMEX'
+ # #+END_SRC
 
 #+BEGIN_src
 usage: ./filetags/__init__.py [-h] [-t "STRING WITH TAGS"] [--remove] [-i]
@@ -326,6 +328,7 @@ For =--filter= and =--tagtrees= examples see sections below.
     integration
 - 2018-07-23: =--tagtrees== can now be filtered with =--filter=
 - 2018-08-02: added option =--hardlinks= as an alternative for non-Windows systems
+- 2019-12-22: added manual file globbing for Windows because of [[https://github.com/novoid/filetags/issues/25][#25]]
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
