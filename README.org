@@ -74,7 +74,8 @@ use the correct pip version. You might need to use =pip3= instead of
 =pip=. If you only have Python 3 installed, you don't have to care ;-)
 
 On Microsoft Windows (only), you are going to need ~pip install
-pypiwin32~ as prerequisite.
+pypiwin32~ as prerequisite. For easy Windows File Explorer
+integration, take a look at [[https://github.com/novoid/integratethis][integratethis]].
 
 Now install filetags via [[https://pip.pypa.io/en/stable/][pip]]: ~pip install filetags~
 
