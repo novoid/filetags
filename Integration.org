@@ -123,6 +123,22 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 :CREATED:  [2018-03-07 Wed 21:42]
 :END:
 
+The easiest way to integrate =filetags= into File Explorer
+("Send to" context menu) is by using [[https://github.com/novoid/integratethis][integratethis]].
+
+Execute this in your command line environment:
+
+: pip install pypiwin32 filetags integratethis
+: integratethis filetags --confirm
+: integratethis filetags --parameter="--filter" --displayname "filetags filter"
+: integratethis filetags --parameter="--filter --recursive" --displayname "filetags filter recursive"
+: integratethis filetags --parameter="--tagtrees --recursive --tagtrees-handle-no-tag no-tags" --displayname "TagTrees recursive"
+: integratethis filetags --parameter="--tagtrees --tagtrees-depth 3" --displayname "TagTrees lvl3"
+
+*** Manual Setup
+
+Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
+
 You do have two independent options to integrate filetags to your
 Windows Explorer.
 
@@ -139,7 +155,9 @@ is one mouse click further away.
 You can do both and choose one or the other, depending on how many
 files you have selected.
 
-*** Integration into Windows Explorer for single files
+**** Integration into Windows Explorer for single files
+
+Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
 
 Create a registry file =add_filetags_to_context_menu.reg= and edit it
 to meet the following template. Please make sure to replace the paths
@@ -196,7 +214,9 @@ print("Successfully written registry file \"register_filetags_for_single_files.r
 print("Please check content before executing.")
 #+END_SRC
 
-*** Integration into Windows Explorer for single and multiple selected files
+**** Integration into Windows Explorer for single and multiple selected files
+
+Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
 
 The tool =integratethis= ([[https://github.com/novoid/integratethis][link]]) does the following steps for you.
 Install it via =pip3 install integratethis=. You can have a look at
