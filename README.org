@@ -1,5 +1,11 @@
 * filetags
 
+#+BEGIN_HTML
+<a href="https://karl-voit.at/demo-filetags-tagging">
+<img src="https://raw.githubusercontent.com/novoid/screencasts/master/file_management/filetags_tagging.gif" />
+</a>
+#+END_HTML
+
 [[file:bin/screencast.gif]]
 
 ... filetags example demonstrating: controlled vocabulary file
