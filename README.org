@@ -638,12 +638,7 @@ If you have integrated filetags in additional commonly used tools,
 please send me a short how-to so that others are able to get the most
 out of filetags as well.
 
-* Related tools and workflows
-
-Alternative implementations of my concept:
-- [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
-
------------
+* Related Tools and Workflows
 
 This tool is part of a tool-set which I use to manage my digital files
 such as photographs. My work-flows are described in [[http://karl-voit.at/managing-digital-photographs/][this blog posting]]
@@ -668,6 +663,18 @@ current season]].
 
 Files containing an ISO time/date-stamp gets indexed by the
 filename-module of [[https://github.com/novoid/Memacs][Memacs]].
+
+-----------
+
+- Alternative implementations of the =filetags= concept:
+  - [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
+
+- A research platform for testing file-tagging on all platforms: [[https://karl-voit.at/tagstore/][tagstore]]
+  - This happens to be an important part of [[https://karl-voit.at/tagstore/downloads/Voit2012b.pdf][my PhD thesis]] in PIM.
+
+- Good resources for tagging software in general
+  - [[https://turbofuture.com/computers/Whats-the-Best-Software-for-Tagging-Files-A-Review][What's the Best Software for Tagging Files? | TurboFuture]]
+  - "Marktübersicht von Tagging-Werkzeugen und Vergleich mit tagstore" (German, 2013): linked on [[https://karl-voit.at/tagstore/en/papers.shtml][this page]] of the [[https://karl-voit.at/tagstore/][tagstore project]]
 
 * How to Thank Me
 
