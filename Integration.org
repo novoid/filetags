@@ -26,14 +26,17 @@ is not straight forward is the need for a wrapper script. The wrapper
 script does provide a shell window for entering the tags.
 
 ~vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh~ looks like:
-: #!/bin/sh
-:
-: /usr/bin/gnome-terminal \
-:     --geometry=73x5+330+5  \
-:     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags/__init__.py --interactive "${@}"
-:
-: #end
+
+#+BEGIN_SRC sh
+#!/bin/sh
+
+/usr/bin/gnome-terminal \
+    --geometry=73x5+330+5  \
+    --hide-menubar \
+    -x /home/vk/src/filetags/filetags/__init__.py --interactive "${@}"
+
+#end
+#+END_SRC
 
 ~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
 looks like:
