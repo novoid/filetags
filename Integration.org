@@ -40,46 +40,55 @@ script does provide a shell window for entering the tags.
 
 ~vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh~
 looks like:
-: #!/bin/sh
-:
-: /usr/bin/gnome-terminal \
-:     --geometry=73x5+330+5  \
-:     --hide-menubar \
-:     -x /home/vk/src/filetags/filetags/__init__.py --interactive --remove "${@}"
-:
-: #end
+
+#+BEGIN_SRC sh
+#!/bin/sh
+
+/usr/bin/gnome-terminal \
+    --geometry=73x5+330+5  \
+    --hide-menubar \
+    -x /home/vk/src/filetags/filetags/__init__.py --interactive --remove "${@}"
+
+#end
+#+END_SRC
 
 In ~$HOME/.config/geeqie/applications~ I wrote two desktop files such
 that geeqie shows the wrapper scripts as external editors to its
 image files:
 
 ~$HOME/.config/geeqie/applications/add-tags.desktop~ looks like:
-: [Desktop Entry]
-: Name=filetags
-: GenericName=filetags
-: Comment=
-: Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
-: Icon=
-: Terminal=true
-: Type=Application
-: Categories=Application;Graphics;
-: hidden=false
-: MimeType=image/*;video/*;image/mpo;image/thm
-: Categories=X-Geeqie;
+
+#+BEGIN_EXAMPLE
+[Desktop Entry]
+Name=filetags
+GenericName=filetags
+Comment=
+Exec=/home/vk/src/misc/vk-filetags-interactive-adding-wrapper-with-gnome-terminal.sh %F
+Icon=
+Terminal=true
+Type=Application
+Categories=Application;Graphics;
+hidden=false
+MimeType=image/*;video/*;image/mpo;image/thm
+Categories=X-Geeqie;
+#+END_EXAMPLE
 
 ~$HOME/.config/geeqie/applications/remove-tags.desktop~ looks like:
-: [Desktop Entry]
-: Name=filetags
-: GenericName=filetags
-: Comment=
-: Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
-: Icon=
-: Terminal=true
-: Type=Application
-: Categories=Application;Graphics;
-: hidden=false
-: MimeType=image/*;video/*;image/mpo;image/thm
-: Categories=X-Geeqie;
+
+#+BEGIN_EXAMPLE
+[Desktop Entry]
+Name=filetags
+GenericName=filetags
+Comment=
+Exec=/home/vk/src/misc/vk-filetags-interactive-removing-wrapper-with-gnome-terminal.sh %F
+Icon=
+Terminal=true
+Type=Application
+Categories=Application;Graphics;
+hidden=false
+MimeType=image/*;video/*;image/mpo;image/thm
+Categories=X-Geeqie;
+#+END_EXAMPLE
 
 In order to be able to use the keyboard shortcuts ~t~ (adding tags)
 and ~T~ (removing tags), you can define them in geeqie:
