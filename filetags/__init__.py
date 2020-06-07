@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2020-06-07 10:47:09 vk>"
+PROG_VERSION = "Time-stamp: <2020-06-07 17:24:55 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -852,14 +852,15 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
-    @param return: error value or new filename
+    @param return: number of errors and optional new filename
     """
 
+    num_errors = 0
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") …  " + '★' * 20)
 
     if os.path.isdir(orig_filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
-        return
+        return num_errors, False
 
     filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
     global list_of_link_directories
@@ -875,7 +876,8 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
             logging.debug('handle_file_and_optional_link: Could not locate alternative ' +
                           'basename that starts with same substring')
             logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
-            return
+            num_errors += 1
+            return num_errors, False
         else:
             logging.info("Could not find basename \"%s\" but found \"%s\" instead which starts with same substring ..." %
                          (filename, alternative_filename))
@@ -909,9 +911,10 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
             logging.debug('handle_file_and_optional_link: invoking handle_file_and_optional_link("' +
                           old_source_filename + '")  ' + 'v' * 20)
-            new_source_basename = handle_file_and_optional_link(old_source_filename,
-                                                                tags,
-                                                                do_remove, do_filter, dryrun)
+            additional_errors, new_source_basename = handle_file_and_optional_link(old_source_filename,
+                                                                                   tags,
+                                                                                   do_remove, do_filter, dryrun)
+            num_errors += additional_errors
             logging.debug('handle_file_and_optional_link: RETURNED handle_file_and_optional_link("' +
                           old_source_filename + '")  ' + 'v' * 20)
 
@@ -941,14 +944,14 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
                     create_link(new_source_filename, new_filename)
                 # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
-                return new_filename
+                return num_errors, new_filename
             else:
                 logging.debug('handle_file_and_optional_link: The old sourcefilename "' +
                               old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
                 # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
-                return old_source_filename
+                return num_errors, old_source_filename
         else:
             logging.debug('handle_file_and_optional_link: The file "' + filename +
                           '" is a link to "' + old_source_filename +
@@ -964,7 +967,7 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") FINISHED  " + '★' * 20)
-    return new_filename
+    return num_errors, new_filename
 
 
 def create_link(source, destination):
@@ -2670,14 +2673,17 @@ def main():
             max_file_length = len(filename)
     logging.debug('determined maximum file name length with %i' % max_file_length)
 
+    num_errors = 0
     for filename in files:
 
         if not os.path.exists(filename):
             logging.error('File "' + filename + '" does not exist. Skipping this one …')
+            num_errors += 1
 
         elif is_broken_link(filename):
             # skip broken links completely and write error message:
             logging.error('File "' + filename + '" is a broken link. Skipping this one …')
+            num_errors += 1
 
         else:
 
@@ -2696,6 +2702,9 @@ def main():
                 for directory in list_of_link_directories[:-1]:
                     print('      · ' + directory)
             list_of_link_directories = []
+
+    if num_errors > 0:
+        error_exit(20, str(num_errors) + ' error(s) occurred. Please check messages above.')
 
     if options.tagfilter:
         logging.debug('Now openeing filebrowser for dir "' + chosen_tagtrees_dir + '"')
