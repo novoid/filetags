@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2019-12-22 13:23:52 vk>"
+PROG_VERSION = "Time-stamp: <2020-06-07 10:47:09 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -45,6 +45,7 @@ import platform
 import argparse   # for handling command line arguments
 import time
 import logging
+import errno      # for throwing FileNotFoundError
 save_import('operator')   # for sorting dicts
 save_import('difflib')    # for good enough matching words
 save_import('readline')   # for raw_input() reading from stdin
@@ -812,7 +813,7 @@ def is_lnk_file(filename):
     return filename.upper().endswith('.LNK')
 
 
-def split_up_filename(filename):
+def split_up_filename(filename, exception_on_file_not_found=False):
     """
     Returns separate strings for the given filename.
 
@@ -826,9 +827,12 @@ def split_up_filename(filename):
 
     if not os.path.exists(filename):
         # This does make sense for splitting up filenames that are about to be created for example:
-        logging.debug('split_up_filename(' + filename +
-                      ') does NOT exist. Playing along and returning non-existent filename parts.')
-        dirname = os.path.dirname(filename)
+        if exception_on_file_not_found:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+        else:
+            logging.debug('split_up_filename(' + filename +
+                          ') does NOT exist. Playing along and returning non-existent filename parts.')
+            dirname = os.path.dirname(filename)
     else:
         dirname = os.path.dirname(os.path.abspath(filename))
 
@@ -1033,7 +1037,7 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
 
     global chosen_tagtrees_dir
 
-    filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
+    filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename, exception_on_file_not_found=True)
 
     logging.debug("handle_file(\"" + filename + "\") " + '#' * 10 +
                   "  … with working dir \"" + os.getcwd() + "\"")

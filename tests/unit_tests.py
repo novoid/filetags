@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2018-07-23 18:40:23 karl.voit>
+# Time-stamp: <2020-06-07 16:20:55 vk>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -508,6 +508,13 @@ class TestFileWithoutTags(unittest.TestCase):
     def file_exists(self, name):
 
         return os.path.isfile(os.path.join(self.tempdir, name))
+
+    def test_handle_file_with_nonexistent_filename(self):
+
+         with self.assertRaises(FileNotFoundError):
+             filetags.handle_file(os.path.join(self.tempdir, 'this filename does not exist - ' + self.testfilename),
+                                  ['bar'],
+                                  do_remove=False, do_filter=False, dryrun=False)
 
     def test_add_and_remove_tags(self):
 
