@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2020-06-07 10:47:09 vk>"
+PROG_VERSION = "Time-stamp: <2020-06-07 17:24:55 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -65,7 +65,9 @@ if platform.system() == 'Windows':
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
-FILENAME_TAG_SEPARATOR = ' -- '
+FILENAME_PRE_TAG_SEPARATOR = ' -- '
+FILENAME_POST_TAG_SEPARATOR = ''
+
 BETWEEN_TAG_SEPARATOR = ' '
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
@@ -96,10 +98,10 @@ unique_tags = [UNIQUE_TAG_TESTSTRINGS]  # list of list which contains tags that 
 DESCRIPTION = "This tool adds or removes simple tags to/from file names.\n\
 \n\
 Tags within file names are placed between the actual file name and\n\
-the file extension, separated with \"" + FILENAME_TAG_SEPARATOR + "\". Multiple tags are\n\
+the file extension, separated with \"" + FILENAME_PRE_TAG_SEPARATOR + "\". Multiple tags are\n\
 separated with \"" + BETWEEN_TAG_SEPARATOR + "\":\n\
-  Update for the Boss" + FILENAME_TAG_SEPARATOR + "projectA" + BETWEEN_TAG_SEPARATOR + "presentation.pptx\n\
-  2013-05-16T15.31.42 Error message" + FILENAME_TAG_SEPARATOR + "screenshot" + BETWEEN_TAG_SEPARATOR + "projectB.png\n\
+  Update for the Boss" + FILENAME_PRE_TAG_SEPARATOR + "projectA" + BETWEEN_TAG_SEPARATOR + "presentation.pptx\n\
+  2013-05-16T15.31.42 Error message" + FILENAME_PRE_TAG_SEPARATOR + "screenshot" + BETWEEN_TAG_SEPARATOR + "projectB.png\n\
 \n\
 This easy to use tag system has a drawback: for tagging a larger\n\
 set of files with the same tag, you have to rename each file\n\
@@ -131,7 +133,7 @@ EPILOG = u"\n\
 
 
 # file names containing tags matches following regular expression
-FILE_WITH_TAGS_REGEX = re.compile("(.+?)" + FILENAME_TAG_SEPARATOR + "(.+?)(\.(\w+))??$")
+FILE_WITH_TAGS_REGEX = re.compile("(.+?)" + FILENAME_PRE_TAG_SEPARATOR + "(.+?)" +"(\.(\w+))??$")
 FILE_WITH_TAGS_REGEX_FILENAME_INDEX = 1  # component.group(1)
 FILE_WITH_TAGS_REGEX_TAGLIST_INDEX = 2
 FILE_WITH_TAGS_REGEX_EXTENSION_INDEX = 4
@@ -274,6 +276,9 @@ parser.add_argument("-q", "--quiet",
 parser.add_argument("--version",
                     dest="version", action="store_true",
                     help="Display version and exit")
+parser.add_argument("--tagspaces",
+                    dest="is_tagspaces", action="store_true",
+                    help="Use tagspaces notation. Store tags in between of square brackets.")
 
 options = parser.parse_args()
 
@@ -455,6 +460,7 @@ def adding_tag_to_filename(filename, tagname):
 
     assert(filename.__class__ == str)
     assert(tagname.__class__ == str)
+    tagname = tagname.strip()
 
     filename, dirname, basename, basename_without_lnk = split_up_filename(filename)
 
@@ -464,19 +470,23 @@ def adding_tag_to_filename(filename, tagname):
         components = re.match(FILE_WITH_EXTENSION_REGEX, basename_without_lnk)
         if components:
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            old_basename = old_basename.replace(FILENAME_POST_TAG_SEPARATOR, "")
+
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
+
             if is_lnk_file(filename):
-                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR +
-                                    tagname + '.' + extension + '.lnk')
+                return os.path.join(dirname, old_basename + FILENAME_PRE_TAG_SEPARATOR +
+                                    tagname + FILENAME_POST_TAG_SEPARATOR + '.' + extension + '.lnk')
             else:
-                return os.path.join(dirname, old_basename + FILENAME_TAG_SEPARATOR +
-                                    tagname + '.' + extension)
+                return os.path.join(dirname, old_basename + FILENAME_PRE_TAG_SEPARATOR +
+                                    tagname + FILENAME_POST_TAG_SEPARATOR + '.' + extension)
+
         else:
             # filename has no extension
             if is_lnk_file(filename):
-                return os.path.join(dirname, basename_without_lnk + FILENAME_TAG_SEPARATOR + tagname + '.lnk')
+                return os.path.join(dirname, basename_without_lnk + FILENAME_PRE_TAG_SEPARATOR + tagname + FILENAME_POST_TAG_SEPARATOR + '.lnk')
             else:
-                return os.path.join(dirname, basename + FILENAME_TAG_SEPARATOR + tagname)
+                return os.path.join(dirname, basename + FILENAME_PRE_TAG_SEPARATOR + tagname + FILENAME_POST_TAG_SEPARATOR)
 
     elif contains_tag(basename_without_lnk, tagname):
         logging.debug("adding_tag_to_filename(%s, %s): tag already found in filename" % (filename, tagname))
@@ -491,11 +501,15 @@ def adding_tag_to_filename(filename, tagname):
         new_filename = False
         if components:
             old_basename = components.group(FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX)
+            old_basename = old_basename.replace(FILENAME_POST_TAG_SEPARATOR, "")
+
             extension = components.group(FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX)
             new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR +
-                                        tagname + '.' + extension)
+                                            tagname + FILENAME_POST_TAG_SEPARATOR + '.' + extension)
+
         else:
-            new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
+            new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname + FILENAME_POST_TAG_SEPARATOR)
+
         if is_lnk_file(filename):
             return new_filename + '.lnk'
         else:
@@ -513,6 +527,7 @@ def removing_tag_from_filename(orig_filename, tagname):
 
     assert(orig_filename.__class__ == str)
     assert(tagname.__class__ == str)
+    tagname = tagname.strip()
 
     if not contains_tag(orig_filename, tagname):
         return orig_filename
@@ -526,6 +541,7 @@ def removing_tag_from_filename(orig_filename, tagname):
     else:
         tags = components.group(FILE_WITH_TAGS_REGEX_TAGLIST_INDEX).split(BETWEEN_TAG_SEPARATOR)
         old_filename = components.group(FILE_WITH_TAGS_REGEX_FILENAME_INDEX)
+
         extension = components.group(FILE_WITH_TAGS_REGEX_EXTENSION_INDEX)
         if not extension:
             extension = ''
@@ -533,13 +549,13 @@ def removing_tag_from_filename(orig_filename, tagname):
             extension = '.' + extension
 
         new_filename = False
-        if len(tags) < 2:
+        if len(tags) <= 1:
             logging.debug("given tagname is the only tag -> remove all tags and FILENAME_TAG_SEPARATOR as well")
-            new_filename = old_filename + extension
+            new_filename = old_filename.strip() + extension
         else:
             # still tags left
-            new_filename = old_filename + FILENAME_TAG_SEPARATOR + \
-                BETWEEN_TAG_SEPARATOR.join([tag for tag in tags if tag != tagname]) + extension
+            new_filename = old_filename.strip() + FILENAME_PRE_TAG_SEPARATOR + \
+                           BETWEEN_TAG_SEPARATOR.join([tag.strip() for tag in tags if tag != tagname]).strip() + FILENAME_POST_TAG_SEPARATOR + extension
 
         if is_lnk_file(orig_filename):
             return new_filename + '.lnk'
@@ -852,14 +868,15 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     @param tags: list containing one or more tags
     @param do_remove: boolean which defines if tags should be added (False) or removed (True)
     @param dryrun: boolean which defines if files should be changed (False) or not (True)
-    @param return: error value or new filename
+    @param return: number of errors and optional new filename
     """
 
+    num_errors = 0
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") …  " + '★' * 20)
 
     if os.path.isdir(orig_filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
-        return
+        return num_errors, False
 
     filename, dirname, basename, basename_without_lnk = split_up_filename(orig_filename)
     global list_of_link_directories
@@ -875,7 +892,8 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
             logging.debug('handle_file_and_optional_link: Could not locate alternative ' +
                           'basename that starts with same substring')
             logging.error("Skipping \"%s\" because this tool only renames existing file names." % filename)
-            return
+            num_errors += 1
+            return num_errors, False
         else:
             logging.info("Could not find basename \"%s\" but found \"%s\" instead which starts with same substring ..." %
                          (filename, alternative_filename))
@@ -909,9 +927,10 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
             logging.debug('handle_file_and_optional_link: invoking handle_file_and_optional_link("' +
                           old_source_filename + '")  ' + 'v' * 20)
-            new_source_basename = handle_file_and_optional_link(old_source_filename,
-                                                                tags,
-                                                                do_remove, do_filter, dryrun)
+            additional_errors, new_source_basename = handle_file_and_optional_link(old_source_filename,
+                                                                                   tags,
+                                                                                   do_remove, do_filter, dryrun)
+            num_errors += additional_errors
             logging.debug('handle_file_and_optional_link: RETURNED handle_file_and_optional_link("' +
                           old_source_filename + '")  ' + 'v' * 20)
 
@@ -941,14 +960,14 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
                     create_link(new_source_filename, new_filename)
                 # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
-                return new_filename
+                return num_errors, new_filename
             else:
                 logging.debug('handle_file_and_optional_link: The old sourcefilename "' +
                               old_source_filename +
                               '" did not change. So therefore I don\'t re-link.')
                 # we've already handled the link source and created the updated link, return now without calling handle_file once more ...
                 os.chdir(dirname)  # go back to original dir after handling links of different directories
-                return old_source_filename
+                return num_errors, old_source_filename
         else:
             logging.debug('handle_file_and_optional_link: The file "' + filename +
                           '" is a link to "' + old_source_filename +
@@ -964,7 +983,7 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") FINISHED  " + '★' * 20)
-    return new_filename
+    return num_errors, new_filename
 
 
 def create_link(source, destination):
@@ -1051,8 +1070,10 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
         new_basename = basename
         logging.debug('handle_file: set new_basename [' + new_basename +
                       '] according to parameters (initialization)')
+        cntr = 0
 
         for tagname in tags:
+            cntr += 1
             if do_remove:
                 new_basename = removing_tag_from_filename(new_basename, tagname)
                 logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
@@ -1065,6 +1086,12 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
                     item_contained_in_list_of_lists(tagname, unique_tags)
 
                 if tagname != tag_in_unique_tags:
+                    # Check, if another tag follows
+                    if cntr < len(tags):
+                        is_last = False
+                    else:
+                        is_last = True
+
                     new_basename = adding_tag_to_filename(new_basename, tagname)
                     logging.debug('handle_file: set new_basename [' + new_basename +
                                   '] when tagname != tag_in_unique_tags')
@@ -2467,6 +2494,18 @@ def main():
     if (options.list_tags_by_alphabet or options.list_tags_by_number) and (options.tags or options.interactive or options.remove):
         error_exit(8, "Please don't use list any option together with add/remove tag options.")
 
+    if options.is_tagspaces:
+        logging.debug("Using tagspaces syntax [tag1 tag2] ...")
+        # Modify global pre tag separator; change from "--" to "[ "
+        global FILENAME_PRE_TAG_SEPARATOR
+        FILENAME_PRE_TAG_SEPARATOR= " ["
+        # Modify global post tag separator from "" to "]"
+        global FILENAME_POST_TAG_SEPARATOR
+        FILENAME_POST_TAG_SEPARATOR = "]"
+        # Modify global regex to extract tags
+        global FILE_WITH_TAGS_REGEX
+        FILE_WITH_TAGS_REGEX = re.compile("(.+?)" + "\[" + "(.+?)" +"\]"+"(\.(\w+))??$")
+
     logging.debug("extracting list of files ...")
     logging.debug("len(options.files) [%s]" % str(len(options.files)))
 
@@ -2670,14 +2709,17 @@ def main():
             max_file_length = len(filename)
     logging.debug('determined maximum file name length with %i' % max_file_length)
 
+    num_errors = 0
     for filename in files:
 
         if not os.path.exists(filename):
             logging.error('File "' + filename + '" does not exist. Skipping this one …')
+            num_errors += 1
 
         elif is_broken_link(filename):
             # skip broken links completely and write error message:
             logging.error('File "' + filename + '" is a broken link. Skipping this one …')
+            num_errors += 1
 
         else:
 
@@ -2696,6 +2738,9 @@ def main():
                 for directory in list_of_link_directories[:-1]:
                     print('      · ' + directory)
             list_of_link_directories = []
+
+    if num_errors > 0:
+        error_exit(20, str(num_errors) + ' error(s) occurred. Please check messages above.')
 
     if options.tagfilter:
         logging.debug('Now openeing filebrowser for dir "' + chosen_tagtrees_dir + '"')
