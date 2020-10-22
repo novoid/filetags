@@ -1,0 +1,12 @@
+TestLocateAndParseControlledVocabulary.sh
+build/
+dist/
+filetags.egg-info/
+filetags/__pycache__/
+manualtests/
+setup.py
+tests/testfiles/
+update_pip.sh
+venv/
+
+/tests/__pycache__/
