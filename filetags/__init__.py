@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2020-06-07 17:24:55 vk>"
+PROG_VERSION = "Time-stamp: <2021-01-10 14:42:32 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1338,7 +1338,7 @@ def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0,
     hint_for_being_in_vocabulary = ''
     similar_tags = ''
     if vocabulary:
-        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE +
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE.strip() +
               "\" appear in your vocabulary.)")
     print("\n {0:{1}} : {2:{3}}".format('count', maxlength_count, 'tag', maxlength_tags))
     print(" " + '-' * (maxlength_tags + maxlength_count + 7))
@@ -1386,7 +1386,7 @@ def print_tag_set(tag_set, vocabulary=False, print_similar_vocabulary_tags=False
 
     hint_for_being_in_vocabulary = ''
     if vocabulary:
-        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE +
+        print("\n  (Tags marked with \"" + HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE.strip() +
               "\" appear in your vocabulary.)\n")
 
     for tag in sorted(tag_set):
@@ -1550,18 +1550,27 @@ def handle_tag_gardening(vocabulary):
     tags_only_used_once_dict = {key: value for key, value in list(tag_dict.items()) if value < 2}
     print_tag_dict(tags_only_used_once_dict, vocabulary, sort_index=0, print_only_tags_with_similar_tags=False)
 
-    print("\nTags which have similar other tags are probably typos or plural/singular forms of others:")
-    tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
-    only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
-                                          if find_similar_tags(key, tags_for_comparing)}
-    print_tag_dict(only_similar_tags_by_alphabet_dict, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
-
+    if vocabulary:
+        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:\n  (first for tags not in vocabulary, second for vocaulary tags)")
+        tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
+        only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
+                                              if find_similar_tags(key, tags_for_comparing)}
+    
+        print_tag_dict({key: value for key, value in only_similar_tags_by_alphabet_dict.items() if key not in vocabulary}, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
+        print_tag_dict({key: value for key, value in only_similar_tags_by_alphabet_dict.items() if key in vocabulary}, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
+    else:
+        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:")
+        tags_for_comparing = list(set(tag_dict.keys()))
+        only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
+                                              if find_similar_tags(key, tags_for_comparing)}
+        print_tag_dict(only_similar_tags_by_alphabet_dict, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
+    
     tags_only_used_once_set = set(tags_only_used_once_dict.keys())
     only_similar_tags_by_alphabet_set = set(only_similar_tags_by_alphabet_dict.keys())
     tags_in_both_outputs = tags_only_used_once_set.intersection(only_similar_tags_by_alphabet_set)
 
     if tags_in_both_outputs != set([]):
-        print("\nIf tags appear in both lists from above (only once and similar to " +
+        print("\nIf tags appear in both sections from above (only once and similar to " +
               "others), they most likely\nrequire your attention:")
         print_tag_set(tags_in_both_outputs,
                       vocabulary=vocabulary,
