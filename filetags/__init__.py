@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2021-01-10 14:42:32 vk>"
+PROG_VERSION = "Time-stamp: <2021-03-13 19:01:51 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -1056,6 +1056,8 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
                       '] according to parameters (initialization)')
 
         for tagname in tags:
+            if tagname.strip() == '':
+                continue
             if do_remove:
                 new_basename = removing_tag_from_filename(new_basename, tagname)
                 logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
