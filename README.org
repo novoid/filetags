@@ -336,6 +336,7 @@ For =--filter= and =--tagtrees= examples see sections below.
 - 2018-07-23: =--tagtrees== can now be filtered with =--filter=
 - 2018-08-02: added option =--hardlinks= as an alternative for non-Windows systems
 - 2019-12-22: added manual file globbing for Windows because of [[https://github.com/novoid/filetags/issues/25][#25]]
+- 2021-04-03: added support for =#donotsuggest= lines within =.filetags= files to omit tags from being proposed
 
 ** Get the most out of filetags: controlled vocabulary ~.filetags~
 :PROPERTIES:
