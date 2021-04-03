@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2021-03-13 19:01:51 vk>"
+PROG_VERSION = "Time-stamp: <2021-04-03 16:33:29 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -93,6 +93,11 @@ unique_tags = [UNIQUE_TAG_TESTSTRINGS]  # list of list which contains tags that 
 # Note: u'teststring1' and u'teststring2' are hard-coded for testing purposes.
 #       You might delete them if you don't use my unit test suite.
 
+# those tags are omitted from being suggested when they are mentioned in .filetags #donotsuggest lines (case insensitive)
+# example line:  "#donotsuggest foo bar" -> "foo" and "bar" are never suggested
+DONOTSUGGEST_PREFIX = '#donotsuggest '
+do_not_suggest_tags = []  # list of lower-case strings
+
 DESCRIPTION = "This tool adds or removes simple tags to/from file names.\n\
 \n\
 Tags within file names are placed between the actual file name and\n\
@@ -131,16 +136,16 @@ EPILOG = u"\n\
 
 
 # file names containing tags matches following regular expression
-FILE_WITH_TAGS_REGEX = re.compile("(.+?)" + FILENAME_TAG_SEPARATOR + "(.+?)(\.(\w+))??$")
+FILE_WITH_TAGS_REGEX = re.compile(r'(.+?)' + FILENAME_TAG_SEPARATOR + r'(.+?)(\.(\w+))??$')
 FILE_WITH_TAGS_REGEX_FILENAME_INDEX = 1  # component.group(1)
 FILE_WITH_TAGS_REGEX_TAGLIST_INDEX = 2
 FILE_WITH_TAGS_REGEX_EXTENSION_INDEX = 4
 
-FILE_WITH_EXTENSION_REGEX = re.compile("(.*)\.(.*)$")
+FILE_WITH_EXTENSION_REGEX = re.compile(r'(.*)\.(.*)$')
 FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
 FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
-YYYY_MM_DD_PATTERN = re.compile('^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
+YYYY_MM_DD_PATTERN = re.compile(r'^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
 
 cache_of_tags_by_folder = {}
 cache_of_files_with_metadata = {}  # dict of big list of dicts: 'filename', 'path' and other metadata
@@ -1557,7 +1562,7 @@ def handle_tag_gardening(vocabulary):
         tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
         only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
                                               if find_similar_tags(key, tags_for_comparing)}
-    
+
         print_tag_dict({key: value for key, value in only_similar_tags_by_alphabet_dict.items() if key not in vocabulary}, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
         print_tag_dict({key: value for key, value in only_similar_tags_by_alphabet_dict.items() if key in vocabulary}, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
     else:
@@ -1566,7 +1571,7 @@ def handle_tag_gardening(vocabulary):
         only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
                                               if find_similar_tags(key, tags_for_comparing)}
         print_tag_dict(only_similar_tags_by_alphabet_dict, vocabulary, sort_index=0, print_similar_vocabulary_tags=True)
-    
+
     tags_only_used_once_set = set(tags_only_used_once_dict.keys())
     only_similar_tags_by_alphabet_set = set(only_similar_tags_by_alphabet_dict.keys())
     tags_in_both_outputs = tags_only_used_once_set.intersection(only_similar_tags_by_alphabet_set)
@@ -1700,6 +1705,7 @@ def locate_and_parse_controlled_vocabulary(startfile):
             filename = get_link_source_file(filename)
 
     global unique_tags
+    global do_not_suggest_tags
 
     if filename:
         logging.debug('locate_and_parse_controlled_vocabulary: .filetags found: ' + filename)
@@ -1714,23 +1720,30 @@ def locate_and_parse_controlled_vocabulary(startfile):
                 controlled_vocabulary_filename = filename
                 for rawline in filehandle:
 
-                    # remove everyting after the first hash character (which is a comment separator)
-                    line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
-
-                    if len(line) == 0:
-                        # nothing left, line consisted only of a comment or was empty
-                        continue
-
-                    if BETWEEN_TAG_SEPARATOR in line:
-                        ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
-                        logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
-                                      (line))
-                        unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
+                    if rawline.strip().lower().startswith(DONOTSUGGEST_PREFIX):
+                        # parse and save do not suggest tags:
+                        line = rawline[len(DONOTSUGGEST_PREFIX):].strip().lower()
                         for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                            # *also* append unique tags to general tag list:
-                            tags.append(tag)
+                            do_not_suggest_tags.append(tag)
                     else:
-                        tags.append(line)
+
+                        # remove everyting after the first hash character (which is a comment separator)
+                        line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
+
+                        if len(line) == 0:
+                            # nothing left, line consisted only of a comment or was empty
+                            continue
+
+                        if BETWEEN_TAG_SEPARATOR in line:
+                            ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
+                            logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
+                                          (line))
+                            unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
+                            for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                                # *also* append unique tags to general tag list:
+                                tags.append(tag)
+                        else:
+                            tags.append(line)
 
             logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' %
                           len(tags))
@@ -1837,7 +1850,7 @@ def check_for_possible_shortcuts_in_entered_tags(usertags, list_of_shortcut_tags
     return foundtags
 
 
-def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[]):
+def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[], omit_filetags_donotsuggest_tags=False):
     """
     Takes a dict, sorts it according to their values, and returns up to nine
     values with the highest values.
@@ -1847,6 +1860,7 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
 
     @param mydict: dictionary holding keys and values
     @param list_of_tags_to_omit: list of strings that should not be part of the returned list
+    @param omit_filetags_donotsuggest_tags: boolean that controls whether or not tags are omitted that are mentioned in .filetags #donotsuggest lines
     @param return: list of up to top nine keys according to the rank of their values
     """
 
@@ -1860,6 +1874,10 @@ def get_upto_nine_keys_of_dict_with_highest_value(mydict, list_of_tags_to_omit=[
         logging.debug("get_upto_nine_keys_of_dict_with_highest_value: omitting tags: " +
                       ", ".join(list_of_tags_to_omit))
         complete_list = [x for x in complete_list if x not in list_of_tags_to_omit]
+
+    if omit_filetags_donotsuggest_tags:
+        # filter all tags that should not be suggested (case insensitive)
+        complete_list = [x for x in complete_list if x.lower() not in do_not_suggest_tags]
 
     return sorted(complete_list[:9])
 
@@ -2574,7 +2592,7 @@ def main():
                 for newtag in extract_tags_from_filename(currentfile):
                     add_tag_to_countdict(newtag, tags_for_vocabulary)
             vocabulary = sorted(tags_for_vocabulary.keys())
-            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
+            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary, omit_filetags_donotsuggest_tags=True))
 
         elif options.tagfilter:
 
@@ -2590,7 +2608,7 @@ def main():
 
             logging.debug('generating vocabulary ...')
             vocabulary = sorted(tags_for_vocabulary.keys())
-            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary))
+            upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary, omit_filetags_donotsuggest_tags=True))
 
         else:
             if files:
@@ -2639,7 +2657,7 @@ def main():
                         get_tags_from_files_and_subfolders(
                             startdir=os.path.dirname(
                                 os.path.abspath(files[0]))),
-                        tags_intersection_of_files))
+                        tags_intersection_of_files, omit_filetags_donotsuggest_tags=True))
                 logging.debug('derived upto9_tags_for_shortcuts')
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 

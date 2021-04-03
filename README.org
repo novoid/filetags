@@ -363,6 +363,13 @@ You can use comments in =.filetags= files: everything after a =#=
 character is considered a comment. You can even add a comment after a
 tag like "=mytag   # this is a test tag=".
 
+If you do use tags you do not want to get proposed for tagging, you
+can write them in lines like the following ones to omit their proposal
+(case insensitive):
+
+: #donotsuggest omit-this-tag dontshow
+: #donotsuggest wontpropose
+
 ** Mutually exclusive tags
 :PROPERTIES:
 :ID:       2018-07-08-mutually-exclusive-tags
@@ -785,6 +792,10 @@ Please read [[id:2018-07-08-cv][this]] first in order to understand CVs.
        - FUTURE: may be changed to: [[https://github.com/novoid/filetags/issues/16][Use "$HOME/.config/filetags" for overriding default options · Issue #16 · novoid/filetags · GitHub]]
   - =.filetags= files may be links (hardlinks, symbolic links or even Windows =.LNK= files)
 - Comments within =.filetags= files begin with one or more =#= characters that may be prepended by one or more spaces.
+- You can omit (case insensitive) tags from being proposed (selectable
+  via shortcuts =0-9=) by adding special comment lines like:
+  : #donotsuggest omit-this-tag dontshow
+  : #donotsuggest wontpropose
 - PLANNED: =.filetags= files may include other =.filetags= files via =#include <relative or absolute path to another file>=
   - [[https://github.com/novoid/filetags/issues/7][.filetags CV-file: include other files · Issue #7 · novoid/filetags · GitHub]]
 - FUTURE: [[https://github.com/novoid/filetags/issues/17][CV: .filetags may contain mandatory options · Issue #17 · novoid/filetags · GitHub]]
