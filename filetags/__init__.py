@@ -2504,7 +2504,7 @@ def main():
 
     files = extract_filenames_from_argument(options.files)
 
-    if platform.system() == 'Windows' and len(files)==1:
+    if platform.system() == 'Windows' and len(files)==1 and '*' in files:
         # Windows CLI does not resolve wildcard globbing: https://github.com/novoid/filetags/issues/25
         # Therefore, filetags has to do the business proper(TM) operating systems usually
         # does: converting file globs to lists of files:
