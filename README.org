@@ -247,6 +247,12 @@ tags that are most likely typos or abandoned
 
 For =--filter= and =--tagtrees= examples see sections below.
 
+Independent to tags you might define on the fly, the optional file
+.filetags stores a controlled vocabulary of recurrent tags; adjust
+this content to your needs.  In an interactive session, this set is
+available to tag any file in the folder .filetags resides (click tab
+key) and propagates into folders of lower hierachy.
+
 ** Changelog
 
 - [[https://twitter.com/n0v0id/status/335043859404951554][2013-05-16]]: first version on GitHub
