@@ -477,9 +477,9 @@ Consider having a file like:
 : My new car -- car hardware expensive.jpg
 
 Now you generate the TagTrees, you'll find [[https://en.wikipedia.org/wiki/Symbolic_link][links]] to this file within
-sub-directories of =~/.filetags=, the default target directory: =new/=
-and =hardware/= and =expensive/= and =new/hardware/= and
-=new/expensive/= and =hardware/new/= and so on. You get the idea.
+sub-directories of =~/.filetags=, the default target directory: =car/=
+and =hardware/= and =expensive/= and =car/hardware/= and
+=car/expensive/= and =hardware/car/= and so on. You get the idea.
 
 The default target directory can be overridden via =--tagtrees-dir=.
 
