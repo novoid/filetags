@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2021-04-03 16:33:29 vk>"
+PROG_VERSION = "Time-stamp: <2022-01-24 12:38:12 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -2441,7 +2441,8 @@ def handle_option_tagtrees(filtertags=None):
     delta = time.time() - start  # it's a float
     if delta > 3:
         logging.info("Generated tagtrees in %.2f seconds" % delta)
-    start_filebrowser(chosen_tagtrees_dir)
+    if not options.quiet:
+        start_filebrowser(chosen_tagtrees_dir)
     successful_exit()
 
 
@@ -2735,7 +2736,7 @@ def main():
     if num_errors > 0:
         error_exit(20, str(num_errors) + ' error(s) occurred. Please check messages above.')
 
-    if options.tagfilter:
+    if options.tagfilter and not options.quiet:
         logging.debug('Now openeing filebrowser for dir "' + chosen_tagtrees_dir + '"')
         start_filebrowser(chosen_tagtrees_dir)
 
