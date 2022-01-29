@@ -430,7 +430,12 @@ link structure:
 
 : filetags --filter
 
-User gets asked to enter one or more tags and she enters "scan":
+User gets asked to enter one or more tags and she enters "scan". What
+now happens is that filetags creates a directory whose content
+consists of links to all matching files from your query. By default,
+the resulting directory is =.filetags_tagfilter= in your home
+directory. After invoking for our example, the content of this
+retrieval directory looks like that:
 
 : $HOME/.filetags_tagfilter/
 : |_ 2018-06-25 Party invitation -- scan correspondence.pdf
@@ -460,17 +465,20 @@ temporal link structure:
 :ID:       2018-07-08-tagtrees
 :END:
 
-This functions is somewhat sophisticated with regards to the
-background. If you're really interested in the whole story behind the
-visualization/navigation of tags using TagTrees, feel free to read [[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][my
-PhD thesis]] about it on [[http://Karl-Voit.at/tagstore/][the tagstore webpage]]. It is surely a piece of
-work I am proud of and the general chapters of it are written so that
-the average person is perfectly well able to follow.
+This functions is somewhat sophisticated as it is not a very
+well-known thing to have. If you're really interested in the whole
+story behind the visualization/navigation of tags using TagTrees, feel
+free to read [[http://Karl-Voit.at/tagstore/downloads/Voit2012b.pdf][my PhD thesis]] about it on [[http://Karl-Voit.at/tagstore/][the tagstore webpage]]. It is
+surely a piece of work I am proud of and the general chapters of it
+are written so that the average person is perfectly well able to
+follow.
 
 In short: this function takes the files of the current directory and
 generates hierarchies up to level of =$maxdepth= (by default 2, can be
 overridden via =--tagtrees-depth=) of all combinations of tags,
 [[https://en.wikipedia.org/wiki/Symbolic_link][linking]] all files according to their tags.
+
+Too complicated? Then let's explain it with some examples.
 
 Consider having a file like:
 
@@ -492,9 +500,9 @@ linked directly to =~/.filetags= so that you can find and tag them
 easily.
 
 I personally, do use this feature within my image viewer of choice
-([[http://geeqie.sourceforge.net/][geeqie]]). I mapped it to =Shift-T= because =Shift-t= is occupied by
+([[http://geeqie.sourceforge.net/][geeqie]]). I mapped it to =Alt-T= because =Alt-t= is occupied by
 =filetags= for tagging of course. So when I am within my image viewer
-and I press =Shift-T=, TagTrees of the currently shown images are
+and I press =Alt-T=, TagTrees of the currently shown images are
 created. Then an additional image viewer window opens up for me,
 showing the resulting TagTrees. This way, I can quickly navigate
 through the tag combinations to easily interactively filter according
@@ -859,6 +867,9 @@ results to curate your tags. My personal favorites are:
   - Fraction of files that are not tagged.
 - Tags I have used which are not in my CVs.
 - Unused tags.
+
+This feature is really powerful when it comes to maintenance of your
+file tags or get some insight related to your tagging patterns.
 
 * Local Variables                                                  :noexport:
 # Local Variables:
