@@ -130,6 +130,10 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 : echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
 : #+END_SRC
 
+** Integrarion into Nautilus
+
+Please do read the great instructions from [[https://github.com/novoid/filetags/issues/45][that thread]].
+
 ** Integration into Windows Explorer
 :PROPERTIES:
 :CREATED:  [2018-03-07 Wed 21:42]
