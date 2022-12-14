@@ -691,6 +691,10 @@ filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 
 - Alternative implementations of the =filetags= concept:
   - [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
+  - With [[https://github.com/protesilaos/denote][denote]], Protesilaos
+    Stavrou implemented a conceptually related approach to manage notes
+    within an Emacs buffer.  With ~dired~, this method equally may be
+    applied on files, too.
 
 - A research platform for testing file-tagging on all platforms: [[https://karl-voit.at/tagstore/][tagstore]]
   - This happens to be an important part of [[https://karl-voit.at/tagstore/downloads/Voit2012b.pdf][my PhD thesis]] in PIM.
