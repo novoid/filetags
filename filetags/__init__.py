@@ -81,10 +81,14 @@ if platform.system() == 'Windows':
     TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
     IS_WINDOWS = True
 else:
-    try:
-        TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
-    except ValueError:
-        TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
+    # check to avoid unrecoverable stty error when stdin is not a terminal.
+    if sys.stdin.isatty():
+        try:
+            TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
+        except ValueError:
+            TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
+    else:
+        TTY_HEIGHT, TTY_WIDTH = 80, 80
 
 max_file_length = 0  # will be set after iterating over source files182
 
