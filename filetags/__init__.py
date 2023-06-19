@@ -81,7 +81,7 @@ if platform.system() == 'Windows':
     TTY_HEIGHT, TTY_WIDTH = 80, 80  # fall-back values
     IS_WINDOWS = True
 else:
-    # check to avoid unrecoverable stty error when stdin is not a terminal.
+    # check to avoid stty error when stdin is not a terminal.
     if sys.stdin.isatty():
         try:
             TTY_HEIGHT, TTY_WIDTH = [int(x) for x in os.popen('stty size', 'r').read().split()]
