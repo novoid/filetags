@@ -755,7 +755,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
                                    link_missing_mutual_tagged_items=False,
                                    filtertags=None)
 
-        self.assertEqual(len(os.listdir(self.subdir2)), 4)  # 4 entries in this directory
+        self.assertEqual(len(os.listdir(self.subdir2)), 5)  # 5 entries in this directory
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'bar')))
         self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
@@ -781,7 +781,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
                                    link_missing_mutual_tagged_items=False,
                                    filtertags=['teststring1'])
 
-        self.assertEqual(len(os.listdir(self.subdir2)), 3)  # 3 entries in this directory
+        self.assertEqual(len(os.listdir(self.subdir2)), 4)  # 4 entries in this directory
 
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
@@ -806,7 +806,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
                                    filtertags=['teststring1', 'baz'])
 
         self.assertEqual(set(os.listdir(self.subdir2)),
-                         set(['teststring1', 'baz', 'nontagged_items']))
+                         set(['.filetags_tagtrees', 'teststring1', 'baz', 'nontagged_items']))
 
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
@@ -817,6 +817,68 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
+
+
+    def test_tagtrees_overwrites_old_default_directory(self):
+
+        with open(os.path.join(self.subdir2, 'boring tagtrees data.txt'), 'w'):
+            pass
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=None)
+
+
+    def test_tagtrees_overwrites_known_tagtrees(self):
+
+        filetags.options.tagtrees_directory = self.subdir2
+
+        with open(os.path.join(self.subdir2, '.filetags_tagtrees'), 'w'):
+            pass
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=None)
+
+        filetags.options.tagtrees_directory = None
+
+
+    def test_tagtrees_overwrites_nonempty_foreign_directory(self):
+
+        filetags.options.tagtrees_directory = self.subdir2
+
+        with open(os.path.join(self.subdir2, 'critical data.txt'), 'w'):
+            pass
+
+        with self.assertRaises(SystemExit):
+            filetags.generate_tagtrees(directory=self.subdir2,
+                                       maxdepth=5,
+                                       ignore_nontagged=False,
+                                       nontagged_subdir='nontagged_items',
+                                       link_missing_mutual_tagged_items=False,
+                                       filtertags=None)
+
+        filetags.options.tagtrees_directory = None
+
+
+    def test_tagtrees_overwrites_empty_foreign_directory(self):
+
+        filetags.options.tagtrees_directory = self.subdir2
+
+        filetags.generate_tagtrees(directory=self.subdir2,
+                                   maxdepth=5,
+                                   ignore_nontagged=False,
+                                   nontagged_subdir='nontagged_items',
+                                   link_missing_mutual_tagged_items=False,
+                                   filtertags=None)
+
+        filetags.options.tagtrees_directory = None
 
 
     def tearDown(self):
