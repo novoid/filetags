@@ -32,7 +32,7 @@ possible length limitations).
 - Note that [[https://en.wikipedia.org/wiki/Folder_(computing)#Folder_metaphor]["directories" are to "folders"]] what "files" are to
   "documents".
 
-https://imgs.xkcd.com/comics/trained_a_neural_net.png (Source: [[https://xkcd.com/2173/][xkcd]])
+[[https://imgs.xkcd.com/comics/trained_a_neural_net.png]] (Source: [[https://xkcd.com/2173/][xkcd]])
 
 ** Why
 
