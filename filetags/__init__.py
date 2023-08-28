@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2022-01-24 12:38:12 vk>"
+PROG_VERSION = "Time-stamp: <2023-08-28 19:03:57 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -865,7 +865,9 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     """
 
     num_errors = 0
+    original_dir = os.getcwd()
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") …  " + '★' * 20)
+    logging.debug('handle_file_and_optional_link: original directory = ' + original_dir)
 
     if os.path.isdir(orig_filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
@@ -975,6 +977,8 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
+    logging.debug('handle_file_and_optional_link: switching back to original directory = ' + original_dir)
+    os.chdir(original_dir)  # reset working directory
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") FINISHED  " + '★' * 20)
     return num_errors, new_filename
 
@@ -1600,6 +1604,7 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' %
                   (startfile, filename))
 
+    original_dir = os.getcwd()
     filename_in_startfile_dir = os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)
     filename_in_startdir = os.path.join(startfile, filename)
     if startfile and os.path.isfile(startfile) and os.path.isfile(filename_in_startfile_dir):
@@ -1640,10 +1645,11 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
             if os.path.isfile(filename_to_look_for):
                 logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ........' %
                               (filename, parent_dir))
-                os.chdir(starting_dir)
+                os.chdir(original_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        os.chdir(starting_dir)
+            
+        os.chdir(original_dir)
         logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' %
                       filename)
         return False
@@ -2657,11 +2663,13 @@ def main():
                                   set(tags_intersection_of_files))
 
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
+                logging.debug('files[0] = ' + files[0])
+                logging.debug('startdir = ' + os.path.dirname(os.path.abspath(os.path.basename(files[0]))))
                 upto9_tags_for_shortcuts = sorted(
                     get_upto_nine_keys_of_dict_with_highest_value(
                         get_tags_from_files_and_subfolders(
                             startdir=os.path.dirname(
-                                os.path.abspath(files[0]))),
+                                os.path.abspath(os.path.basename(files[0])))),
                         tags_intersection_of_files, omit_filetags_donotsuggest_tags=True))
                 logging.debug('derived upto9_tags_for_shortcuts')
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
@@ -2712,6 +2720,8 @@ def main():
 
         if not os.path.exists(filename):
             logging.error('File "' + filename + '" does not exist. Skipping this one …')
+            logging.debug('problematic filename: ' + filename)
+            logging.debug('os.getcwd() = ' + os.getcwd())
             num_errors += 1
 
         elif is_broken_link(filename):
