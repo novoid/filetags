@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: <2021-04-03 16:16:22 vk>
+# Time-stamp: <2023-08-28 18:16:44 vk>
 
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
@@ -746,6 +746,13 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
         print("FIXXME: test_locate_and_parse_controlled_vocabulary() not implemented yet")
 
+    def test_tag_file_in_subdir(self):
+
+        # adding a tag
+        filetags.handle_file(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar.txt'),
+                             ['testtag'], do_remove=False, do_filter=False, dryrun=False)
+        self.assertEqual(self.file_exists(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar testtag.txt')), True)
+        
     def test_tagtrees_with_tagfilter_and_no_filtertag(self):
 
         filetags.generate_tagtrees(directory=self.subdir2,
