@@ -710,6 +710,10 @@ filename-module of [[https://github.com/novoid/Memacs][Memacs]].
   Maintenance is limited though. Please notice that my other tools
   working with tags do not support TagSpaces-style either.
 
+- https://forge.chapril.org/tykayn/rangement.git
+  - An NPM implementation of a subset of GuessFileName (using image exif header), append2name, move2archive
+  - You probably need to read a bit of French
+
 * How to Thank Me
 
 I'm glad you like my tools. If you want to support me:
