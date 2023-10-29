@@ -132,7 +132,43 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 
 ** Integrarion into Nautilus
 
-Please do read the great instructions from [[https://github.com/novoid/filetags/issues/45][that thread]].
+Nautilus allows scripts to be run directly from its GUI. The program passes the filenames of all selected files into the script under the variable ~$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS~. We will use it to create our "taggify" script.
+
+First, check what kind of terminal you have installed and where it is located. In order to do this, run the command:
+
+: ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)
+
+Copy the output of this command and run:
+
+: nano ~/.local/share/nautilus/scripts/taggify.sh
+
+The folder where we created our .sh file is where Nautilus usually looks for scripts. Paste this into the file:
+
+: #!/bin/bash
+: 
+: # Declare an array to store file paths
+: file_paths=()
+: 
+: # Split the selected file paths into an array
+: IFS=$'\n' read -d '' -ra file_paths <<< "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"
+: 
+: # Iterate through the array and format the paths
+: for file in "${file_paths[@]}"; do
+:     # Enclose each file path in quotation marks and append it to the array
+:     formatted_file="\"$file\""
+:     formatted_paths+=("$formatted_file")
+: done
+: 
+: # Join the array into a single string with space-separated items
+: formatted_paths="${formatted_paths[*]}"
+: 
+: # DEBUG - Output the formatted paths to the 'output' file
+: # echo "filetags $formatted_paths" > output
+: 
+: # Open new instance of the terminal and run filetags <filepaths>
+: /usr/bin/kgx --command="/bin/bash -ci 'source ~/.bashrc && filetags $formatted_paths && read -p \"You can now safely exit the terminal...\"'"
+
+Replace ~/usr/bin/kgx~ with the terminal name we previously copied. Now launch Nautilus, select some files and right click - you should see "Scripts" button in the dropdown list. If you click it, you will be able to click *Taggify* and tag all the selected files at once.
 
 ** Integration into Windows Explorer
 :PROPERTIES:
