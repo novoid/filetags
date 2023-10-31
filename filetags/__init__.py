@@ -2034,7 +2034,9 @@ def assert_empty_tagfilter_directory(directory):
     @param directory: the directory to use as starting directory
     """
 
-    if options.tagtrees_directory and os.path.isdir(directory) and os.listdir(directory):
+    id = os.path.join(directory, '.filetags_tagtrees')
+
+    if not os.path.exists(id) and options.tagtrees_directory and os.path.exists(directory) and os.listdir(directory):
         error_exit(13, 'The given tagtrees directory ' + directory +
                    ' is not empty. Aborting here instead ' +
                    'of removing its content without asking. Please free it up yourself and try again.')
@@ -2051,6 +2053,10 @@ def assert_empty_tagfilter_directory(directory):
             shutil.rmtree(directory)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
+
+    with open(id, 'w'):
+        pass
+
     if not options.dryrun:
         assert(os.path.isdir(directory))
 
