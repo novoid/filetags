@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2023-08-28 19:03:57 vk>"
+PROG_VERSION = "Time-stamp: <2023-10-31 11:20:37 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -185,6 +185,9 @@ parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="Enable dryrun mode: just simulate what would happen, do not modify files")
+
+parser.add_argument("--overwrite", dest="overwrite", action="store_true",
+                    help="If a link is about to be created and a previous file/link exists, the old will be deleted if this is enabled.")
 
 parser.add_argument("--hardlinks", dest="hardlinks", action="store_true",
                     help="Use hard links instead of symbolic links. This is ignored on Windows systems. " +
@@ -1000,12 +1003,26 @@ def create_link(source, destination):
     The command link option "--hardlinks" switches to hardlinks. This
     is ignored on Windows systems.
 
+    If the destination file exists, an error is shown unless the --overwrite
+    option is used which results in deleting the old file and replacing with
+    the new link.
+    
     @param source: a file name of the source, an existing file
     @param destination: a file name for the link which is about to be created
 
     """
 
     logging.debug('create_link(' + source + ', ' + destination + ') called')
+
+    if os.path.exists(destination):
+        if options.overwrite:
+            logging.debug('destination exists and overwrite flag set → deleting old file')
+            os.remove(destination)
+        else:
+            logging.debug('destination exists and overwrite flag is not set → report error to user')
+            error_exit(21, 'Trying to create new link but found an old file with same name. ' +
+                       'If you want me to overwrite older files, use the "--overwrite" option. Culprit: ' + destination)
+    
     if IS_WINDOWS:
         # do lnk-files instead of symlinks:
         shell = win32com.client.Dispatch('WScript.Shell')
@@ -1028,6 +1045,7 @@ def create_link(source, destination):
                 os.link(source, destination)
             except OSError:
                 logging.warning('Due to cross-device links, I had to use a symbolic link as a fall-back for: ' + source)
+                os.symlink(source, destination)
         else:
             # use good old high-performing symbolic links:
             os.symlink(source, destination)
