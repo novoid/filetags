@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2023-10-31 11:20:37 vk>"
+PROG_VERSION = "Time-stamp: <2023-11-10 18:44:48 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -2034,7 +2034,7 @@ def assert_empty_tagfilter_directory(directory):
     @param directory: the directory to use as starting directory
     """
 
-    if options.tagtrees_directory and os.path.isdir(directory) and os.listdir(directory):
+    if options.tagtrees_directory and os.path.isdir(directory) and os.listdir(directory) and not options.overwrite:
         error_exit(13, 'The given tagtrees directory ' + directory +
                    ' is not empty. Aborting here instead ' +
                    'of removing its content without asking. Please free it up yourself and try again.')
