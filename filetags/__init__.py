@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2023-11-10 18:44:48 vk>"
+PROG_VERSION = "Time-stamp: <2024-01-13 18:29:18 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -30,7 +30,7 @@ PROG_VERSION = "Time-stamp: <2023-11-10 18:44:48 vk>"
 
 from importlib import import_module
 
-def save_import(library):
+def safe_import(library):
     try:
         globals()[library] = import_module(library)
     except ImportError:
@@ -46,14 +46,14 @@ import argparse   # for handling command line arguments
 import time
 import logging
 import errno      # for throwing FileNotFoundError
-save_import('operator')   # for sorting dicts
-save_import('difflib')    # for good enough matching words
-save_import('readline')   # for raw_input() reading from stdin
-save_import('codecs')     # for handling Unicode content in .tagfiles
-save_import('math')       # (integer) calculations
-save_import('clint')      # for config file handling
-save_import('itertools')  # for calculating permutations of tagtrees
-save_import('colorama')   # for colorful output
+safe_import('operator')   # for sorting dicts
+safe_import('difflib')    # for good enough matching words
+safe_import('readline')   # for raw_input() reading from stdin
+safe_import('codecs')     # for handling Unicode content in .tagfiles
+safe_import('math')       # (integer) calculations
+safe_import('clint')      # for config file handling
+safe_import('itertools')  # for calculating permutations of tagtrees
+safe_import('colorama')   # for colorful output
 if platform.system() == 'Windows':
     try:
         import win32com.client
@@ -61,7 +61,7 @@ if platform.system() == 'Windows':
         print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., " +
               "with \"sudo pip install pypiwin32\".")
         sys.exit(3)
-    save_import('pathlib')
+    safe_import('pathlib')
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -2047,7 +2047,7 @@ def assert_empty_tagfilter_directory(directory):
         # FIXXME 2018-04-04: I guess this is never reached because this script does never rm -r on that directory: check it and add overwrite parameter
         logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(directory))
         if not options.dryrun:
-            save_import('shutil')  # for removing directories with shutil.rmtree()
+            safe_import('shutil')  # for removing directories with shutil.rmtree()
             shutil.rmtree(directory)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
@@ -2343,7 +2343,7 @@ def start_filebrowser(directory):
         logging.debug('user overrides filebrowser with "none". Skipping filebrowser alltogether.')
         return
 
-    save_import('subprocess')
+    safe_import('subprocess')
     current_platform = platform.system()
     logging.debug('platform.system() is: [' + current_platform + ']')
     if current_platform == 'Linux':
