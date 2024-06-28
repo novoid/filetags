@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2024-01-13 18:29:18 vk>"
+PROG_VERSION = "Time-stamp: <2024-06-28 16:55:33 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -507,7 +507,7 @@ def adding_tag_to_filename(filename, tagname):
             new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR +
                                         tagname + '.' + extension)
         else:
-            new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
+            new_filename = os.path.join(dirname, basename_without_lnk + BETWEEN_TAG_SEPARATOR + tagname)
         if is_lnk_file(filename):
             return new_filename + '.lnk'
         else:
@@ -837,6 +837,8 @@ def split_up_filename(filename, exception_on_file_not_found=False):
     @param return: filename with absolute path, pathname, basename, basename without the optional ".lnk" extension
     """
 
+    # logging.debug(f"split_up_filename: called with: {filename= } {exception_on_file_not_found= }")
+    
     if not os.path.exists(filename):
         # This does make sense for splitting up filenames that are about to be created for example:
         if exception_on_file_not_found:
@@ -855,7 +857,9 @@ def split_up_filename(filename, exception_on_file_not_found=False):
     else:
         basename_without_lnk = basename
 
-    return os.path.join(dirname, basename), dirname, basename, basename_without_lnk
+    dir_and_basename = os.path.join(dirname, basename)
+    # logging.debug(f"split_up_filename: returns: {dir_and_basename= }  {dirname= }  {basename= }  {basename_without_lnk= } ")
+    return dir_and_basename, dirname, basename, basename_without_lnk
 
 
 def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dryrun):
