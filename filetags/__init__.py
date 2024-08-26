@@ -102,6 +102,9 @@ unique_tags = [UNIQUE_TAG_TESTSTRINGS]  # list of list which contains tags that 
 DONOTSUGGEST_PREFIX = '#donotsuggest '
 do_not_suggest_tags = []  # list of lower-case strings
 
+INCLUDE_PREFIX = '#include '
+included_files = []
+
 DESCRIPTION = "This tool adds or removes simple tags to/from file names.\n\
 \n\
 Tags within file names are placed between the actual file name and\n\
@@ -1738,56 +1741,76 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     global unique_tags
     global do_not_suggest_tags
+    global included_files
 
     if filename:
-        logging.debug('locate_and_parse_controlled_vocabulary: .filetags found: ' + filename)
-        if os.path.isfile(filename):
-            logging.debug('locate_and_parse_controlled_vocabulary: found controlled vocabulary')
-
-            tags = []
-            with codecs.open(filename, encoding='utf-8') as filehandle:
-                logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
-                              filename)
-                global controlled_vocabulary_filename
-                controlled_vocabulary_filename = filename
-                for rawline in filehandle:
-
-                    if rawline.strip().lower().startswith(DONOTSUGGEST_PREFIX):
-                        # parse and save do not suggest tags:
-                        line = rawline[len(DONOTSUGGEST_PREFIX):].strip().lower()
-                        for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                            do_not_suggest_tags.append(tag)
-                    else:
-
-                        # remove everyting after the first hash character (which is a comment separator)
-                        line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
-
-                        if len(line) == 0:
-                            # nothing left, line consisted only of a comment or was empty
-                            continue
-
-                        if BETWEEN_TAG_SEPARATOR in line:
-                            ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
-                            logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
-                                          (line))
-                            unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
-                            for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                                # *also* append unique tags to general tag list:
-                                tags.append(tag)
-                        else:
-                            tags.append(line)
-
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' %
-                          len(tags))
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
-                          (len(unique_tags) - 1))
-
-            return tags
-        else:
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
-            return []
+        return parse_controlled_vocabulary(filename)
     else:
         logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary')
+        return []
+
+def parse_controlled_vocabulary(filename):
+    """Parses a controlled vocabulary file."""
+    files_to_include = []
+
+    logging.debug('parse_controlled_vocabulary: .filetags found: ' + filename)
+    if os.path.isfile(filename):
+        logging.debug('parse_controlled_vocabulary: found controlled vocabulary')
+
+        included_files.append(os.path.realpath(filename))
+
+        tags = []
+        with codecs.open(filename, encoding='utf-8') as filehandle:
+            logging.debug('parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
+                            filename)
+            global controlled_vocabulary_filename
+            controlled_vocabulary_filename = filename
+            for rawline in filehandle:
+                if rawline.strip().lower().startswith(INCLUDE_PREFIX):
+                    file_to_include = rawline.strip().removeprefix(INCLUDE_PREFIX)
+                    current_file_dir = os.path.dirname(filename)
+                    file_path = os.path.realpath(os.path.join(current_file_dir, file_to_include))
+                    logging.debug('parse_controlled_vocabulary: found include statement for file [%s]' % file_path)
+                    if file_path not in included_files:
+                        files_to_include.append(file_path)
+                        logging.debug('parse_controlled_vocabulary: including file [%s]' % file_path)
+
+                elif rawline.strip().lower().startswith(DONOTSUGGEST_PREFIX):
+                    # parse and save do not suggest tags:
+                    line = rawline[len(DONOTSUGGEST_PREFIX):].strip().lower()
+                    for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                        do_not_suggest_tags.append(tag)
+                else:
+
+                    # remove everyting after the first hash character (which is a comment separator)
+                    line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
+
+                    if len(line) == 0:
+                        # nothing left, line consisted only of a comment or was empty
+                        continue
+
+                    if BETWEEN_TAG_SEPARATOR in line:
+                        ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
+                        logging.debug('parse_controlled_vocabulary: found unique tags: %s' %
+                                        (line))
+                        unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
+                        for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                            # *also* append unique tags to general tag list:
+                            tags.append(tag)
+                    else:
+                        tags.append(line)
+
+        for file in files_to_include:
+            tags.extend(parse_controlled_vocabulary(file))
+
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary has %i tags' %
+                        len(tags))
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
+                        (len(unique_tags) - 1))
+
+        return tags
+    else:
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
         return []
 
 
