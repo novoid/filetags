@@ -462,9 +462,8 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
         self.assertEqual(set(cv), set(["foo", "bar", "baz", "tag"]))
 
 
-    def test_include_lines_in_cv(self):
+    def test_include_lines_in_cv_not_circular(self):
         """
-        FIXXME!!!!
         This tests does not use the setup from the test class. However, it does use several
         other util functions defined in this class. Therefore, I set up a different test
         case here and re-use the util functions.
@@ -473,13 +472,95 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
         tmpdir
              `- subdir1
                       |
-                       `- .filetags with a reference to subdir2/included_filetags
+                       `- .filetags with a reference to subdir2/included.filetags
               - subdir2
                       |
                        `- included_filetags with additional tags
         """
-        pass  # FIXXME: implement
+        tempdir = tempfile.mkdtemp(prefix="TestControlledVocabulary_Include")
+        print("\ntempdir: " + tempdir + '  <<<' + '#' * 10)
 
+        subdir1 = os.path.join(tempdir, "subdir1")
+        os.makedirs(subdir1)
+        assert(os.path.exists(subdir1))
+
+        subdir2 = os.path.join(tempdir, "subdir2")
+        os.makedirs(subdir2)
+        assert(os.path.exists(subdir2))
+
+        include_cv = """
+        tag_from_include_before_CV
+        #include ../subdir2/included.filetags
+        tag_from_include_after_CV
+        """
+        include_file = os.path.join(subdir1, '.filetags')
+        self.create_file(include_file, include_cv)
+        assert(os.path.isfile(include_file))
+
+        included_cv = 'tag_from_included_CV'
+        included_file = os.path.join(subdir2, 'included.filetags')
+        self.create_file(included_file, included_cv)
+        assert(os.path.isfile(included_file))
+
+        if platform.system() != 'Windows':
+            os.sync()
+
+        # setup complete
+
+        cv = filetags.locate_and_parse_controlled_vocabulary(include_file)
+        self.assertEqual(set(cv), set(["tag_from_include_before_CV", "tag_from_include_after_CV", "tag_from_included_CV"]))
+
+    def test_include_lines_in_cv_circular(self):
+        """
+        This tests does not use the setup from the test class. However, it does use several
+        other util functions defined in this class. Therefore, I set up a different test
+        case here and re-use the util functions.
+
+        Setup looks like this:
+        tmpdir
+             `- subdir1
+                      |
+                       `- .filetags with a reference to subdir2/included.filetags
+              - subdir2
+                      |
+                       `- included.filetags with additional tags and reference to subdir1/.filetags
+        """
+        tempdir = tempfile.mkdtemp(prefix="TestControlledVocabulary_Include")
+        print("\ntempdir: " + tempdir + '  <<<' + '#' * 10)
+
+        subdir1 = os.path.join(tempdir, "subdir1")
+        os.makedirs(subdir1)
+        assert(os.path.exists(subdir1))
+
+        subdir2 = os.path.join(tempdir, "subdir2")
+        os.makedirs(subdir2)
+        assert(os.path.exists(subdir2))
+
+        circular1_cv = """
+        tag_from_first_before_CV
+        #include ../subdir2/included.filetags
+        tag_from_first_after_CV
+        """
+        circular1_file = os.path.join(subdir1, '.filetags')
+        self.create_file(circular1_file, circular1_cv)
+        assert(os.path.isfile(circular1_file))
+
+        circular2_cv = """
+        tag_from_second_before_CV
+        #include ../subdir1/.filetags
+        tag_from_second_after_CV
+        """
+        circular2_file = os.path.join(subdir2, 'included.filetags')
+        self.create_file(circular2_file, circular2_cv)
+        assert(os.path.isfile(circular2_file))
+
+        if platform.system() != 'Windows':
+            os.sync()
+
+        # setup complete
+
+        cv = filetags.locate_and_parse_controlled_vocabulary(circular1_file)
+        self.assertEqual(set(cv), set(["tag_from_first_before_CV", "tag_from_first_after_CV", "tag_from_second_before_CV", "tag_from_second_after_CV"]))
 
 class TestFileWithoutTags(unittest.TestCase):
 
