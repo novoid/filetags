@@ -32,6 +32,8 @@ possible length limitations).
 - Note that [[https://en.wikipedia.org/wiki/Folder_(computing)#Folder_metaphor]["directories" are to "folders"]] what "files" are to
   "documents".
 
+[[https://imgs.xkcd.com/comics/trained_a_neural_net.png]] (Source: [[https://xkcd.com/2173/][xkcd]])
+
 ** Why
 
 Besides the fact that I am using [[https://en.wikipedia.org/wiki/Iso_date][ISO dates and times]] in file names
@@ -707,6 +709,10 @@ filename-module of [[https://github.com/novoid/Memacs][Memacs]].
   adding tags to file names, you should check out [[https://github.com/jgru/filetags][this filetags fork]].
   Maintenance is limited though. Please notice that my other tools
   working with tags do not support TagSpaces-style either.
+
+- https://forge.chapril.org/tykayn/rangement.git
+  - An NPM implementation of a subset of GuessFileName (using image exif header), append2name, move2archive
+  - You probably need to read a bit of French
 
 * How to Thank Me
 

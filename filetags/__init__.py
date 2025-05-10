@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2022-01-24 12:38:12 vk>"
+PROG_VERSION = "Time-stamp: <2024-06-28 16:55:33 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -30,7 +30,7 @@ PROG_VERSION = "Time-stamp: <2022-01-24 12:38:12 vk>"
 
 from importlib import import_module
 
-def save_import(library):
+def safe_import(library):
     try:
         globals()[library] = import_module(library)
     except ImportError:
@@ -46,14 +46,14 @@ import argparse   # for handling command line arguments
 import time
 import logging
 import errno      # for throwing FileNotFoundError
-save_import('operator')   # for sorting dicts
-save_import('difflib')    # for good enough matching words
-save_import('readline')   # for raw_input() reading from stdin
-save_import('codecs')     # for handling Unicode content in .tagfiles
-save_import('math')       # (integer) calculations
-save_import('clint')      # for config file handling
-save_import('itertools')  # for calculating permutations of tagtrees
-save_import('colorama')   # for colorful output
+safe_import('operator')   # for sorting dicts
+safe_import('difflib')    # for good enough matching words
+safe_import('readline')   # for raw_input() reading from stdin
+safe_import('codecs')     # for handling Unicode content in .tagfiles
+safe_import('math')       # (integer) calculations
+safe_import('clint')      # for config file handling
+safe_import('itertools')  # for calculating permutations of tagtrees
+safe_import('colorama')   # for colorful output
 if platform.system() == 'Windows':
     try:
         import win32com.client
@@ -61,7 +61,7 @@ if platform.system() == 'Windows':
         print("Could not find Python module \"win32com.client\".\nPlease install it, e.g., " +
               "with \"sudo pip install pypiwin32\".")
         sys.exit(3)
-    save_import('pathlib')
+    safe_import('pathlib')
 
 PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
@@ -101,6 +101,9 @@ unique_tags = [UNIQUE_TAG_TESTSTRINGS]  # list of list which contains tags that 
 # example line:  "#donotsuggest foo bar" -> "foo" and "bar" are never suggested
 DONOTSUGGEST_PREFIX = '#donotsuggest '
 do_not_suggest_tags = []  # list of lower-case strings
+
+INCLUDE_PREFIX = '#include '
+included_files = []
 
 DESCRIPTION = "This tool adds or removes simple tags to/from file names.\n\
 \n\
@@ -185,6 +188,9 @@ parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
 
 parser.add_argument("-s", "--dryrun", dest="dryrun", action="store_true",
                     help="Enable dryrun mode: just simulate what would happen, do not modify files")
+
+parser.add_argument("--overwrite", dest="overwrite", action="store_true",
+                    help="If a link is about to be created and a previous file/link exists, the old will be deleted if this is enabled.")
 
 parser.add_argument("--hardlinks", dest="hardlinks", action="store_true",
                     help="Use hard links instead of symbolic links. This is ignored on Windows systems. " +
@@ -504,7 +510,7 @@ def adding_tag_to_filename(filename, tagname):
             new_filename = os.path.join(dirname, old_basename + BETWEEN_TAG_SEPARATOR +
                                         tagname + '.' + extension)
         else:
-            new_filename = os.path.join(dirname, basename + BETWEEN_TAG_SEPARATOR + tagname)
+            new_filename = os.path.join(dirname, basename_without_lnk + BETWEEN_TAG_SEPARATOR + tagname)
         if is_lnk_file(filename):
             return new_filename + '.lnk'
         else:
@@ -834,6 +840,8 @@ def split_up_filename(filename, exception_on_file_not_found=False):
     @param return: filename with absolute path, pathname, basename, basename without the optional ".lnk" extension
     """
 
+    # logging.debug(f"split_up_filename: called with: {filename= } {exception_on_file_not_found= }")
+    
     if not os.path.exists(filename):
         # This does make sense for splitting up filenames that are about to be created for example:
         if exception_on_file_not_found:
@@ -852,7 +860,9 @@ def split_up_filename(filename, exception_on_file_not_found=False):
     else:
         basename_without_lnk = basename
 
-    return os.path.join(dirname, basename), dirname, basename, basename_without_lnk
+    dir_and_basename = os.path.join(dirname, basename)
+    # logging.debug(f"split_up_filename: returns: {dir_and_basename= }  {dirname= }  {basename= }  {basename_without_lnk= } ")
+    return dir_and_basename, dirname, basename, basename_without_lnk
 
 
 def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dryrun):
@@ -865,7 +875,9 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
     """
 
     num_errors = 0
+    original_dir = os.getcwd()
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") …  " + '★' * 20)
+    logging.debug('handle_file_and_optional_link: original directory = ' + original_dir)
 
     if os.path.isdir(orig_filename):
         logging.warning("Skipping directory \"%s\" because this tool only renames file names." % orig_filename)
@@ -975,6 +987,8 @@ def handle_file_and_optional_link(orig_filename, tags, do_remove, do_filter, dry
 
     new_filename = handle_file(filename, tags, do_remove, do_filter, dryrun)
 
+    logging.debug('handle_file_and_optional_link: switching back to original directory = ' + original_dir)
+    os.chdir(original_dir)  # reset working directory
     logging.debug("handle_file_and_optional_link(\"" + orig_filename + "\") FINISHED  " + '★' * 20)
     return num_errors, new_filename
 
@@ -996,12 +1010,26 @@ def create_link(source, destination):
     The command link option "--hardlinks" switches to hardlinks. This
     is ignored on Windows systems.
 
+    If the destination file exists, an error is shown unless the --overwrite
+    option is used which results in deleting the old file and replacing with
+    the new link.
+    
     @param source: a file name of the source, an existing file
     @param destination: a file name for the link which is about to be created
 
     """
 
     logging.debug('create_link(' + source + ', ' + destination + ') called')
+
+    if os.path.exists(destination):
+        if options.overwrite:
+            logging.debug('destination exists and overwrite flag set → deleting old file')
+            os.remove(destination)
+        else:
+            logging.debug('destination exists and overwrite flag is not set → report error to user')
+            error_exit(21, 'Trying to create new link but found an old file with same name. ' +
+                       'If you want me to overwrite older files, use the "--overwrite" option. Culprit: ' + destination)
+    
     if IS_WINDOWS:
         # do lnk-files instead of symlinks:
         shell = win32com.client.Dispatch('WScript.Shell')
@@ -1024,6 +1052,7 @@ def create_link(source, destination):
                 os.link(source, destination)
             except OSError:
                 logging.warning('Due to cross-device links, I had to use a symbolic link as a fall-back for: ' + source)
+                os.symlink(source, destination)
         else:
             # use good old high-performing symbolic links:
             os.symlink(source, destination)
@@ -1600,6 +1629,7 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
     logging.debug('locate_file_in_cwd_and_parent_directories: called with startfile \"%s\" and filename \"%s\" ..' %
                   (startfile, filename))
 
+    original_dir = os.getcwd()
     filename_in_startfile_dir = os.path.join(os.path.dirname(os.path.abspath(startfile)), filename)
     filename_in_startdir = os.path.join(startfile, filename)
     if startfile and os.path.isfile(startfile) and os.path.isfile(filename_in_startfile_dir):
@@ -1640,10 +1670,11 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
             if os.path.isfile(filename_to_look_for):
                 logging.debug('locate_file_in_cwd_and_parent_directories: found \"%s\" in directory \"%s\" ........' %
                               (filename, parent_dir))
-                os.chdir(starting_dir)
+                os.chdir(original_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        os.chdir(starting_dir)
+            
+        os.chdir(original_dir)
         logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' %
                       filename)
         return False
@@ -1710,56 +1741,76 @@ def locate_and_parse_controlled_vocabulary(startfile):
 
     global unique_tags
     global do_not_suggest_tags
+    global included_files
 
     if filename:
-        logging.debug('locate_and_parse_controlled_vocabulary: .filetags found: ' + filename)
-        if os.path.isfile(filename):
-            logging.debug('locate_and_parse_controlled_vocabulary: found controlled vocabulary')
-
-            tags = []
-            with codecs.open(filename, encoding='utf-8') as filehandle:
-                logging.debug('locate_and_parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
-                              filename)
-                global controlled_vocabulary_filename
-                controlled_vocabulary_filename = filename
-                for rawline in filehandle:
-
-                    if rawline.strip().lower().startswith(DONOTSUGGEST_PREFIX):
-                        # parse and save do not suggest tags:
-                        line = rawline[len(DONOTSUGGEST_PREFIX):].strip().lower()
-                        for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                            do_not_suggest_tags.append(tag)
-                    else:
-
-                        # remove everyting after the first hash character (which is a comment separator)
-                        line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
-
-                        if len(line) == 0:
-                            # nothing left, line consisted only of a comment or was empty
-                            continue
-
-                        if BETWEEN_TAG_SEPARATOR in line:
-                            ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
-                            logging.debug('locate_and_parse_controlled_vocabulary: found unique tags: %s' %
-                                          (line))
-                            unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
-                            for tag in line.split(BETWEEN_TAG_SEPARATOR):
-                                # *also* append unique tags to general tag list:
-                                tags.append(tag)
-                        else:
-                            tags.append(line)
-
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i tags' %
-                          len(tags))
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
-                          (len(unique_tags) - 1))
-
-            return tags
-        else:
-            logging.debug('locate_and_parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
-            return []
+        return parse_controlled_vocabulary(filename)
     else:
         logging.debug('locate_and_parse_controlled_vocabulary: could not derive filename for controlled vocabulary')
+        return []
+
+def parse_controlled_vocabulary(filename):
+    """Parses a controlled vocabulary file."""
+    files_to_include = []
+
+    logging.debug('parse_controlled_vocabulary: .filetags found: ' + filename)
+    if os.path.isfile(filename):
+        logging.debug('parse_controlled_vocabulary: found controlled vocabulary')
+
+        included_files.append(os.path.realpath(filename))
+
+        tags = []
+        with codecs.open(filename, encoding='utf-8') as filehandle:
+            logging.debug('parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
+                            filename)
+            global controlled_vocabulary_filename
+            controlled_vocabulary_filename = filename
+            for rawline in filehandle:
+                if rawline.strip().lower().startswith(INCLUDE_PREFIX):
+                    file_to_include = rawline.strip().removeprefix(INCLUDE_PREFIX)
+                    current_file_dir = os.path.dirname(filename)
+                    file_path = os.path.realpath(os.path.join(current_file_dir, file_to_include))
+                    logging.debug('parse_controlled_vocabulary: found include statement for file [%s]' % file_path)
+                    if file_path not in included_files:
+                        files_to_include.append(file_path)
+                        logging.debug('parse_controlled_vocabulary: including file [%s]' % file_path)
+
+                elif rawline.strip().lower().startswith(DONOTSUGGEST_PREFIX):
+                    # parse and save do not suggest tags:
+                    line = rawline[len(DONOTSUGGEST_PREFIX):].strip().lower()
+                    for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                        do_not_suggest_tags.append(tag)
+                else:
+
+                    # remove everyting after the first hash character (which is a comment separator)
+                    line = rawline.strip().split('#')[0].strip()  # split and take everything before the first '#' as new "line"
+
+                    if len(line) == 0:
+                        # nothing left, line consisted only of a comment or was empty
+                        continue
+
+                    if BETWEEN_TAG_SEPARATOR in line:
+                        ## if multiple tags are in one line, they are mutually exclusive: only has can be set via filetags
+                        logging.debug('parse_controlled_vocabulary: found unique tags: %s' %
+                                        (line))
+                        unique_tags.append(line.split(BETWEEN_TAG_SEPARATOR))
+                        for tag in line.split(BETWEEN_TAG_SEPARATOR):
+                            # *also* append unique tags to general tag list:
+                            tags.append(tag)
+                    else:
+                        tags.append(line)
+
+        for file in files_to_include:
+            tags.extend(parse_controlled_vocabulary(file))
+
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary has %i tags' %
+                        len(tags))
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary has %i groups of unique tags' %
+                        (len(unique_tags) - 1))
+
+        return tags
+    else:
+        logging.debug('parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
         return []
 
 
@@ -2012,7 +2063,7 @@ def assert_empty_tagfilter_directory(directory):
 
     id = os.path.join(directory, '.filetags_tagtrees')
 
-    if not os.path.exists(id) and options.tagtrees_directory and os.path.exists(directory) and os.listdir(directory):
+    if not os.path.exists(id) and options.tagtrees_directory and os.path.exists(directory) and os.listdir(directory) and not options.overwrite:
         error_exit(13, 'The given tagtrees directory ' + directory +
                    ' is not empty. Aborting here instead ' +
                    'of removing its content without asking. Please free it up yourself and try again.')
@@ -2025,7 +2076,7 @@ def assert_empty_tagfilter_directory(directory):
         # FIXXME 2018-04-04: I guess this is never reached because this script does never rm -r on that directory: check it and add overwrite parameter
         logging.debug('found old tagfilter directory "%s"; deleting directory ...' % str(directory))
         if not options.dryrun:
-            save_import('shutil')  # for removing directories with shutil.rmtree()
+            safe_import('shutil')  # for removing directories with shutil.rmtree()
             shutil.rmtree(directory)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
@@ -2325,7 +2376,7 @@ def start_filebrowser(directory):
         logging.debug('user overrides filebrowser with "none". Skipping filebrowser alltogether.')
         return
 
-    save_import('subprocess')
+    safe_import('subprocess')
     current_platform = platform.system()
     logging.debug('platform.system() is: [' + current_platform + ']')
     if current_platform == 'Linux':
@@ -2663,11 +2714,13 @@ def main():
                                   set(tags_intersection_of_files))
 
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
+                logging.debug('files[0] = ' + files[0])
+                logging.debug('startdir = ' + os.path.dirname(os.path.abspath(os.path.basename(files[0]))))
                 upto9_tags_for_shortcuts = sorted(
                     get_upto_nine_keys_of_dict_with_highest_value(
                         get_tags_from_files_and_subfolders(
                             startdir=os.path.dirname(
-                                os.path.abspath(files[0]))),
+                                os.path.abspath(os.path.basename(files[0])))),
                         tags_intersection_of_files, omit_filetags_donotsuggest_tags=True))
                 logging.debug('derived upto9_tags_for_shortcuts')
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
@@ -2718,6 +2771,8 @@ def main():
 
         if not os.path.exists(filename):
             logging.error('File "' + filename + '" does not exist. Skipping this one …')
+            logging.debug('problematic filename: ' + filename)
+            logging.debug('os.getcwd() = ' + os.getcwd())
             num_errors += 1
 
         elif is_broken_link(filename):
