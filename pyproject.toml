@@ -1,0 +1,43 @@
+[project]
+name = "filetags"
+description = "Management of simple tags within file names"
+readme = "README.org"
+version = "2025.09.02.1"
+keywords = ["tagging", "tags", "file managing", "file management", "files", "tagtrees", "tagstore", "tag-based navigation", "tag-based filter"]
+classifiers=[
+    "Programming Language :: Python :: 3 :: Only",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "Operating System :: OS Independent",
+    ]
+authors = [{name="Karl Voit", email="tools@Karl-Voit.at"}]
+license = {file = "LICENSE.txt"}
+
+[project.urls]
+Homepage = "https://github.com/novoid/filetags"
+Repository = "https://github.com/novoid/filetags"
+Issues = "https://github.com/novoid/filetags/issues"
+
+[project.scripts]
+filetags="filetags:main"
+
+[tool.poetry.scripts]
+filetags="filetags:main"
+
+[tool.poetry]
+name = "filetags"
+authors = ["Karl Voit <tools@Karl-Voit.at>"]
+license = "GPL v3"
+readme = "README.org"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+clint = "^0.5.1"
+colorama = "^0.4.6"
+pyreadline3 = "^3.4.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
