@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2024-06-28 16:55:33 vk>"
+PROG_VERSION = "Time-stamp: <2025-09-02 16:42:40 rise>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -46,6 +46,9 @@ import argparse   # for handling command line arguments
 import time
 import logging
 import errno      # for throwing FileNotFoundError
+import tkinter as tk    ## for --gui 
+from tkinter import ttk ## for --gui 
+
 safe_import('operator')   # for sorting dicts
 safe_import('difflib')    # for good enough matching words
 safe_import('readline')   # for raw_input() reading from stdin
@@ -181,6 +184,9 @@ parser.add_argument("--remove", action="store_true",
 
 parser.add_argument("-i", "--interactive", action="store_true", dest="interactive",
                     help="Interactive mode: ask for (a)dding or (r)emoving and name of tag(s)")
+
+parser.add_argument("--gui", action="store_true", dest="gui",
+                    help="In interactive mode: use a GUI dialog instead of the text based version")
 
 parser.add_argument("-R", "--recursive", dest="recursive", action="store_true",
                     help="Recursively go through the current directory and all of its subdirectories. " +
@@ -350,6 +356,263 @@ class SimpleCompleter(object):
                       repr(text), state, repr(response))
         return response
 
+class TagDialog:
+
+    ## Warning: this class was mostly programmed by ChatGPT 2025-09-01
+    ## and therefore might contain errors and mistakes. This needs to
+    ## be re-checked by somebody with Tkinter knowledge.
+
+    def get_soft_foreground(self, widget, ratio=0.5):
+        """Return a reduced-contrast foreground color based on blending foreground and background. The higher to 1, the darker it gets for black as the default value."""
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-02 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+        
+        # if widget is None:
+        #     widget = tk._default_root
+        if widget is None:
+            raise ValueError("No widget specified and no default root exists.")
+    
+        # Get widget's foreground and background
+        bg = widget.cget("bg")
+        fg = widget.cget("fg") if "fg" in widget.keys() else "black"
+    
+        # Convert to RGB
+        r1, g1, b1 = widget.winfo_rgb(fg)
+        r2, g2, b2 = widget.winfo_rgb(bg)
+    
+        # Blend and reduce to 8-bit
+        r = int(r1 * ratio + r2 * (1 - ratio)) >> 8
+        g = int(g1 * ratio + g2 * (1 - ratio)) >> 8
+        b = int(b1 * ratio + b2 * (1 - ratio)) >> 8
+    
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    
+    def __init__(self, root, vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list):
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+
+        ## FIXXME: Layout can be improved by somebody who knows how to do this.
+        ##         E.g.: gray labels left justified, values centered (as they are now)
+        
+        self.root = root
+        self.root.title("filetags")
+
+        self.vocabulary = vocabulary
+        self.entered_tags = ""
+        low_contrast_fg_color = self.get_soft_foreground(root, 0.6)  ## better than hard-coded gray values that interfere with default color schema
+
+        # Label for instructions
+
+        if not tags_for_visual:
+            ## self.label = tk.Label(self.root, text="Current common tags: —")
+            self.label = tk.Label(self.root, text="")
+            self.label.pack(pady=30)
+        else:
+            existingtags = BETWEEN_TAG_SEPARATOR.join(sorted(tags_for_visual))
+            self.label = tk.Label(self.root, fg=low_contrast_fg_color, justify=tk.LEFT, text=f"Current common 🏷")
+            self.label.pack(padx=(0,0), pady=(30,0))
+            self.label = tk.Label(self.root, font="bold", text=existingtags)
+            self.label.pack(pady=(0,30))
+        
+        self.label = tk.Label(self.root, fg=low_contrast_fg_color, text=hint_str)
+        self.label.pack(pady=(0,0))
+        self.label = tk.Label(self.root, text='\n'.join(tag_list))
+        self.label.pack(pady=(0,30))
+
+        if number_of_files>1:
+            plural = 's'
+        else:
+            plural = ''
+        self.label = tk.Label(self.root, text=f"Please enter 🏷 for {str(number_of_files)} file{plural}", width=50)
+        self.label.pack(pady=(20,0))
+        
+        # Create an entry widget for input
+        self.entry = ttk.Entry(self.root, width=40)
+        self.entry.pack(pady=(0,30))
+
+        # Set focus on the entry field
+        self.entry.focus_set()  # Ensure the cursor is within the entry field on startup
+
+        # Bind the entry field to handle auto-completion on key release and TAB key
+        self.entry.bind("<KeyRelease>", self.on_keyrelease)
+        self.entry.bind("<Tab>", self.on_tab)        # This binds the TAB key
+        self.entry.bind("<Return>", self.on_return)  # This binds the RETURN (Enter) key
+        self.entry.bind("<Escape>", lambda event: self.on_cancel())  # ESC cancels the dialog
+
+        self.label = tk.Label(self.root, fg=low_contrast_fg_color, text="Complete 2 tags with the <TAB>-key")
+        self.label.pack(pady=(30,0))
+
+        # A listbox to show matching tags
+        self.completions_listbox = tk.Listbox(self.root,
+                                              height=5,              # max of completion matches shown
+                                              bg=root.cget("bg"),    # no separate background color
+                                              bd=0,                  # no borders
+                                              highlightthickness=0,  # No focus border
+                                              relief="flat",         # Flat appearance
+                                              activestyle="none",    # No underline or highlight on active item
+                                              selectmode=tk.SINGLE,
+                                              width=20)
+        self.completions_listbox.pack(pady=(0,30))
+
+        # A button to cancel the dialog
+        self.cancel_btn = tk.Button(self.root, text="Cancel", command=self.on_cancel)
+        self.cancel_btn.pack(side=tk.LEFT, pady=(20,20), padx=(30,20))
+
+        # A button to submit the entered tags
+        self.submit_button = tk.Button(self.root, text="Tag!", command=self.submit_tags)
+        self.submit_button.pack(side=tk.RIGHT, padx=(20,30), pady=20)
+
+        
+    def on_keyrelease(self, event):
+        """ Handle key release to filter the word completions. """
+        
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+        
+        user_input = self.entry.get().strip()
+
+        # Split the input into words
+        words = user_input.split()
+
+        # If there is any word to complete, we focus on the last one
+        if words:
+            current_word = words[-1]
+        else:
+            current_word = ""
+
+        # Find matching tags from vocabulary for the current word
+        if current_word:
+            matching_tags = [tag for tag in self.vocabulary if tag.startswith(current_word)]
+        else:
+            matching_tags = []
+
+        # Update the listbox with matching tags
+        self.update_completions_listbox(matching_tags)
+
+    def on_tab(self, event):
+        """ Handle tab keypress for word completion. """
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+
+        #print("TAB pressed!")  # Debugging line to see if the TAB event is fired
+        user_input = self.entry.get().strip()
+
+        # Split the input into words
+        words = user_input.split()
+
+        # If there is any word to complete, we focus on the last one
+        if words:
+            current_word = words[-1]
+        else:
+            current_word = ""
+
+        # Find matching tags from vocabulary for the current word
+        matching_tags = [tag for tag in self.vocabulary if tag.startswith(current_word)]
+
+        # If there are multiple matching words, try to find the common prefix
+        if len(matching_tags) > 1:
+            # Find the longest common prefix
+            common_prefix = self.longest_common_prefix(matching_tags)
+            
+            # Update the entry field with the common prefix
+            new_input = user_input[:len(user_input) - len(current_word)] + common_prefix
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, new_input)
+
+            # Prevent the default TAB behavior (moving focus or creating a tab space)
+            return "break"
+
+        # If there's exactly one match, complete it
+        elif len(matching_tags) == 1:
+            # Automatically complete the current word in the entry field
+            new_input = user_input[:len(user_input) - len(current_word)] + matching_tags[0]
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, new_input)
+
+            # Prevent the default TAB behavior (moving focus or creating a tab space)
+            return "break"
+
+        # If there are no matches, do nothing
+        return "break"
+
+    def on_return(self, event):
+        """ Handle Enter (Return) key to submit the form. """
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+
+        #print("RETURN pressed!")  # Debugging line to see if RETURN is fired
+        self.submit_tags()
+        return "break"  # Prevent the default RETURN behavior (like adding a newline)
+
+    def update_completions_listbox(self, matching_tags):
+        """ Update the listbox with matching tags. """
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+
+        # Clear the current listbox
+        self.completions_listbox.delete(0, tk.END)
+
+        # Insert new matching tags with gray text for completion items
+        for tag in matching_tags:
+            self.completions_listbox.insert(tk.END, tag)
+
+        # Set the completion list items to be gray (less contrast)
+        for i in range(self.completions_listbox.size()):
+            self.completions_listbox.itemconfig(i, {'fg': 'gray'})
+
+    def longest_common_prefix(self, words):
+        """ Return the longest common prefix of a list of words. """
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+ 
+        if not words:
+            return ""
+
+        # Start with the first word in the list as the prefix
+        prefix = words[0]
+
+        for word in words[1:]:
+            # Compare the prefix with the rest of the words
+            while not word.startswith(prefix):
+                # Shorten the prefix
+                prefix = prefix[:-1]
+                if not prefix:
+                    return ""
+        
+        return prefix
+
+    def submit_tags(self):
+        """ Handle submit action (close window). """
+        ## Warning: this function was mostly programmed by ChatGPT
+        ## 2025-09-01 and therefore might contain errors and mistakes.
+        ## This needs to be re-checked by somebody with Tkinter
+        ## knowledge.
+
+        self.entered_tags = self.entry.get().strip()
+        print(f"Entered Tags: {self.entered_tags}")
+
+        # Close the window after submission
+        self.root.quit()
+
+    def on_cancel(self):
+        # Just close the dialog
+        self.root.destroy()        
+    
 
 def contains_tag(filename, tagname=False):
     """
@@ -1813,8 +2076,41 @@ def parse_controlled_vocabulary(filename):
         logging.debug('parse_controlled_vocabulary: controlled vocabulary is a non-existing file')
         return []
 
+def get_tag_shortcut_information(tag_list, tags_get_added=True, tags_get_linked=False):
+    """A list of tags from the list are printed to stdout. Each tag
+    gets a number associated which corresponds to the position in the
+    list (although starting with 1).
 
-def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_linked=False):
+    @param tag_list: list of string holding the tags
+    @param tags_get_added: True if tags get added, False otherwise
+    @param return: -
+    """
+    
+    if tags_get_added:
+        if len(tag_list) < 9:
+            hint_str = "Previously used tags in this directory:"
+        else:
+            hint_str = "Top nine previously used tags in this directory:"
+    elif tags_get_linked:
+        if len(tag_list) < 9:
+            hint_str = "Used tags in this directory:"
+        else:
+            hint_str = "Top nine used tags in this directory:"
+    else:
+        if len(tag_list) < 9:
+            hint_str = "Possible tags to be removed:"
+        else:
+            hint_str = "Top nine possible tags to be removed:"
+
+    count = 1
+    list_of_tag_hints = []
+    for tag in tag_list:
+        list_of_tag_hints.append(tag + ' (' + str(count) + ')')
+        count += 1
+        
+    return hint_str, list_of_tag_hints
+    
+def print_tag_shortcut_with_numbers(hint_str, tag_list):
     """A list of tags from the list are printed to stdout. Each tag
     gets a number associated which corresponds to the position in the
     list (although starting with 1).
@@ -1824,34 +2120,14 @@ def print_tag_shortcut_with_numbers(tag_list, tags_get_added=True, tags_get_link
     @param return: -
     """
 
-    if tags_get_added:
-        if len(tag_list) < 9:
-            hint_string = "Previously used tags in this directory:"
-        else:
-            hint_string = "Top nine previously used tags in this directory:"
-    elif tags_get_linked:
-        if len(tag_list) < 9:
-            hint_string = "Used tags in this directory:"
-        else:
-            hint_string = "Top nine used tags in this directory:"
-    else:
-        if len(tag_list) < 9:
-            hint_string = "Possible tags to be removed:"
-        else:
-            hint_string = "Top nine possible tags to be removed:"
-    print("\n  " + colorama.Style.DIM + hint_string + colorama.Style.RESET_ALL)
-
-    count = 1
-    list_of_tag_hints = []
-    for tag in tag_list:
-        list_of_tag_hints.append(tag + ' (' + str(count) + ')')
-        count += 1
+    print("\n  " + colorama.Style.DIM + hint_str + colorama.Style.RESET_ALL)
     try:
-        print('    ' + ' ⋅ '.join(list_of_tag_hints))
+        tag_list_str= ' ⋅ '.join(tag_list)
     except UnicodeEncodeError:
         logging.debug('ERROR: I got an UnicodeEncodeError when displaying "⋅" (or list_of_tag_hints) ' +
                       'but I re-try with "|" as a separator instead ...')
-        print('    ' + ' | '.join(list_of_tag_hints))
+        tag_list_str = ' | '.join(tag_list)
+    print('    ' + tag_list_str)
     print('')  # newline at end
 
 
@@ -1961,8 +2237,7 @@ def _get_tag_visual(tags_for_visual=None):
 
     return visual
 
-
-def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
+def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
     the user to enter tags. Aborts program if no tags were entered. Returns list of
@@ -1972,7 +2247,7 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
     @param return: list of up to top nine keys according to the rank of their values
     """
-
+    
     completionhint = ''
     if vocabulary and len(vocabulary) > 0:
 
@@ -1998,14 +2273,68 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None):
     print("                     ")
 
     if len(upto9_tags_for_shortcuts) > 0:
-        print_tag_shortcut_with_numbers(upto9_tags_for_shortcuts,
-                                        tags_get_added=(not options.remove and not options.tagfilter),
-                                        tags_get_linked=options.tagfilter)
+        print_tag_shortcut_with_numbers(hint_str, tag_list)
 
     logging.debug("interactive mode: asking for tags ...")
     entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
-    tags_from_userinput = extract_tags_from_argument(entered_tags)
+    return extract_tags_from_argument(entered_tags)
 
+
+def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual=None):
+    """
+    Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
+    the user to enter tags. Aborts program if no tags were entered. Returns list of
+    entered tags.
+
+    @param vocabulary: array containing the controlled vocabulary
+    @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
+    @param return: list of up to top nine keys according to the rank of their values
+    """
+    
+    completionhint = ''
+    if vocabulary and len(vocabulary) > 0:
+        assert(vocabulary.__class__ == list)
+        
+    number_of_files = len(options.files)
+    number_of_files_str = str(number_of_files)
+    logging.debug("len(files) [%s]" % number_of_files_str)
+    logging.debug("files: %s" % str(options.files))
+
+    # Create the Tkinter window
+    root = tk.Tk()
+
+    # Create an instance of the TagDialog with the vocabulary
+    guidialog = TagDialog(root, vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list)
+
+    # Run the Tkinter main loop
+    root.mainloop()
+
+    entered_tags = guidialog.entered_tags.strip()
+    logging.debug(f"interactive GUI mode: entered tags: {entered_tags}")
+    return extract_tags_from_argument(entered_tags)
+
+
+def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
+    """
+    Wrapper-function for the text-based version and the GUI version:
+    
+    Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
+    the user to enter tags. Aborts program if no tags were entered. Returns list of
+    entered tags.
+
+    @param vocabulary: array containing the controlled vocabulary
+    @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
+    @param return: list of up to top nine keys according to the rank of their values
+    """
+
+    hint_str, tag_list = get_tag_shortcut_information(upto9_tags_for_shortcuts,
+                                                          tags_get_added=(not options.remove and not options.tagfilter),
+                                                          tags_get_linked=options.tagfilter)
+    if gui:
+        tags_from_userinput = ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
+    else:
+        tags_from_userinput = ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
+    
     if not tags_from_userinput:
         logging.info("no tags given, exiting.")
         sys.stdout.flush()
@@ -2531,6 +2860,9 @@ def main():
         error_exit(3, "I found option \"--tag\" and option \"--interactive\". \n" +
                    "Please choose either tag option OR interactive mode.")
 
+    if not options.interactive and options.gui:
+        logging.warning('Found option "--gui" without option "--interactive". Will ignore that.')
+        
     if options.list_tags_by_number and options.list_tags_by_alphabet:
         error_exit(6, "Please use only one list-by-option at once.")
 
@@ -2726,7 +3058,7 @@ def main():
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
         # ==================== Interactive asking user for tags ============================= ##
-        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual)
+        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual, options.gui)
         # ==================== Interactive asking user for tags ============================= ##
         print('')  # new line after input for separating input from output
 
