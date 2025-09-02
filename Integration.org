@@ -13,7 +13,60 @@ If you have integrated filetags in additional commonly used tools,
 please send me a short how-to so that others are able to get the most
 out of filetags as well.
 
-** Integrating into Geeqie
+** Integration of the GUI-Based Version Using Terminal-Windows
+
+With 2025-09, filetags introduced the =--interactive --gui= option
+which provides a GUI dialog for tagging. This simplifies the
+integration into third party tools and should run on all major
+operating systems as long as you do have Python 3 and [[https://docs.astral.sh/uv/][uv]] installed.
+
+*** Integrating into Geeqie
+
+FIXXME: Take a look at the Nautilus integration. The same principle applies but tool-specific details vary.
+
+*** Integration into Thunar
+
+FIXXME: Take a look at the Nautilus integration. The same principle applies but tool-specific details vary.
+
+*** Integration into Nautilus (GNOME "Filed")
+
+You need to create a file: =~/.local/share/nautilus/scripts/filetags= that holds something like that:
+
+#+BEGIN_SRC sh
+#!/usr/bin/env bash
+uv --project ${HOME}/src/filetags run ${HOME}/src/filetags/filetags/__init__.py --interactive --gui "$@"
+#end
+#+END_SRC
+
+Of course, you need to modify the paths according to your situation:
+
+The =--project= parameter points to the main folder of filetags source
+code that also contains the file =pyproject.toml= that holds all the
+dependencies =uv= is looking for.
+
+The second path is the one to the filetags main executable: =filetags/__init__.py=
+
+This should now provide you a "Script" folder within your "Files" context menu where you can find "filetags".
+
+*** Integration into Windows Explorer
+
+FIXXME: Take a look at the Nautilus integration. The same principle applies but tool-specific details vary.
+
+*** Integration into FreeCommander
+
+FIXXME: Take a look at the Nautilus integration. The same principle applies but tool-specific details vary.
+
+** Integration of the Text-Based Version Using Terminal-Windows
+
+Background: in its original form and for the first decade of its
+existance, filetags did not come with a GUI dialog. Therefore, it had
+to use some Terminal windows to pop up if filetags was involved from
+outside of the command line shell.
+
+These are the integration options for this older method using the
+command line and not the GUI:
+
+*** Integrating into Geeqie
 
 I am using [[http://geeqie.sourceforge.net/][geeqie]] for browsing/presenting image files. After I
 mark a set of images for adding one or more tags, I just have to
@@ -99,7 +152,7 @@ and ~T~ (removing tags), you can define them in geeqie:
 
 I hope this method is as handy for you as it is for me :-)
 
-** Integration into Thunar
+*** Integration into Thunar
 
 [[https://en.wikipedia.org/wiki/Thunar][Thunar]] is a popular GNU/Linux file browser for the xfce environment.
 
@@ -130,7 +183,7 @@ If they don't match, following script re-writes ~accels.scm~ with the current ID
 : echo "(gtk_accel_path \"<Actions>/ThunarActions/uca-action-$ID\" \"$myshortcut\")" >> $HOME/.config/Thunar/accels.scm
 : #+END_SRC
 
-** Integrarion into Nautilus
+*** Integrarion into Nautilus (GNOME "Filed")
 
 Nautilus allows scripts to be run directly from its GUI. The program passes the filenames of all selected files into the script under the variable ~$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS~. We will use it to create our "taggify" script.
 
@@ -170,7 +223,7 @@ The folder where we created our .sh file is where Nautilus usually looks for scr
 
 Replace ~/usr/bin/kgx~ with the terminal name we previously copied. Now launch Nautilus, select some files and right click - you should see "Scripts" button in the dropdown list. If you click it, you will be able to click *Taggify* and tag all the selected files at once.
 
-** Integration into Windows Explorer
+*** Integration into Windows Explorer
 :PROPERTIES:
 :CREATED:  [2018-03-07 Wed 21:42]
 :END:
@@ -187,7 +240,7 @@ Execute this in your command line environment:
 : integratethis filetags --parameter="--tagtrees --recursive --tagtrees-handle-no-tag no-tags" --displayname "TagTrees recursive"
 : integratethis filetags --parameter="--tagtrees --tagtrees-depth 3" --displayname "TagTrees lvl3"
 
-*** Manual Setup
+**** Manual Setup
 
 Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
 
@@ -207,7 +260,7 @@ is one mouse click further away.
 You can do both and choose one or the other, depending on how many
 files you have selected.
 
-**** Integration into Windows Explorer for single files
+***** Integration into Windows Explorer for single files
 
 Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
 
@@ -266,7 +319,7 @@ print("Successfully written registry file \"register_filetags_for_single_files.r
 print("Please check content before executing.")
 #+END_SRC
 
-**** Integration into Windows Explorer for single and multiple selected files
+***** Integration into Windows Explorer for single and multiple selected files
 
 Use this only if the [[https://github.com/novoid/integratethis][integratethis]] method can not be applied:
 
@@ -321,7 +374,7 @@ If you did not use pip to install, it looks like this:
 This way, you got a nice entry in your context sub-menu "Send to"
 which is also correctly tagging multiple files at once.
 
-** Integration into FreeCommander
+*** Integration into FreeCommander
 
 [[http://freecommander.com/en/summary/][FreeCommander]] is a [[https://en.wikipedia.org/wiki/File_manager#Orthodox_file_managers][orthodox file manager]] for Windows. You can add
 filetags as an favorite command:
@@ -354,7 +407,7 @@ If you want to assign a different keyboard shortcut than =Ctrl-1= like
       overwrite essential shortcuts you're using.
   - OK
 
-** Integration into Dired
+*** Integration into Dired
 :PROPERTIES:
 :CREATED:  [2018-06-30 Sat 00:00]
 :END:
