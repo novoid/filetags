@@ -403,6 +403,7 @@ class TagDialog:
         self.root.title("filetags")
 
         self.vocabulary = vocabulary
+        num_of_vocabulary_entries = len(vocabulary)
         self.entered_tags = ""
         low_contrast_fg_color = self.get_soft_foreground(root, 0.6)  ## better than hard-coded gray values that interfere with default color schema
 
@@ -444,7 +445,7 @@ class TagDialog:
         self.entry.bind("<Return>", self.on_return)  # This binds the RETURN (Enter) key
         self.entry.bind("<Escape>", lambda event: self.on_cancel())  # ESC cancels the dialog
 
-        self.label = tk.Label(self.root, fg=low_contrast_fg_color, text="Complete 2 tags with the <TAB>-key")
+        self.label = tk.Label(self.root, fg=low_contrast_fg_color, text=f"Complete {str(num_of_vocabulary_entries)} tags with the <TAB>-key")
         self.label.pack(pady=(30,0))
 
         # A listbox to show matching tags
