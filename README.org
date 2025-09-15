@@ -1,10 +1,19 @@
 * filetags
 
+Tagging dialog with GUI:
+
+#+BEGIN_HTML
+<img src="https://raw.githubusercontent.com/novoid/screencasts/master/file_management/filetags_GUI_dialog_with_examples.png" />
+#+END_HTML
+
+Snippet from the filetags demo using the text interface:
+
 #+BEGIN_HTML
 <a href="https://karl-voit.at/demo-filetags-tagging">
 <img src="https://raw.githubusercontent.com/novoid/screencasts/master/file_management/filetags_tagging.gif" />
 </a>
 #+END_HTML
+
 
 [[file:bin/screencast.gif]]
 
