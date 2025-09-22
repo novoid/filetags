@@ -1,7 +1,7 @@
 [project]
 name = "filetags"
 description = "Management of simple tags within file names"
-readme = "README.org"
+# readme = "README.org"
 version = "2025.09.02.1"
 keywords = ["tagging", "tags", "file managing", "file management", "files", "tagtrees", "tagstore", "tag-based navigation", "tag-based filter"]
 classifiers=[
@@ -14,11 +14,12 @@ classifiers=[
     ]
 authors = [{name="Karl Voit", email="tools@Karl-Voit.at"}]
 license = {file = "LICENSE.txt"}
-requires-python = ">=3.13"
+requires-python = ">=3.10"  # see https://devguide.python.org/versions/
 dependencies = [
     "clint>=0.5.1",
     "colorama>=0.4.6",
     "pyreadline3>=3.5.4",
+    "pypiwin32; sys_platform == 'win32'",
 ]
 
 [project.urls]
