@@ -1,3 +1,0 @@
-pyreadline3
-colorama
-clint
