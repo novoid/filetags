@@ -1,8 +1,22 @@
 [project]
 name = "filetags"
-description = "Management of simple tags within file names"
+description = "Management of simple tags within file names and retrieval methods using those tags"
 # readme = "README.org"
-version = "2025.09.02.1"
+readme = {text = """
+This Python script adds or removes tags to file names in the following form:
+
+- file without time stamp in name -- tag2.txt
+- file name with several tags -- tag1 tag2.jpeg
+- another example file name with multiple example tags -- fun videos kids.mpeg
+- 2013-05-09 a file name with ISO date stamp in name -- tag1.jpg
+- 2013-05-09T16.17 file name with time stamp -- tag3.csv
+
+The script accepts an arbitrary number of files (see your shell for possible length limitations).
+
+- Target group: users who are able to use command line tools and who are using tags in file names.
+- Hosted and documented on github: https://github.com/novoid/filetags
+""", content-type = "text/plain"}
+version = "2025.11.16.1"
 keywords = ["tagging", "tags", "file managing", "file management", "files", "tagtrees", "tagstore", "tag-based navigation", "tag-based filter"]
 
 # sequence along https://pypi.org/classifiers
@@ -38,4 +52,12 @@ Issues = "https://github.com/novoid/filetags/issues"
 
 [project.scripts]
 filetags="filetags:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+filetags = ["Register_filetags_for_Windows_context_menu_TEMPLATE.reg"]
+
 
