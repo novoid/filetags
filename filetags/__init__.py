@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2025-09-02 16:42:40 rise>"
+PROG_VERSION = "Time-stamp: <2025-10-25 12:32:41 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -2852,6 +2852,8 @@ def main():
 
     handle_logging()
 
+    logging.debug(f'{options=}')
+    
     if options.verbose and options.quiet:
         error_exit(1, "Options \"--verbose\" and \"--quiet\" found. " +
                    "This does not make any sense, you silly fool :-)")
