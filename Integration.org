@@ -413,7 +413,8 @@ If you want to assign a different keyboard shortcut than =Ctrl-1= like
 :END:
 
 [[https://en.wikipedia.org/wiki/Dired][Dired]] is the oldest file manager. It started in 1974 and offers a wide
-range of efficient functionality. Here, we add filetags to Dired.
+range of efficient functionality. Here, we add filetags to Dired using the
+xfce4-terminal on Linux.
 
 #+BEGIN_SRC emacs-lisp
 (defun my-dired-filetags ()
@@ -432,8 +433,26 @@ range of efficient functionality. Here, we add filetags to Dired.
   )
 #+END_SRC
 
-I mapped it to =M-t= in my dired buffers:
+An alternative implementation using the kitty terminal:
+#+begin_src emacs-lisp
+(defun my-dired-filetags ()
+  "Run \"filetags\" on current or marked files"
+  (interactive)
+  (dired-do-shell-command
+   "kitty -o remember_window_size=no -o initial_window_width=60c -o initial_window_height=15c --position 535x300 -o window_padding_width='0 20 0 20' --title floating -- filetags --interactive *"
+   nil
+   (dired-get-marked-files))
+  (revert-buffer nil t t))
+#+end_src
+It can look like this:
+[[file:bin/dired-demo.png]]
 
+You can map it in your dired buffers:
 #+BEGIN_SRC emacs-lisp
 (define-key dired-mode-map (kbd "M-t") 'my-dired-filetags)
+;; or
+(use-package dired
+  :ensure nil
+  :bind (:map dired-mode-map
+              ("t" . my-dired-filetags)))
 #+END_SRC
