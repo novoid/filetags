@@ -52,7 +52,6 @@ from tkinter import ttk ## for --gui
 safe_import('operator')   # for sorting dicts
 safe_import('difflib')    # for good enough matching words
 safe_import('readline')   # for raw_input() reading from stdin
-safe_import('codecs')     # for handling Unicode content in .tagfiles
 safe_import('math')       # (integer) calculations
 safe_import('clint')      # for config file handling
 safe_import('itertools')  # for calculating permutations of tagtrees
@@ -2024,7 +2023,7 @@ def parse_controlled_vocabulary(filename):
         included_files.append(os.path.realpath(filename))
 
         tags = []
-        with codecs.open(filename, encoding='utf-8') as filehandle:
+        with open(filename, encoding='utf-8') as filehandle:
             logging.debug('parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
                             filename)
             global controlled_vocabulary_filename
