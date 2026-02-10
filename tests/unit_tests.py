@@ -461,6 +461,22 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
         cv = filetags.locate_and_parse_controlled_vocabulary(cv_file)
         self.assertEqual(set(cv), set(["foo", "bar", "baz", "tag"]))
 
+    def test_unicode_symbols_in_cv(self):
+        """
+        Ensure unicode symbols and non-ASCII characters in controlled vocabulary
+        files are parsed correctly.
+        """
+        tempdir = tempfile.mkdtemp(prefix='TestControlledVocabulary_Unicode_')
+        print("\ntempdir: " + tempdir + '  <<<' + '#' * 10)
+        assert(os.path.isdir(tempdir))
+
+        cv_file = os.path.join(tempdir, '.filetags')
+        self.create_file(cv_file, "café\nnaïve\npi_π\nstar_★\nsnow_雪\n")
+        assert(os.path.isfile(cv_file))
+
+        cv = filetags.locate_and_parse_controlled_vocabulary(cv_file)
+        self.assertEqual(set(cv), set(["café", "naïve", "pi_π", "star_★", "snow_雪"]))
+
 
     def test_include_lines_in_cv_not_circular(self):
         """
