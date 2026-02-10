@@ -456,6 +456,7 @@ class TagDialog:
         self.entry.bind("<Tab>", self.on_tab)        # This binds the TAB key
         self.entry.bind("<Return>", self.on_return)  # This binds the RETURN (Enter) key
         self.entry.bind("<Escape>", lambda event: self.on_cancel())  # ESC cancels the dialog
+        self.root.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
         self.label = tk.Label(self.root, fg=low_contrast_fg_color, text=f"Complete {str(num_of_vocabulary_entries)} tags with the <TAB>-key")
         self.label.pack(pady=(30,0))
@@ -2391,6 +2392,8 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     # Run the Tkinter main loop
     root.mainloop()
 
+    if guidialog.cancelled:
+        return False
     entered_tags = guidialog.entered_tags.strip()
     logging.debug(f"interactive GUI mode: entered tags: {entered_tags}")
     return extract_tags_from_argument(entered_tags)
