@@ -1916,7 +1916,7 @@ def handle_tag_gardening(vocabulary):
     print_tag_dict(tags_only_used_once_dict, vocabulary, sort_index=0, print_only_tags_with_similar_tags=False)
 
     if vocabulary:
-        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:\n  (first for tags not in vocabulary, second for vocaulary tags)")
+        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:\n  (first for tags not in vocabulary, second for vocbaulary tags)")
         tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
         only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
                                               if find_similar_tags(key, tags_for_comparing)}
