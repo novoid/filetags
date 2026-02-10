@@ -36,7 +36,8 @@ classifiers=[
     ]
 
 authors = [{name="Karl Voit", email="tools@Karl-Voit.at"}]
-license = {file = "LICENSE.txt"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"  # see https://devguide.python.org/versions/
 dependencies = [
     "clint>=0.5.1",
