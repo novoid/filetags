@@ -2421,9 +2421,6 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
         print(colorama.Fore.RED + "No controlled vocabulary (.filetags) found; --force-cv disabled." + colorama.Style.RESET_ALL)
         force_cv_enabled = False
 
-    if force_cv_enabled:
-        hint_str = hint_str + " (tags must match your controlled vocabulary)"
-
     previous_input = None
     previous_error = None
     while True:
