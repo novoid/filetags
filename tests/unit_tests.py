@@ -207,6 +207,18 @@ class TestMethods(unittest.TestCase):
                                                                      'file4 -- common foo bar jodel.txt.lnk'])),
                             set(['common', 'foo']))
 
+    def test_get_invalid_tags_for_vocabulary(self):
+        vocabulary = ['foo', 'bar', 'baz']
+        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['foo', 'bar'], vocabulary), [])
+        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['foo', 'qux'], vocabulary), ['qux'])
+        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['-foo', '-qux'], vocabulary), ['-qux'])
+        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['aa', 'aa', 'bb', 'aa'], ['bb']), ['aa'])
+
+    def test_build_similar_to_invalid_tags_message(self):
+        self.assertIsNone(filetags.build_similar_to_invalid_tags_message(['xxx'], ['foo', 'bar']))
+        self.assertEqual(filetags.build_similar_to_invalid__tags_message(['Simpson'], ['Simson', 'simpson']),
+                         'Similar tags: Simpson -> Simson simpson')
+
     def test_extract_tags_from_path(self):
         self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
         self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags')),
