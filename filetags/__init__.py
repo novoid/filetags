@@ -2277,7 +2277,12 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
         print_tag_shortcut_with_numbers(hint_str, tag_list)
 
     logging.debug("interactive mode: asking for tags ...")
-    entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
+    try:
+        entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
+    except EOFError:
+        logging.info("Received EOF")
+        sys.exit(0)
+
     return extract_tags_from_argument(entered_tags)
 
 
