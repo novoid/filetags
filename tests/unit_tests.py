@@ -216,7 +216,7 @@ class TestMethods(unittest.TestCase):
 
     def test_build_similar_to_invalid_tags_message(self):
         self.assertIsNone(filetags.build_similar_to_invalid_tags_message(['xxx'], ['foo', 'bar']))
-        self.assertEqual(filetags.build_similar_to_invalid__tags_message(['Simpson'], ['Simson', 'simpson']),
+        self.assertEqual(filetags.build_similar_to_invalid_tags_message(['Simpson'], ['Simson', 'simpson']),
                          'Similar tags: Simpson -> Simson simpson')
 
     def test_extract_tags_from_path(self):
