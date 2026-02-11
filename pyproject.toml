@@ -24,7 +24,6 @@ classifiers=[
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -36,7 +35,8 @@ classifiers=[
     ]
 
 authors = [{name="Karl Voit", email="tools@Karl-Voit.at"}]
-license = {file = "LICENSE.txt"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"  # see https://devguide.python.org/versions/
 dependencies = [
     "clint>=0.5.1",
@@ -54,7 +54,7 @@ Issues = "https://github.com/novoid/filetags/issues"
 filetags="filetags:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
