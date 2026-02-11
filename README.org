@@ -76,6 +76,8 @@ This tool needs [[http://www.python.org/downloads/][Python 3 to be installed]].
 
 You can install filetags either via [[https://packaging.python.org/tutorials/installing-packages/][pip]] or [[https://docs.astral.sh/uv/][uv]].
 
+On Arch Linux you can use the [[https://aur.archlinux.org/packages/filetags-git][AUR package]]: `yay -S filetags-git`
+
 Or you can install filetags using the source code, e.g., by cloning
 the [[https://github.com/novoid/filetags/][GitHub repository of filetags]].
 

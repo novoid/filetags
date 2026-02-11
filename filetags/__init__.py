@@ -52,7 +52,6 @@ from tkinter import ttk ## for --gui
 safe_import('operator')   # for sorting dicts
 safe_import('difflib')    # for good enough matching words
 safe_import('readline')   # for raw_input() reading from stdin
-safe_import('codecs')     # for handling Unicode content in .tagfiles
 safe_import('math')       # (integer) calculations
 safe_import('clint')      # for config file handling
 safe_import('itertools')  # for calculating permutations of tagtrees
@@ -2086,7 +2085,7 @@ def parse_controlled_vocabulary(filename):
         included_files.append(os.path.realpath(filename))
 
         tags = []
-        with codecs.open(filename, encoding='utf-8') as filehandle:
+        with open(filename, encoding='utf-8') as filehandle:
             logging.debug('parse_controlled_vocabulary: reading controlled vocabulary in [%s]' %
                             filename)
             global controlled_vocabulary_filename
@@ -2353,12 +2352,18 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
             print_tag_shortcut_with_numbers(hint_str, tag_list)
 
     logging.debug("interactive mode: asking for tags ...")
+
     if prompt_prefill:
         def _prefill():
             readline.insert_text(prompt_prefill)
         readline.set_startup_hook(_prefill)
-    entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
+    try:
+        entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
+    except EOFError:
+        logging.info("Received EOF")
+        sys.exit(0)
     readline.set_startup_hook()
+
     return extract_tags_from_argument(entered_tags)
 
 
