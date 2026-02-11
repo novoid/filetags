@@ -283,6 +283,10 @@ parser.add_argument("--tag-gardening",
                     help="This is for getting an overview on tags that might require to be renamed (typos, " +
                     "singular/plural, ...). See also http://www.webology.org/2008/v5n3/a58.html")
 
+parser.add_argument("--force-cv",
+                    dest="force_cv", action="store_true",
+                    help="Only allow tags that are part of the controlled vocabulary (.filetags)")
+
 parser.add_argument("-v", "--verbose",
                     dest="verbose", action="store_true",
                     help="Enable verbose mode")
@@ -397,13 +401,15 @@ class TagDialog:
 
         ## FIXXME: Layout can be improved by somebody who knows how to do this.
         ##         E.g.: gray labels left justified, values centered (as they are now)
-        
+
         self.root = root
         self.root.title("filetags")
 
         self.vocabulary = vocabulary
         num_of_vocabulary_entries = len(vocabulary)
         self.entered_tags = ""
+        self.cancelled = False
+        self.force_cv_enabled = options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees
         low_contrast_fg_color = self.get_soft_foreground(root, 0.6)  ## better than hard-coded gray values that interfere with default color schema
 
         # Label for instructions
@@ -430,10 +436,16 @@ class TagDialog:
             plural = ''
         self.label = tk.Label(self.root, text=f"Please enter 🏷 for {str(number_of_files)} file{plural}", width=50)
         self.label.pack(pady=(20,0))
-        
+
         # Create an entry widget for input
         self.entry = ttk.Entry(self.root, width=40)
         self.entry.pack(pady=(0,30))
+
+        warning_text = ""
+        if options.force_cv and not self.vocabulary:
+            warning_text = "No controlled vocabulary (.filetags) found; --force-cv disabled."
+        self.error_label = tk.Label(self.root, fg="red", text=warning_text)
+        self.error_label.pack(pady=(0,10))
 
         # Set focus on the entry field
         self.entry.focus_set()  # Ensure the cursor is within the entry field on startup
@@ -443,6 +455,7 @@ class TagDialog:
         self.entry.bind("<Tab>", self.on_tab)        # This binds the TAB key
         self.entry.bind("<Return>", self.on_return)  # This binds the RETURN (Enter) key
         self.entry.bind("<Escape>", lambda event: self.on_cancel())  # ESC cancels the dialog
+        self.root.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
         self.label = tk.Label(self.root, fg=low_contrast_fg_color, text=f"Complete {str(num_of_vocabulary_entries)} tags with the <TAB>-key")
         self.label.pack(pady=(30,0))
@@ -604,15 +617,25 @@ class TagDialog:
         ## knowledge.
 
         self.entered_tags = self.entry.get().strip()
-        print(f"Entered Tags: {self.entered_tags}")
+        self.cancelled = False
+        tags_for_validation = extract_tags_from_argument(self.entered_tags)
+        invalid_tags = force_cv_validator(self.force_cv_enabled, tags_for_validation, self.vocabulary)
+        if invalid_tags:
+            error_msg = "Invalid tags: " + BETWEEN_TAG_SEPARATOR.join(invalid_tags)
+            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, self.vocabulary)
+            if similar_msg:
+                error_msg += "\n" + similar_msg
+            self.error_label.config(text=error_msg)
+            return
 
         # Close the window after submission
         self.root.quit()
 
     def on_cancel(self):
         # Just close the dialog
+        self.cancelled = True
         self.root.destroy()        
-    
+
 
 def contains_tag(filename, tagname=False):
     """
@@ -1613,6 +1636,45 @@ def find_similar_tags(tag, tags):
     return close_but_not_exact_matches
 
 
+def get_invalid_tags_for_vocabulary(tags, vocabulary):
+    """Return a list of tags not contained in the controlled vocabulary."""
+
+    normalized_vocabulary = set()
+    for vocab_tag in vocabulary:
+        if vocab_tag.startswith('-'):
+            normalized_vocabulary.add(vocab_tag[1:])
+        else:
+            normalized_vocabulary.add(vocab_tag)
+
+    invalid_tags = []
+    for raw_tag in tags:
+        tag = raw_tag[1:] if raw_tag.startswith('-') else raw_tag
+        if raw_tag.startswith('-') and tag in normalized_vocabulary:
+            continue
+        if tag not in normalized_vocabulary:
+            invalid_tags.append(raw_tag)
+    return list(dict.fromkeys(invalid_tags))
+
+def force_cv_validator(force_cv_enabled, tags_for_validation, vocabulary):
+    if not force_cv_enabled:
+        return None
+    if not tags_for_validation:
+        return None
+    invalid_tags = get_invalid_tags_for_vocabulary(tags_for_validation, vocabulary)
+    if invalid_tags:
+        return invalid_tags
+    return None
+
+def build_similar_to_invalid_tags_message(invalid_tags, vocabulary):
+    suggestions = []
+    for tag in invalid_tags:
+        similar = find_similar_tags(tag, vocabulary)
+        if similar:
+            suggestions.append(tag + " -> " + BETWEEN_TAG_SEPARATOR.join(similar))
+    if not suggestions:
+        return None
+    return "Similar tags: " + "; ".join(suggestions)
+
 def print_tag_dict(tag_dict_reference, vocabulary=False, sort_index=0,
                    print_similar_vocabulary_tags=False, print_only_tags_with_similar_tags=False):
     """
@@ -1854,7 +1916,7 @@ def handle_tag_gardening(vocabulary):
     print_tag_dict(tags_only_used_once_dict, vocabulary, sort_index=0, print_only_tags_with_similar_tags=False)
 
     if vocabulary:
-        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:\n  (first for tags not in vocabulary, second for vocaulary tags)")
+        print("\nTags which have similar other tags are probably typos or plural/singular forms of others:\n  (first for tags not in vocabulary, second for vocbaulary tags)")
         tags_for_comparing = list(set(tag_dict.keys()).union(set(vocabulary)))  # unified elements of both lists
         only_similar_tags_by_alphabet_dict = {key: value for key, value in list(tag_dict.items())
                                               if find_similar_tags(key, tags_for_comparing)}
@@ -2237,7 +2299,8 @@ def _get_tag_visual(tags_for_visual=None):
 
     return visual
 
-def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual=None):
+def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
+                              tags_for_visual=None, prompt_prefill=None, invalid_tags=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
     the user to enter tags. Aborts program if no tags were entered. Returns list of
@@ -2260,32 +2323,52 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
         readline.parse_and_bind('tab: complete')
 
         completionhint = '; complete %s tags with TAB' % str(len(vocabulary))
+        if options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees:
+            completionhint += '; tags must match your controlled vocabulary'
 
     logging.debug("len(files) [%s]" % str(len(options.files)))
     logging.debug("files: %s" % str(options.files))
 
-    print("                 ")
-    print("Please enter tags" + colorama.Style.DIM + ", separated by \"" +
-          BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
-          completionhint + colorama.Style.RESET_ALL)
-    print("                     ")
-    print(_get_tag_visual(tags_for_visual))
-    print("                     ")
+    minimal_prompt = invalid_tags is not None
+    if not minimal_prompt:
+        print("                 ")
 
-    if len(upto9_tags_for_shortcuts) > 0:
-        print_tag_shortcut_with_numbers(hint_str, tag_list)
+    if invalid_tags:
+        print(colorama.Fore.RED + "Invalid tags:" + colorama.Style.RESET_ALL +
+              " " + BETWEEN_TAG_SEPARATOR.join(invalid_tags))
+        similar_msg = build_similar_to_invalid_tags_message(invalid_tags, vocabulary)
+        if similar_msg:
+            print(similar_msg)
+
+    if not minimal_prompt:
+        print("Please enter tags" + colorama.Style.DIM + ", separated by \"" +
+              BETWEEN_TAG_SEPARATOR + "\"; abort with Ctrl-C" +
+              completionhint + colorama.Style.RESET_ALL)
+        print("                     ")
+        print(_get_tag_visual(tags_for_visual))
+        print("                     ")
+
+        if len(upto9_tags_for_shortcuts) > 0:
+            print_tag_shortcut_with_numbers(hint_str, tag_list)
 
     logging.debug("interactive mode: asking for tags ...")
+
+    if prompt_prefill:
+        def _prefill():
+            readline.insert_text(prompt_prefill)
+        readline.set_startup_hook(_prefill)
     try:
         entered_tags = input(colorama.Style.DIM + 'Tags: ' + colorama.Style.RESET_ALL).strip()
     except EOFError:
         logging.info("Received EOF")
         sys.exit(0)
+    readline.set_startup_hook()
 
     return extract_tags_from_argument(entered_tags)
 
 
-def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual=None):
+def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
+                             tags_for_visual=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
     the user to enter tags. Aborts program if no tags were entered. Returns list of
@@ -2314,15 +2397,17 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     # Run the Tkinter main loop
     root.mainloop()
 
+    if guidialog.cancelled:
+        return False
     entered_tags = guidialog.entered_tags.strip()
     logging.debug(f"interactive GUI mode: entered tags: {entered_tags}")
     return extract_tags_from_argument(entered_tags)
 
 
-def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
+def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
     """
     Wrapper-function for the text-based version and the GUI version:
-    
+
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
     the user to enter tags. Aborts program if no tags were entered. Returns list of
     entered tags.
@@ -2335,16 +2420,36 @@ def ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui
     hint_str, tag_list = get_tag_shortcut_information(upto9_tags_for_shortcuts,
                                                           tags_get_added=(not options.remove and not options.tagfilter),
                                                           tags_get_linked=options.tagfilter)
-    if gui:
-        tags_from_userinput = ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
-    else:
-        tags_from_userinput = ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
-    
-    if not tags_from_userinput:
-        logging.info("no tags given, exiting.")
-        sys.stdout.flush()
-        sys.exit(0)
-    else:
+
+    force_cv_enabled = options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees
+    if force_cv_enabled and not controlled_vocabulary:
+        print(colorama.Fore.RED + "No controlled vocabulary (.filetags) found; --force-cv disabled." + colorama.Style.RESET_ALL)
+        force_cv_enabled = False
+
+    previous_input = None
+    previous_error = None
+    while True:
+        if gui:
+            tags_from_userinput = ask_for_tags_gui_version(
+                vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
+        else:
+            tags_from_userinput = ask_for_tags_text_version(
+                vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual,
+                prompt_prefill=previous_input, invalid_tags=previous_error)
+            previous_input = BETWEEN_TAG_SEPARATOR.join(tags_from_userinput) if tags_from_userinput else previous_input
+
+        if not tags_from_userinput:
+            logging.info("no tags given, exiting.")
+            sys.stdout.flush()
+            sys.exit(0)
+
+        validation_error = force_cv_validator(force_cv_enabled, tags_from_userinput, controlled_vocabulary)
+        if validation_error:
+            if not gui:
+                previous_error = validation_error
+                continue
+            previous_error = None
+
         if len(upto9_tags_for_shortcuts) > 0:
             # check if user entered number shortcuts for tags to be removed:
             tags_from_userinput = check_for_possible_shortcuts_in_entered_tags(
@@ -2929,9 +3034,10 @@ def main():
                   ' and height: ' + str(TTY_HEIGHT) + '   (80/80 is the fall-back)')
     tags_from_userinput = []
     if files:
-        vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
+        controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
     else:
-        vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
+        controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
+    vocabulary = list(controlled_vocabulary)
 
     if len(options.files) < 1 and not (options.tagtrees or
                                        options.tagfilter or
@@ -3065,7 +3171,8 @@ def main():
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
         # ==================== Interactive asking user for tags ============================= ##
-        tags_from_userinput = ask_for_tags(vocabulary, upto9_tags_for_shortcuts, tags_for_visual, options.gui)
+        tags_from_userinput = ask_for_tags(vocabulary, controlled_vocabulary,
+                                           upto9_tags_for_shortcuts, tags_for_visual, options.gui)
         # ==================== Interactive asking user for tags ============================= ##
         print('')  # new line after input for separating input from output
 
@@ -3082,6 +3189,22 @@ def main():
             sys.exit(0)
 
     logging.debug("tags found: [%s]" % '], ['.join(tags_from_userinput))
+
+    if options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees and options.tags:
+        if not controlled_vocabulary:
+            error_exit(21, "No controlled vocabulary (.filetags) found; --force-cv requires a vocabulary.")
+        invalid_tags = get_invalid_tags_for_vocabulary(tags_from_userinput, controlled_vocabulary)
+        if invalid_tags:
+            logging.error(
+                colorama.Fore.RED + "Not all tags match the controlled vocabulary " +
+                colorama.Fore.LIGHTBLACK_EX + "(\"" + str(controlled_vocabulary_filename) + "\")" +
+                colorama.Style.RESET_ALL + ": " + BETWEEN_TAG_SEPARATOR.join(invalid_tags)
+            )
+            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, controlled_vocabulary)
+            if similar_msg:
+                logging.info(similar_msg)
+            sys.exit(22)
+
     if options.remove:
         logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
     elif options.tagfilter:

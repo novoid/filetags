@@ -193,6 +193,7 @@ options:
   --lu, --list-tags-unknown-to-vocabulary
                         List all file-tags which are found in file names but are not part of .filetags
   --tag-gardening       This is for getting an overview on tags that might require to be renamed (typos, singular/plural, ...). See also http://www.webology.org/2008/v5n3/a58.html
+  --force-cv            Only allow tags that are part of the controlled vocabulary (.filetags)
   -v, --verbose         Enable verbose mode
   -q, --quiet           Enable quiet mode
   --version             Display version and exit
