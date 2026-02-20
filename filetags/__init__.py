@@ -2408,7 +2408,7 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     return extract_tags_from_argument(entered_tags)
 
 
-def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
+def ask_for_tags(vocabulary, constant_vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
     """
     Wrapper-function for the text-based version and the GUI version:
 
@@ -2426,7 +2426,7 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
                                                           tags_get_linked=options.tagfilter)
 
     force_cv_enabled = options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees
-    if force_cv_enabled and not controlled_vocabulary:
+    if force_cv_enabled and not constant_vocabulary:
         print(colorama.Fore.RED + "No controlled vocabulary (.filetags) found; --force-cv disabled." + colorama.Style.RESET_ALL)
         force_cv_enabled = False
 
@@ -2447,7 +2447,7 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
             sys.stdout.flush()
             sys.exit(0)
 
-        validation_error = force_cv_validator(force_cv_enabled, tags_from_userinput, controlled_vocabulary)
+        validation_error = force_cv_validator(force_cv_enabled, tags_from_userinput, constant_vocabulary)
         if validation_error:
             if not gui:
                 previous_error = validation_error
@@ -3041,7 +3041,8 @@ def main():
         controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
     else:
         controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
-    vocabulary = list(controlled_vocabulary)
+    vocabulary = list(controlled_vocabulary) # will be modified
+    constant_vocabulary = controlled_vocabulary # will stay constant/unmodified
 
     if len(options.files) < 1 and not (options.tagtrees or
                                        options.tagfilter or
@@ -3175,7 +3176,7 @@ def main():
             logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
 
         # ==================== Interactive asking user for tags ============================= ##
-        tags_from_userinput = ask_for_tags(vocabulary, controlled_vocabulary,
+        tags_from_userinput = ask_for_tags(vocabulary, constant_vocabulary,
                                            upto9_tags_for_shortcuts, tags_for_visual, options.gui)
         # ==================== Interactive asking user for tags ============================= ##
         print('')  # new line after input for separating input from output
@@ -3195,16 +3196,16 @@ def main():
     logging.debug("tags found: [%s]" % '], ['.join(tags_from_userinput))
 
     if options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees and options.tags:
-        if not controlled_vocabulary:
+        if not constant_vocabulary:
             error_exit(21, "No controlled vocabulary (.filetags) found; --force-cv requires a vocabulary.")
-        invalid_tags = get_invalid_tags_for_vocabulary(tags_from_userinput, controlled_vocabulary)
+        invalid_tags = get_invalid_tags_for_vocabulary(tags_from_userinput, constant_vocabulary)
         if invalid_tags:
             logging.error(
                 colorama.Fore.RED + "Not all tags match the controlled vocabulary " +
                 colorama.Fore.LIGHTBLACK_EX + "(\"" + str(controlled_vocabulary_filename) + "\")" +
                 colorama.Style.RESET_ALL + ": " + BETWEEN_TAG_SEPARATOR.join(invalid_tags)
             )
-            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, controlled_vocabulary)
+            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, constant_vocabulary)
             if similar_msg:
                 logging.info(similar_msg)
             sys.exit(22)
