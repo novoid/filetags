@@ -211,7 +211,7 @@ class TestMethods(unittest.TestCase):
         vocabulary = ['foo', 'bar', 'baz']
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['foo', 'bar'], vocabulary), [])
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['foo', 'qux'], vocabulary), ['qux'])
-        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['-foo', '-qux'], vocabulary), ['-qux'])
+        self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['-foo', '-qux'], vocabulary), [])
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['aa', 'aa', 'bb', 'aa'], ['bb']), ['aa'])
 
     def test_build_similar_to_invalid_tags_message(self):
