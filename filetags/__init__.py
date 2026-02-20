@@ -331,8 +331,12 @@ class SimpleCompleter(object):
     def __init__(self, options):
         self.options = sorted(options)
 
-        # removing '-' as a delimiter character in order to be able to use '-tagname' for removing:
-        readline.set_completer_delims(readline.get_completer_delims().replace('-', ''))
+        # remove delimiter characters to improve completion
+        # remove '-' in order to be able to complete '-tagname' for removing
+        # remove ':' to be able to complete 'key:' into 'key:value{1,2,3}'
+        readline.set_completer_delims(
+            readline.get_completer_delims().replace('-', '').replace(':', '')
+        )
 
         return
 
