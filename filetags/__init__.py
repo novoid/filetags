@@ -1652,9 +1652,9 @@ def get_invalid_tags_for_vocabulary(tags, vocabulary):
 
     invalid_tags = []
     for raw_tag in tags:
-        tag = raw_tag[1:] if raw_tag.startswith('-') else raw_tag
-        if raw_tag.startswith('-') and tag in normalized_vocabulary:
+        if raw_tag.startswith('-'): # always allow removals
             continue
+        tag = raw_tag
         if tag not in normalized_vocabulary:
             invalid_tags.append(raw_tag)
     return list(dict.fromkeys(invalid_tags))
