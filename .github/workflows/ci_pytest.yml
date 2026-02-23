@@ -1,0 +1,47 @@
+name: CI_pytest_filetags
+
+# name    : CI_pytest_filetags.yml
+# purpose : regularly run pytest on filetags
+# date    : [2026-02-23 Mon]
+# edit    :
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # a factorial test of explicitly defined GitHub runner images
+        # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.14"]
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 5  # individual timeout per job
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: setup pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+          pip install pytest
+          pip list
+
+      - name: verbose pytest
+        run: |
+          cd tests
+          python -m pytest unit_tests.py -v
