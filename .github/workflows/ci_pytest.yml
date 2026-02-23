@@ -45,4 +45,5 @@ jobs:
       - name: verbose pytest
         run: |
           cd tests
+          python -m pytest unit_tests.py
           python -m pytest unit_tests.py -v

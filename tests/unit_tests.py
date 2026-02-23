@@ -220,11 +220,15 @@ class TestMethods(unittest.TestCase):
                          'Similar tags: Simpson -> Simson simpson')
 
     def test_extract_tags_from_path(self):
-        self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
-        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags')),
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join (os.sep, 'a', 'path', 'without', 'tags')  )), set([]))
+
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join(os.sep, 'path -- ptag1', 'with -- ptag1 ptag2', 'tags')  )),
                          set(['ptag1', 'ptag2']))
-        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags -- ftag1')),
+
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join(os.sep, 'path -- ptag1', 'with -- ptag1 ptag2', 'tags -- ftag1')  )),
                          set(['ptag1', 'ptag2', 'ftag1']))
+
+
 
     def test_extract_iso_datestamp_from_filename(self):
         self.assertEqual(filetags.extract_iso_datestamp_from_filename(''), [])
@@ -354,7 +358,7 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
     def create_file(self, name, content):
 
         assert(os.path.isdir(os.path.dirname(name)))
-        with open(name, 'w') as outputhandle:
+        with open(name, 'w', encoding="utf-8") as outputhandle:
             outputhandle.write(content)
 
     def test_find_cv_in_startfile_dir_instead_of_cwd(self):
@@ -613,7 +617,7 @@ class TestFileWithoutTags(unittest.TestCase):
 
     def create_tmp_file(self, name):
 
-        with open(os.path.join(self.tempdir, name), 'w') as outputhandle:
+        with open(os.path.join(self.tempdir, name), 'w', encoding="utf-8") as outputhandle:
             outputhandle.write('This is a test file for filetags unit testing')
 
     def file_exists(self, name):
@@ -825,7 +829,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     def create_tmp_file(self, directory, name):
 
-        with open(os.path.join(directory, name), 'w') as outputhandle:
+        with open(os.path.join(directory, name), 'w', encoding="utf-8") as outputhandle:
             outputhandle.write('This is a test file for filetags unit testing')
 
     def file_exists(self, name):
@@ -937,7 +941,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
     def test_tagtrees_overwrites_old_default_directory(self):
 
-        with open(os.path.join(self.subdir2, 'boring tagtrees data.txt'), 'w'):
+        with open(os.path.join(self.subdir2, 'boring tagtrees data.txt'), 'w', encoding="utf-8"):
             pass
 
         filetags.generate_tagtrees(directory=self.subdir2,
@@ -952,7 +956,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
         filetags.options.tagtrees_directory = self.subdir2
 
-        with open(os.path.join(self.subdir2, '.filetags_tagtrees'), 'w'):
+        with open(os.path.join(self.subdir2, '.filetags_tagtrees'), 'w', encoding="utf-8"):
             pass
 
         filetags.generate_tagtrees(directory=self.subdir2,
@@ -969,7 +973,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
 
         filetags.options.tagtrees_directory = self.subdir2
 
-        with open(os.path.join(self.subdir2, 'critical data.txt'), 'w'):
+        with open(os.path.join(self.subdir2, 'critical data.txt'), 'w', encoding="utf-8"):
             pass
 
         with self.assertRaises(SystemExit):
@@ -1055,7 +1059,7 @@ class TestReplacingLinkSourceAndTarget(unittest.TestCase):
 
     def create_source_file(self, name):
 
-        with open(os.path.join(self.sourcedir, name), 'w') as outputhandle:
+        with open(os.path.join(self.sourcedir, name), 'w', encoding="utf-8") as outputhandle:
             outputhandle.write('This is a test file for filetags unit testing')
 
     def create_link_file(self, source, destination):

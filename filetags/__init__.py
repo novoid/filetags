@@ -2520,7 +2520,7 @@ def assert_empty_tagfilter_directory(directory):
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
 
-    with open(id, 'w'):
+    with open(id, 'w', encoding="utf-8"):
         pass
 
     if not options.dryrun:
