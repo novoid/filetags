@@ -220,11 +220,15 @@ class TestMethods(unittest.TestCase):
                          'Similar tags: Simpson -> Simson simpson')
 
     def test_extract_tags_from_path(self):
-        self.assertEqual(set(filetags.extract_tags_from_path('/a/path/without/tags')), set([]))
-        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags')),
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join (os.sep, 'a', 'path', 'without', 'tags')  )), set([]))
+
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join(os.sep, 'path -- ptag1', 'with -- ptag1 ptag2', 'tags')  )),
                          set(['ptag1', 'ptag2']))
-        self.assertEqual(set(filetags.extract_tags_from_path('/path -- ptag1/with -- ptag1 ptag2/tags -- ftag1')),
+
+        self.assertEqual(set(filetags.extract_tags_from_path(  os.path.join(os.sep, 'path -- ptag1', 'with -- ptag1 ptag2', 'tags -- ftag1')  )),
                          set(['ptag1', 'ptag2', 'ftag1']))
+
+
 
     def test_extract_iso_datestamp_from_filename(self):
         self.assertEqual(filetags.extract_iso_datestamp_from_filename(''), [])
