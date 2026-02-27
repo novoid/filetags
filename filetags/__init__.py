@@ -73,6 +73,7 @@ PROG_VERSION_DATE = PROG_VERSION[13:23]
 # unused: INVOCATION_TIME = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 FILENAME_TAG_SEPARATOR = ' -- '
 BETWEEN_TAG_SEPARATOR = ' '
+PROBLEMATIC_TAG_CHARACTERS = [':']
 CONTROLLED_VOCABULARY_FILENAME = ".filetags"
 HINT_FOR_BEING_IN_VOCABULARY_TEMPLATE = ' *'
 TAGFILTER_DIRECTORY = os.path.join(os.path.expanduser("~"), ".filetags_tagfilter")
@@ -291,6 +292,11 @@ parser.add_argument("--force-cv",
                     dest="force_cv", action="store_true",
                     help="Only allow tags that are part of the controlled vocabulary (.filetags)")
 
+parser.add_argument("--allow-problematic-characters",
+                    dest="allow_problematic_characters", action="store_true",
+                    help="Allow problematic characters (" + ", ".join('"' + char + '"' for char in PROBLEMATIC_TAG_CHARACTERS) +
+                         ") in user-entered tags")
+
 parser.add_argument("-v", "--verbose",
                     dest="verbose", action="store_true",
                     help="Enable verbose mode")
@@ -335,8 +341,12 @@ class SimpleCompleter(object):
     def __init__(self, options):
         self.options = sorted(options)
 
-        # removing '-' as a delimiter character in order to be able to use '-tagname' for removing:
-        readline.set_completer_delims(readline.get_completer_delims().replace('-', ''))
+        # remove delimiter characters to improve completion
+        # remove '-' in order to be able to complete '-tagname' for removing
+        # remove '_' & ':' to be able to complete 'key_' into 'key_value{1,2,3}'
+        readline.set_completer_delims(
+            readline.get_completer_delims().replace('-', '').replace('_', '').replace(':', '')
+        )
 
         return
 
@@ -414,6 +424,7 @@ class TagDialog:
         self.entered_tags = ""
         self.cancelled = False
         self.force_cv_enabled = options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees
+        self.allow_problematic_characters = options.allow_problematic_characters
         low_contrast_fg_color = self.get_soft_foreground(root, 0.6)  ## better than hard-coded gray values that interfere with default color schema
 
         # Label for instructions
@@ -622,13 +633,24 @@ class TagDialog:
 
         self.entered_tags = self.entry.get().strip()
         self.cancelled = False
+        
         tags_for_validation = extract_tags_from_argument(self.entered_tags)
-        invalid_tags = force_cv_validator(self.force_cv_enabled, tags_for_validation, self.vocabulary)
-        if invalid_tags:
-            error_msg = "Invalid tags: " + BETWEEN_TAG_SEPARATOR.join(invalid_tags)
-            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, self.vocabulary)
+        cv_invalid_tags = force_cv_validator(self.force_cv_enabled, tags_for_validation, self.vocabulary)
+        character_invalid_tags = problematic_characters_validator(self.allow_problematic_characters, tags_for_validation)
+        if cv_invalid_tags or character_invalid_tags:
+            combined_invalid_tags = []
+            if cv_invalid_tags:
+                combined_invalid_tags.extend(cv_invalid_tags)
+            if character_invalid_tags:
+                combined_invalid_tags.extend(character_invalid_tags)
+            combined_invalid_tags = list(dict.fromkeys(combined_invalid_tags))
+
+            error_msg = "Invalid tags: " + BETWEEN_TAG_SEPARATOR.join(combined_invalid_tags)
+            similar_msg = build_similar_to_invalid_tags_message(combined_invalid_tags, self.vocabulary)
             if similar_msg:
                 error_msg += "\n" + similar_msg
+            if character_invalid_tags:
+                error_msg += "\n" + build_problematic_characters_message()
             self.error_label.config(text=error_msg)
             return
 
@@ -1669,6 +1691,30 @@ def force_cv_validator(force_cv_enabled, tags_for_validation, vocabulary):
         return invalid_tags
     return None
 
+def problematic_characters_validator(allow_problematic_characters, tags_for_validation):
+    if allow_problematic_characters or not tags_for_validation:
+        return None
+
+    invalid_tags = []
+    for tag in tags_for_validation:
+        if tag.startswith('-'):
+            continue
+        for char in PROBLEMATIC_TAG_CHARACTERS:
+            if char in tag:
+                invalid_tags.append(tag)
+                break
+
+    if invalid_tags:
+        return list(dict.fromkeys(invalid_tags))
+    return None
+
+def build_problematic_characters_message():
+    if len(PROBLEMATIC_TAG_CHARACTERS) == 1:
+        characters = '"' + PROBLEMATIC_TAG_CHARACTERS[0] + '"'
+        return "Character " + characters + " can be problematic and is prohibited."
+    characters = ", ".join('"' + char + '"' for char in PROBLEMATIC_TAG_CHARACTERS)
+    return "Characters " + characters + " can be problematic and are prohibited."
+
 def build_similar_to_invalid_tags_message(invalid_tags, vocabulary):
     suggestions = []
     for tag in invalid_tags:
@@ -2447,10 +2493,21 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
             sys.stdout.flush()
             sys.exit(0)
 
-        validation_error = force_cv_validator(force_cv_enabled, tags_from_userinput, controlled_vocabulary)
-        if validation_error:
+        cv_validation_error = force_cv_validator(force_cv_enabled, tags_from_userinput, controlled_vocabulary)
+        character_validation_error = problematic_characters_validator(options.allow_problematic_characters, tags_from_userinput)
+
+        if cv_validation_error or character_validation_error:
             if not gui:
-                previous_error = validation_error
+                combined_errors = []
+                if cv_validation_error:
+                    combined_errors.extend(cv_validation_error)
+                if character_validation_error:
+                    combined_errors.extend(character_validation_error)
+                combined_errors = list(dict.fromkeys(combined_errors))
+
+                if character_validation_error and combined_errors:
+                    combined_errors[-1] = combined_errors[-1] + ". " + build_problematic_characters_message()
+                previous_error = combined_errors
                 continue
             previous_error = None
 
@@ -3212,6 +3269,14 @@ def main():
             if similar_msg:
                 logging.info(similar_msg)
             sys.exit(22)
+
+    if options.tags:
+        invalid_tags = problematic_characters_validator(options.allow_problematic_characters, tags_from_userinput)
+        if invalid_tags:
+            logging.error(colorama.Fore.RED + "Invalid tags: " +
+                          colorama.Style.RESET_ALL + BETWEEN_TAG_SEPARATOR.join(invalid_tags))
+            logging.error(build_problematic_characters_message())
+            sys.exit(23)
 
     if options.remove:
         logging.info("removing tags \"%s\" ..." % str(BETWEEN_TAG_SEPARATOR.join(tags_from_userinput)))
