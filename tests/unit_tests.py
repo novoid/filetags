@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Time-stamp: <2023-08-28 18:16:44 vk>
@@ -14,7 +15,7 @@ import logging
 import platform
 import time  # for sleep()
 from shutil import rmtree
-
+import sys
 
 # TEMPLATE for debugging:
 #        try:
@@ -865,7 +866,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         filetags.handle_file(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar.txt'),
                              ['testtag'], do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar testtag.txt')), True)
-        
+
     def test_tagtrees_with_tagfilter_and_no_filtertag(self):
 
         filetags.generate_tagtrees(directory=self.subdir2,
@@ -878,16 +879,34 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertEqual(len(os.listdir(self.subdir2)), 5)  # 5 entries in this directory
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'bar')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
                          set(['baz', 'foo1 -- bar.txt', 'foo2 -- bar baz.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
+                         set(['baz', 'foo1 -- bar.txt.lnk', 'foo2 -- bar baz.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['bar', 'teststring1', 'foo2 -- bar baz.txt', 'foo3 -- baz teststring1.txt']))
 
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['bar', 'teststring1', 'foo2 -- bar baz.txt.lnk', 'foo3 -- baz teststring1.txt.lnk']))
+
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
                          set(['baz', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
 
@@ -906,12 +925,23 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['teststring1', 'foo3 -- baz teststring1.txt']))
+        elif sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
                          set(['baz', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt.lnk']))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
 
@@ -931,8 +961,13 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['teststring1', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt.lnk']))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
 
