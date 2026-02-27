@@ -46,8 +46,12 @@ import argparse   # for handling command line arguments
 import time
 import logging
 import errno      # for throwing FileNotFoundError
-import tkinter as tk    ## for --gui 
-from tkinter import ttk ## for --gui 
+try:
+    import tkinter as tk    ## for --gui
+    from tkinter import ttk ## for --gui
+    have_tkinter = True
+except ModuleNotFoundError:
+    have_tkinter = False
 
 safe_import('operator')   # for sorting dicts
 safe_import('difflib')    # for good enough matching words
@@ -2971,6 +2975,10 @@ def main():
     if options.interactive and options.tags:
         error_exit(3, "I found option \"--tag\" and option \"--interactive\". \n" +
                    "Please choose either tag option OR interactive mode.")
+
+    if options.gui and not have_tkinter:
+        error_exit(4, "Could not find Python module \"tkinter\", which is required for --gui option. \n"+
+        "Please install it (e.g., \"apt install python3-tk\") or don't use this option.")
 
     if not options.interactive and options.gui:
         logging.warning('Found option "--gui" without option "--interactive". Will ignore that.')
