@@ -397,7 +397,7 @@ class TagDialog:
         return f"#{r:02x}{g:02x}{b:02x}"
 
     
-    def __init__(self, root, vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list):
+    def __init__(self, root, completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list):
         ## Warning: this function was mostly programmed by ChatGPT
         ## 2025-09-01 and therefore might contain errors and mistakes.
         ## This needs to be re-checked by somebody with Tkinter
@@ -409,8 +409,9 @@ class TagDialog:
         self.root = root
         self.root.title("filetags")
 
-        self.vocabulary = vocabulary
-        num_of_vocabulary_entries = len(vocabulary)
+        self.completion_vocabulary = completion_vocabulary
+        self.controlled_vocabulary = controlled_vocabulary
+        num_of_vocabulary_entries = len(completion_vocabulary)
         self.entered_tags = ""
         self.cancelled = False
         self.force_cv_enabled = options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees
@@ -446,7 +447,7 @@ class TagDialog:
         self.entry.pack(pady=(0,30))
 
         warning_text = ""
-        if options.force_cv and not self.vocabulary:
+        if options.force_cv and not self.controlled_vocabulary:
             warning_text = "No controlled vocabulary (.filetags) found; --force-cv disabled."
         self.error_label = tk.Label(self.root, fg="red", text=warning_text)
         self.error_label.pack(pady=(0,10))
@@ -506,7 +507,7 @@ class TagDialog:
 
         # Find matching tags from vocabulary for the current word
         if current_word:
-            matching_tags = [tag for tag in self.vocabulary if tag.startswith(current_word)]
+            matching_tags = [tag for tag in self.completion_vocabulary if tag.startswith(current_word)]
         else:
             matching_tags = []
 
@@ -533,7 +534,7 @@ class TagDialog:
             current_word = ""
 
         # Find matching tags from vocabulary for the current word
-        matching_tags = [tag for tag in self.vocabulary if tag.startswith(current_word)]
+        matching_tags = [tag for tag in self.completion_vocabulary if tag.startswith(current_word)]
 
         # If there are multiple matching words, try to find the common prefix
         if len(matching_tags) > 1:
@@ -623,10 +624,10 @@ class TagDialog:
         self.entered_tags = self.entry.get().strip()
         self.cancelled = False
         tags_for_validation = extract_tags_from_argument(self.entered_tags)
-        invalid_tags = force_cv_validator(self.force_cv_enabled, tags_for_validation, self.vocabulary)
+        invalid_tags = force_cv_validator(self.force_cv_enabled, tags_for_validation, self.controlled_vocabulary)
         if invalid_tags:
             error_msg = "Invalid tags: " + BETWEEN_TAG_SEPARATOR.join(invalid_tags)
-            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, self.vocabulary)
+            similar_msg = build_similar_to_invalid_tags_message(invalid_tags, self.controlled_vocabulary)
             if similar_msg:
                 error_msg += "\n" + similar_msg
             self.error_label.config(text=error_msg)
@@ -2303,7 +2304,7 @@ def _get_tag_visual(tags_for_visual=None):
 
     return visual
 
-def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
+def ask_for_tags_text_version(completion_vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
                               tags_for_visual=None, prompt_prefill=None, invalid_tags=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
@@ -2316,17 +2317,17 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
     """
     
     completionhint = ''
-    if vocabulary and len(vocabulary) > 0:
+    if completion_vocabulary and len(completion_vocabulary) > 0:
 
-        assert(vocabulary.__class__ == list)
+        assert(completion_vocabulary.__class__ == list)
 
         # Register our completer function
-        readline.set_completer(SimpleCompleter(vocabulary).complete)
+        readline.set_completer(SimpleCompleter(completion_vocabulary).complete)
 
         # Use the tab key for completion
         readline.parse_and_bind('tab: complete')
 
-        completionhint = '; complete %s tags with TAB' % str(len(vocabulary))
+        completionhint = '; complete %s tags with TAB' % str(len(completion_vocabulary))
         if options.force_cv and not options.remove and not options.tagfilter and not options.tagtrees:
             completionhint += '; tags must match your controlled vocabulary'
 
@@ -2340,7 +2341,7 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
     if invalid_tags:
         print(colorama.Fore.RED + "Invalid tags:" + colorama.Style.RESET_ALL +
               " " + BETWEEN_TAG_SEPARATOR.join(invalid_tags))
-        similar_msg = build_similar_to_invalid_tags_message(invalid_tags, vocabulary)
+        similar_msg = build_similar_to_invalid_tags_message(invalid_tags, completion_vocabulary)
         if similar_msg:
             print(similar_msg)
 
@@ -2371,7 +2372,7 @@ def ask_for_tags_text_version(vocabulary, upto9_tags_for_shortcuts, hint_str, ta
     return extract_tags_from_argument(entered_tags)
 
 
-def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
+def ask_for_tags_gui_version(completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list,
                              tags_for_visual=None):
     """
     Takes a vocabulary and optional up to nine tags for shortcuts and interactively asks
@@ -2384,8 +2385,8 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     """
     
     completionhint = ''
-    if vocabulary and len(vocabulary) > 0:
-        assert(vocabulary.__class__ == list)
+    if completion_vocabulary and len(completion_vocabulary) > 0:
+        assert(completion_vocabulary.__class__ == list)
         
     number_of_files = len(options.files)
     number_of_files_str = str(number_of_files)
@@ -2396,7 +2397,7 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     root = tk.Tk()
 
     # Create an instance of the TagDialog with the vocabulary
-    guidialog = TagDialog(root, vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list)
+    guidialog = TagDialog(root, completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list)
 
     # Run the Tkinter main loop
     root.mainloop()
@@ -2408,7 +2409,7 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     return extract_tags_from_argument(entered_tags)
 
 
-def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
+def ask_for_tags(completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual=None, gui=None):
     """
     Wrapper-function for the text-based version and the GUI version:
 
@@ -2416,7 +2417,8 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
     the user to enter tags. Aborts program if no tags were entered. Returns list of
     entered tags.
 
-    @param vocabulary: array containing the controlled vocabulary
+    @param completion_vocabulary: array used for tag completion
+    @param controlled_vocabulary: array with containing the users cv
     @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
     @param return: list of up to top nine keys according to the rank of their values
     """
@@ -2435,10 +2437,10 @@ def ask_for_tags(vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, ta
     while True:
         if gui:
             tags_from_userinput = ask_for_tags_gui_version(
-                vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
+                completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual)
         else:
             tags_from_userinput = ask_for_tags_text_version(
-                vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual,
+                completion_vocabulary, upto9_tags_for_shortcuts, hint_str, tag_list, tags_for_visual,
                 prompt_prefill=previous_input, invalid_tags=previous_error)
             previous_input = BETWEEN_TAG_SEPARATOR.join(tags_from_userinput) if tags_from_userinput else previous_input
 
@@ -3045,7 +3047,7 @@ def main():
         controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(files[0]))
     else:
         controlled_vocabulary = sorted(locate_and_parse_controlled_vocabulary(False))
-    vocabulary = list(controlled_vocabulary)
+    completion_vocabulary = list(controlled_vocabulary)
 
     if len(options.files) < 1 and not (options.tagtrees or
                                        options.tagfilter or
@@ -3066,13 +3068,13 @@ def main():
 
         if options.list_tags_by_alphabet:
             logging.debug("handling option list_tags_by_alphabet")
-            print_tag_dict(tag_dict, vocabulary=vocabulary,
+            print_tag_dict(tag_dict, vocabulary=completion_vocabulary,
                            sort_index=0, print_similar_vocabulary_tags=True)
             successful_exit()
 
         elif options.list_tags_by_number:
             logging.debug("handling option list_tags_by_number")
-            print_tag_dict(tag_dict, vocabulary=vocabulary,
+            print_tag_dict(tag_dict, vocabulary=completion_vocabulary,
                            sort_index=1, print_similar_vocabulary_tags=True)
             successful_exit()
 
@@ -3083,7 +3085,7 @@ def main():
 
     elif options.tag_gardening:
         logging.debug("handling option for tag gardening")
-        handle_tag_gardening(vocabulary)
+        handle_tag_gardening(completion_vocabulary)
         successful_exit()
 
     elif options.tagtrees and not options.tagfilter:
@@ -3106,7 +3108,7 @@ def main():
                 # add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(currentfile):
                     add_tag_to_countdict(newtag, tags_for_vocabulary)
-            vocabulary = sorted(tags_for_vocabulary.keys())
+            completion_vocabulary = sorted(tags_for_vocabulary.keys())
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary, omit_filetags_donotsuggest_tags=True))
 
         elif options.tagfilter:
@@ -3122,7 +3124,7 @@ def main():
                 add_tag_to_countdict(tag, tags_for_vocabulary)
 
             logging.debug('generating vocabulary ...')
-            vocabulary = sorted(tags_for_vocabulary.keys())
+            completion_vocabulary = sorted(tags_for_vocabulary.keys())
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary, omit_filetags_donotsuggest_tags=True))
 
         else:
@@ -3163,7 +3165,7 @@ def main():
                 for currenttag in list(tags_from_filenames):
                     negative_tags_from_filenames.add('-' + currenttag)
 
-                vocabulary = list(set(vocabulary).union(negative_tags_from_filenames) -
+                completion_vocabulary = list(set(completion_vocabulary).union(negative_tags_from_filenames) -
                                   set(tags_intersection_of_files))
 
                 logging.debug('deriving upto9_tags_for_shortcuts ...')
@@ -3176,10 +3178,10 @@ def main():
                                 os.path.abspath(os.path.basename(files[0])))),
                         tags_intersection_of_files, omit_filetags_donotsuggest_tags=True))
                 logging.debug('derived upto9_tags_for_shortcuts')
-            logging.debug('derived vocabulary with %i entries' % len(vocabulary))  # using default vocabulary which was generate above
+            logging.debug('derived vocabulary with %i entries' % len(completion_vocabulary))  # using default vocabulary which was generate above
 
         # ==================== Interactive asking user for tags ============================= ##
-        tags_from_userinput = ask_for_tags(vocabulary, controlled_vocabulary,
+        tags_from_userinput = ask_for_tags(completion_vocabulary, controlled_vocabulary,
                                            upto9_tags_for_shortcuts, tags_for_visual, options.gui)
         # ==================== Interactive asking user for tags ============================= ##
         print('')  # new line after input for separating input from output
