@@ -646,6 +646,7 @@ please send me a short how-to so that others are able to get the most
 out of filetags as well.
 
 * Related Tools and Workflows
+# --- BEGIN SHARED: filetags_tools --- see https://github.com/novoid/screencasts/
 
 This tool is part of a tool-set which I use to manage my digital files
 such as photographs. My work-flows are described in [[http://karl-voit.at/managing-digital-photographs/][this blog posting]]
@@ -653,23 +654,23 @@ you might like to read and in the video which is linked above.
 
 In short:
 
-For *tagging*, please refer to [[https://github.com/novoid/filetags][filetags]] and its documentation.
+- For *tagging*, please refer to [[https://github.com/novoid/filetags][filetags]] and its documentation. It's
+  the most important part of the whole concept on how I manage files.
 
-See [[https://github.com/novoid/date2name][date2name]] for easily adding ISO *time-stamps or date-stamps* to
-files.
+- See [[https://github.com/novoid/date2name][date2name]] for easily adding ISO *time-stamps or date-stamps* to files.
 
-For *easily naming and tagging* files within file browsers that allow
-integration of external tools, see [[https://github.com/novoid/appendfilename][appendfilename]] (once more) and
-[[https://github.com/novoid/filetags][filetags]].
+- For *easily naming and tagging* files within file browsers that
+  allow integration of external tools, see [[https://github.com/novoid/appendfilename][appendfilename]] (once more)
+  and [[https://github.com/novoid/filetags][filetags]].
 
-Moving to the archive folders is done using [[https://github.com/novoid/move2archive][move2archive]].
+- Moving to the archive folders is done using [[https://github.com/novoid/move2archive][move2archive]].
 
-Having tagged photographs gives you many advantages. For example, I
-automatically [[https://github.com/novoid/set_desktop_background_according_to_season][choose my *desktop background image* according to the
-current season]].
+- Having tagged photographs gives you many advantages. For example, I
+  automatically [[https://github.com/novoid/set_desktop_background_according_to_season][choose my *desktop background image* according to the
+  current season]].
 
-Files containing an ISO time/date-stamp gets indexed by the
-filename-module of [[https://github.com/novoid/Memacs][Memacs]].
+- Files containing an ISO time/date-stamp gets indexed by the
+  filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 
 -----------
 
@@ -682,6 +683,9 @@ filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 
 - A research platform for testing file-tagging on all platforms: [[https://karl-voit.at/tagstore/][tagstore]]
   - This happens to be an important part of [[https://karl-voit.at/tagstore/downloads/Voit2012b.pdf][my PhD thesis]] in PIM.
+  - Not maintained since 2013 any more but surely still a cool
+    starting point in case you want to get a flexible tool when doing
+    research with tagging interfaces.
 
 - Good resources for tagging software in general
   - [[https://turbofuture.com/computers/Whats-the-Best-Software-for-Tagging-Files-A-Review][What's the Best Software for Tagging Files? | TurboFuture]]
@@ -695,17 +699,40 @@ filename-module of [[https://github.com/novoid/Memacs][Memacs]].
 - https://forge.chapril.org/tykayn/rangement.git
   - An NPM implementation of a subset of GuessFileName (using image exif header), append2name, move2archive
   - You probably need to read a bit of French
+# --- END SHARED: filetags_tools --- see https://github.com/novoid/screencasts/
 
 * How to Thank Me
+# --- BEGIN SHARED: how_to_thank_me --- see https://github.com/novoid/screencasts/
 
-I'm glad you like my tools. If you want to support me:
+I'm glad if you like my tool. I've got way more projects on:
 
-- Send old-fashioned *postcard* per snailmail - I love personal feedback!
+- [[https://github.com/novoid/][GitHub]] (oldest projects),
+- [[https://gitlab.com/publicvoit/][GitLab.com]] (older projects), and
+- [[https://codeberg.org/publicvoit/][Codeberg]] (newest projects).
+
+If you want to support me:
+
+- [[https://karl-voit.at/2018/06/07/cardware/][Send old-fashioned *postcard* per snailmail]] - I love personal feedback!
   - see [[http://tinyurl.com/j6w8hyo][my address]]
-- Send feature wishes or improvements as an issue on GitHub
-- Create issues on GitHub for bugs
+- Send feature wishes or improvements as an issue 
+- Create issues for bugs
 - Contribute merge requests for bug fixes
-- Check out my other cool [[https://github.com/novoid][projects on GitHub]]
+- Check out my other cool projects on the platforms above
+
+If you want to contribute to this cool project, please fork and
+contribute!
+
+I am using [[http://www.python.org/dev/peps/pep-0008/][Python PEP8]] and occasionally some ideas from [[http://en.wikipedia.org/wiki/Test-driven_development][Test Driven
+Development (TDD)]]. I fancy Python3 with [[https://typing.python.org/en/latest/spec/annotations.html][type annotations]], although I'm
+not using them everywhere at the moment. Starting with 2025, I began
+to use help from Claude.ai which is a huge improvement, given my lack
+of programming practice and knowledge.
+
+After all, each of my tools was developed because I needed its
+functionality and could not get it elsewhere - at least to my
+knowledge or taste.
+
+# --- END SHARED: how_to_thank_me --- see https://github.com/novoid/screencasts/
 
 * Exhaustive List of All Features
 :PROPERTIES:
