@@ -185,7 +185,6 @@ class TestMethods(unittest.TestCase):
                          myresult)
 
     def test_get_common_tags_from_files(self):
-
         self.assertEqual(filetags.get_common_tags_from_files(['file1.txt']), [])
         self.assertEqual(filetags.get_common_tags_from_files(['file1 -- foo.txt']), ['foo'])
         self.assertSetEqual(set(filetags.get_common_tags_from_files(['file1 -- foo bar.txt'])), set(['foo', 'bar']))
@@ -213,6 +212,10 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['foo', 'qux'], vocabulary), ['qux'])
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['-foo', '-qux'], vocabulary), ['-qux'])
         self.assertEqual(filetags.get_invalid_tags_for_vocabulary(['aa', 'aa', 'bb', 'aa'], ['bb']), ['aa'])
+
+    def test_problematic_characters_validator(self):
+        tags = ['foo', 'bar:baz']
+        self.assertEqual(filetags.problematic_characters_validator(False, tags), ['bar:baz'])
 
     def test_build_similar_to_invalid_tags_message(self):
         self.assertIsNone(filetags.build_similar_to_invalid_tags_message(['xxx'], ['foo', 'bar']))
