@@ -665,6 +665,10 @@ In short:
 
 - Moving to the archive folders is done using [[https://github.com/novoid/move2archive][move2archive]].
 
+- Naming files is tedious. Therefore, I wrote [[https://github.com/novoid/guess-filename.py/][guessfilename]]:
+  Python-script, guesses according to file name, optional PDF content,
+  optional video json metadata.
+
 - Having tagged photographs gives you many advantages. For example, I
   automatically [[https://github.com/novoid/set_desktop_background_according_to_season][choose my *desktop background image* according to the
   current season]].
@@ -676,10 +680,33 @@ In short:
 
 - Alternative implementations of the =filetags= concept:
   - [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
-  - With [[https://github.com/protesilaos/denote][denote]], Protesilaos
-    Stavrou implemented a conceptually related approach to manage notes
-    within an Emacs buffer.  With ~dired~, this method equally may be
-    applied on files, too.
+  - With [[https://github.com/protesilaos/denote][denote]], Protesilaos Stavrou implemented a conceptually
+    related approach to manage notes within an Emacs buffer. With
+    [[https://en.wikipedia.org/wiki/Dired][Emacs/dired]], this method equally may be applied on files, too.
+
+- Related to =date2name=:
+  - https://github.com/DerBeutlin/date2name.el Alternative implementation for [[https://en.wikipedia.org/wiki/Dired][Emacs/dired]]
+  - https://github.com/muehlburger/d2n Alternative implementation in [[https://go.dev/][Go]]
+
+- Related to =m2a=:
+  - https://github.com/velvet-jones/imgfiler/
+
+- Related to =guessfilename=:
+  - [[http://www.jonasjberg.com/][Jonas Sjöberg]] took my idea and developed the much more advanced (and
+    thus a bit more complicated) [[https://github.com/jonasjberg/autonameow][autonameow]]. It uses rule-based renaming,
+    analyzes content of plain text, epub, pdf and rtf files, extracts
+    meta-data from many different file formats via [[https://www.sno.phy.queensu.ca/%257Ephil/exiftool/][exiftool]] and so forth.
+  - [[https://www.reddit.com/r/datacurator/comments/f6ku5p/building_an_auto_file_sorter_need_requirements/][This reddit thread]] brought me to [[https://github.com/unreadablewxy/fs-curator][fs-curator]] whose [[https://github.com/unreadablewxy/fs-curator/wiki][documentation]] looks
+    promising. I did not test it and it's still in an early stage.
+    However, it could be a future user-friendly part of a workflow that
+    watches folders for file changes and applies processes like
+    guessfilename.
+  - I you don't need the full power of a programming language,
+    [[https://github.com/tfeldmann/organize][organize]] might do the trick for you. Instead of coding Python, you
+    define your rules within a text file. For many people, this may
+    seem more user friendly.
+
+----------
 
 - A research platform for testing file-tagging on all platforms: [[https://karl-voit.at/tagstore/][tagstore]]
   - This happens to be an important part of [[https://karl-voit.at/tagstore/downloads/Voit2012b.pdf][my PhD thesis]] in PIM.
