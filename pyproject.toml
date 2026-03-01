@@ -16,7 +16,7 @@ The script accepts an arbitrary number of files (see your shell for possible len
 - Target group: users who are able to use command line tools and who are using tags in file names.
 - Hosted and documented on github: https://github.com/novoid/filetags
 """, content-type = "text/plain"}
-version = "2025.11.16.1"
+version = "2026.03.01.1"
 keywords = ["tagging", "tags", "file managing", "file management", "files", "tagtrees", "tagstore", "tag-based navigation", "tag-based filter"]
 
 # sequence along https://pypi.org/classifiers
@@ -37,7 +37,6 @@ classifiers=[
 
 authors = [{name="Karl Voit", email="tools@Karl-Voit.at"}]
 license = "GPL-3.0-or-later"
-license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"  # see https://devguide.python.org/versions/
 dependencies = [
     "clint>=0.5.1",
@@ -57,6 +56,12 @@ filetags="filetags:main"
 [build-system]
 requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
+
+[[tool.uv.index]]
+name = "filetags"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
 
 [tool.setuptools.package-data]
 filetags = ["Register_filetags_for_Windows_context_menu_TEMPLATE.reg"]

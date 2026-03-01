@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2025-10-25 12:32:41 vk>"
+PROG_VERSION = "Time-stamp: <2026-03-01 14:49:18 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -47,8 +47,8 @@ import time
 import logging
 import errno      # for throwing FileNotFoundError
 try:
-    import tkinter as tk    ## for --gui
-    from tkinter import ttk ## for --gui
+    import tkinter as tk          ## for --gui
+    from tkinter import ttk, font ## for --gui
     have_tkinter = True
 except ModuleNotFoundError:
     have_tkinter = False
@@ -2395,6 +2395,12 @@ def ask_for_tags_gui_version(vocabulary, upto9_tags_for_shortcuts, hint_str, tag
     # Create the Tkinter window
     root = tk.Tk()
 
+    # Auto DPI scaling
+    dpi = root.winfo_fpixels("1i")
+    root.tk.call("tk", "scaling", dpi / 72)
+    # Font tweak (optional but helps)
+    font.nametofont("TkDefaultFont").configure(size=16)
+    
     # Create an instance of the TagDialog with the vocabulary
     guidialog = TagDialog(root, vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list)
 
