@@ -6,16 +6,17 @@
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
 
-import unittest
-import os
-import filetags
-import tempfile
-import os.path
 import logging
+import os
+import os.path
 import platform
-import time  # for sleep()
-from shutil import rmtree
 import sys
+import tempfile
+import time  # for sleep()
+import unittest
+from shutil import rmtree
+
+import filetags
 
 # TEMPLATE for debugging:
 #        try:
