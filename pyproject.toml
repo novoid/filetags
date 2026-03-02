@@ -45,6 +45,9 @@ dependencies = [
     "pypiwin32; sys_platform == 'win32'",
 ]
 
+[tool.setuptools.packages.find]
+include = ["filetags*"]
+
 [project.urls]
 Homepage = "https://github.com/novoid/filetags"
 Repository = "https://github.com/novoid/filetags"
