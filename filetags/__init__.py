@@ -53,6 +53,9 @@ try:
 except ModuleNotFoundError:
     have_tkinter = False
 
+import stat
+import tempfile
+
 safe_import('operator')   # for sorting dicts
 safe_import('difflib')    # for good enough matching words
 safe_import('readline')   # for raw_input() reading from stdin
@@ -2521,6 +2524,7 @@ def assert_empty_tagfilter_directory(directory):
         if not options.dryrun:
             safe_import('shutil')  # for removing directories with shutil.rmtree()
             shutil.rmtree(directory)
+            force_rmtree(directory)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
 
@@ -3276,6 +3280,29 @@ def main():
         start_filebrowser(chosen_tagtrees_dir)
 
     successful_exit()
+
+
+def force_rmtree(path):
+    """Provide a rmtree compatible both for Linux/MacOS and Windows.
+
+    Previous definitions worked well for Linux/MacOS and their tests
+    by `unit_tests.py` launched by `pytest` passed with GitHub's
+    osrunners.  However, the very same tests constantly failed with
+    the osrunner of Windows.  After discussion, this function was
+    provided by Claude AI/Sonnet 4.6."""
+    import stat, tempfile
+    def _remove_readonly(func, fpath, _exc):
+        os.chmod(fpath, stat.S_IWRITE)
+        func(fpath)
+    # Windows locks the CWD; move away before attempting deletion
+    try:
+        cwd = os.getcwd()
+        if os.path.abspath(cwd).startswith(os.path.abspath(path)):
+            os.chdir(tempfile.gettempdir())
+    except Exception:
+        pass
+    if os.path.isdir(path):
+        rmtree(path, onerror=_remove_readonly)
 
 
 if __name__ == "__main__":

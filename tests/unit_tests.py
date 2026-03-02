@@ -417,8 +417,8 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
 
         # Note: cwd = subdir3
         # Let's create all missing files in all dirs:
-        filetags.create_link(self.subdir2_file, self.subdir1_file)  # create link
-        filetags.create_link(self.subdir2b_file, self.tempdir_file)  # create link
+        filetags.create_link(self.subdir2_file, self.subdir1_file + ".lnk")  # create link
+        filetags.create_link(self.subdir2b_file, self.tempdir_file + ".lnk")  # create link
 
         # prio 1 = .filetag file in startfile directory
         self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
