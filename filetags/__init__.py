@@ -162,6 +162,11 @@ FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 YYYY_MM_DD_PATTERN = re.compile(r'^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
 
+# Tag-style time-stamp denoting a cut-out section of a larger video file,
+# e.g. "00h00m00s--00h26m16s" (also tolerates a single dash between the two times).
+CUT_TIMESTAMP_REGEX = re.compile(r'^\d{2}h\d{2}m\d{2}s-{1,2}\d{2}h\d{2}m\d{2}s$')
+CUT_TIMESTAMP_PSEUDO_TAG = 'cuttimes'
+
 cache_of_tags_by_folder = {}
 cache_of_files_with_metadata = {}  # dict of big list of dicts: 'filename', 'path' and other metadata
 controlled_vocabulary_filename = ''
@@ -854,6 +859,34 @@ def removing_tag_from_filename(orig_filename, tagname):
             return new_filename
 
 
+def filename_contains_cut_timestamp(filename):
+    """
+    Returns True if the filename has any tag matching the cut-timestamp pattern
+    (e.g., "00h00m00s--00h26m16s").
+    """
+
+    assert(filename.__class__ == str)
+
+    for tag in extract_tags_from_filename(filename):
+        if CUT_TIMESTAMP_REGEX.match(tag):
+            return True
+    return False
+
+
+def removing_cut_timestamps_from_filename(orig_filename):
+    """
+    Returns the filename with all cut-timestamp tags stripped.
+    """
+
+    assert(orig_filename.__class__ == str)
+
+    new_filename = orig_filename
+    for tag in extract_tags_from_filename(orig_filename):
+        if CUT_TIMESTAMP_REGEX.match(tag):
+            new_filename = removing_tag_from_filename(new_filename, tag)
+    return new_filename
+
+
 def extract_tags_from_argument(argument):
     """
     @param argument: string containing one or more tags
@@ -1389,11 +1422,19 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
             if tagname.strip() == '':
                 continue
             if do_remove:
-                new_basename = removing_tag_from_filename(new_basename, tagname)
-                logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
+                if tagname == CUT_TIMESTAMP_PSEUDO_TAG:
+                    new_basename = removing_cut_timestamps_from_filename(new_basename)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] after removing cut time-stamps')
+                else:
+                    new_basename = removing_tag_from_filename(new_basename, tagname)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
             elif tagname[0] == '-':
-                new_basename = removing_tag_from_filename(new_basename, tagname[1:])
-                logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
+                if tagname[1:] == CUT_TIMESTAMP_PSEUDO_TAG:
+                    new_basename = removing_cut_timestamps_from_filename(new_basename)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] after removing cut time-stamps via minus prefix')
+                else:
+                    new_basename = removing_tag_from_filename(new_basename, tagname[1:])
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
             else:
                 # FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = \
@@ -3111,10 +3152,15 @@ def main():
         # look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
             # vocabulary for completing tags is current tags of files
+            any_file_has_cut_timestamp = False
             for currentfile in files:
                 # add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(currentfile):
                     add_tag_to_countdict(newtag, tags_for_vocabulary)
+                if filename_contains_cut_timestamp(currentfile):
+                    any_file_has_cut_timestamp = True
+            if any_file_has_cut_timestamp:
+                add_tag_to_countdict(CUT_TIMESTAMP_PSEUDO_TAG, tags_for_vocabulary)
             vocabulary = sorted(tags_for_vocabulary.keys())
             upto9_tags_for_shortcuts = sorted(get_upto_nine_keys_of_dict_with_highest_value(tags_for_vocabulary, omit_filetags_donotsuggest_tags=True))
 
@@ -3166,11 +3212,16 @@ def main():
 
                 # append current filetags with a prepended '-' in order to allow tag completion for removing tags via '-tagname'
                 tags_from_filenames = set()
+                any_file_has_cut_timestamp = False
                 for currentfile in files:
                     tags_from_filenames = tags_from_filenames.union(set(extract_tags_from_filename(currentfile)))
+                    if not any_file_has_cut_timestamp and filename_contains_cut_timestamp(currentfile):
+                        any_file_has_cut_timestamp = True
                 negative_tags_from_filenames = set()
                 for currenttag in list(tags_from_filenames):
                     negative_tags_from_filenames.add('-' + currenttag)
+                if any_file_has_cut_timestamp:
+                    negative_tags_from_filenames.add('-' + CUT_TIMESTAMP_PSEUDO_TAG)
 
                 vocabulary = list(set(vocabulary).union(negative_tags_from_filenames) -
                                   set(tags_intersection_of_files))

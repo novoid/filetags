@@ -97,6 +97,41 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(filetags.removing_tag_from_filename('Some file name -- bar.jpeg.lnk', 'foo'),
                          'Some file name -- bar.jpeg.lnk')
 
+    def test_filename_contains_cut_timestamp(self):
+
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            '2013-06-23 Some file name -- cut 00h00m00s--00h26m16s foo bar.mpg'))
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            'Other file name -- baz 01h12m45s--02h34m56s.mpg'))
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            'Final file -- 02h34m56s-02h34m59s.md'))
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'Yet a different file -- foo bar.txt'))
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'No tags at all.mpg'))
+        # not matching: extra digits or wrong format must not be picked up
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'foo -- 123h00m00s--00h00m00s.mpg'))
+
+    def test_removing_cut_timestamps_from_filename(self):
+
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                '2013-06-23 Some file name -- cut 00h00m00s--00h26m16s foo bar.mpg'),
+            '2013-06-23 Some file name -- cut foo bar.mpg')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Other file name -- baz 01h12m45s--02h34m56s.mpg'),
+            'Other file name -- baz.mpg')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Yet a different file -- foo bar.txt'),
+            'Yet a different file -- foo bar.txt')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Final file -- 02h34m56s-02h34m59s.md'),
+            'Final file.md')
+
     def test_extract_tags_from_filename(self):
         self.assertEqual(filetags.extract_tags_from_filename('Some file name - bar.jpeg'), [])
         self.assertEqual(filetags.extract_tags_from_filename('-- bar.jpeg'), [])
