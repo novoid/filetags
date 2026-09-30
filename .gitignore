@@ -14,3 +14,4 @@ venv/
 /tests/__pycache__/
 *swp
 publish_via_uv.sh
+update_mypi.sh

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-PROG_VERSION = "Time-stamp: <2025-10-25 12:32:41 vk>"
+PROG_VERSION = "Time-stamp: <2026-03-01 14:49:18 vk>"
 
 # TODO:
 # - fix parts marked with «FIXXME»
@@ -38,17 +38,19 @@ def safe_import(library):
               "\".\nPlease install it, e.g., with \"sudo pip install " + library + "\".")
         sys.exit(2)
 
-import re
-import sys
+import argparse  # for handling command line arguments
+import errno  # for throwing FileNotFoundError
+import logging
 import os
 import platform
-import argparse   # for handling command line arguments
+import re
+import stat
+import sys
+import tempfile
 import time
-import logging
-import errno      # for throwing FileNotFoundError
 try:
-    import tkinter as tk    ## for --gui
-    from tkinter import ttk ## for --gui
+    import tkinter as tk          ## for --gui
+    from tkinter import ttk, font ## for --gui
     have_tkinter = True
 except ModuleNotFoundError:
     have_tkinter = False
@@ -159,6 +161,11 @@ FILE_WITH_EXTENSION_REGEX_FILENAME_INDEX = 1
 FILE_WITH_EXTENSION_REGEX_EXTENSION_INDEX = 2
 
 YYYY_MM_DD_PATTERN = re.compile(r'^(\d{4,4})-([01]\d)-([0123]\d)[- _T]')
+
+# Tag-style time-stamp denoting a cut-out section of a larger video file,
+# e.g. "00h00m00s--00h26m16s" (also tolerates a single dash between the two times).
+CUT_TIMESTAMP_REGEX = re.compile(r'^\d{2}h\d{2}m\d{2}s-{1,2}\d{2}h\d{2}m\d{2}s$')
+CUT_TIMESTAMP_PSEUDO_TAG = 'cuttimes'
 
 cache_of_tags_by_folder = {}
 cache_of_files_with_metadata = {}  # dict of big list of dicts: 'filename', 'path' and other metadata
@@ -375,25 +382,25 @@ class TagDialog:
         ## 2025-09-02 and therefore might contain errors and mistakes.
         ## This needs to be re-checked by somebody with Tkinter
         ## knowledge.
-        
+
         # if widget is None:
         #     widget = tk._default_root
         if widget is None:
             raise ValueError("No widget specified and no default root exists.")
-    
+
         # Get widget's foreground and background
         bg = widget.cget("bg")
         fg = widget.cget("fg") if "fg" in widget.keys() else "black"
-    
+
         # Convert to RGB
         r1, g1, b1 = widget.winfo_rgb(fg)
         r2, g2, b2 = widget.winfo_rgb(bg)
-    
+
         # Blend and reduce to 8-bit
         r = int(r1 * ratio + r2 * (1 - ratio)) >> 8
         g = int(g1 * ratio + g2 * (1 - ratio)) >> 8
         b = int(b1 * ratio + b2 * (1 - ratio)) >> 8
-    
+
         return f"#{r:02x}{g:02x}{b:02x}"
 
     
@@ -429,7 +436,7 @@ class TagDialog:
             self.label.pack(padx=(0,0), pady=(30,0))
             self.label = tk.Label(self.root, font="bold", text=existingtags)
             self.label.pack(pady=(0,30))
-        
+
         self.label = tk.Label(self.root, fg=low_contrast_fg_color, text=hint_str)
         self.label.pack(pady=(0,0))
         self.label = tk.Label(self.root, text='\n'.join(tag_list))
@@ -485,15 +492,15 @@ class TagDialog:
         self.submit_button = tk.Button(self.root, text="Tag!", command=self.submit_tags)
         self.submit_button.pack(side=tk.RIGHT, padx=(20,30), pady=20)
 
-        
+
     def on_keyrelease(self, event):
         """ Handle key release to filter the word completions. """
-        
+
         ## Warning: this function was mostly programmed by ChatGPT
         ## 2025-09-01 and therefore might contain errors and mistakes.
         ## This needs to be re-checked by somebody with Tkinter
         ## knowledge.
-        
+
         user_input = self.entry.get().strip()
 
         # Split the input into words
@@ -540,7 +547,7 @@ class TagDialog:
         if len(matching_tags) > 1:
             # Find the longest common prefix
             common_prefix = self.longest_common_prefix(matching_tags)
-            
+
             # Update the entry field with the common prefix
             new_input = user_input[:len(user_input) - len(current_word)] + common_prefix
             self.entry.delete(0, tk.END)
@@ -597,7 +604,7 @@ class TagDialog:
         ## 2025-09-01 and therefore might contain errors and mistakes.
         ## This needs to be re-checked by somebody with Tkinter
         ## knowledge.
- 
+
         if not words:
             return ""
 
@@ -611,7 +618,7 @@ class TagDialog:
                 prefix = prefix[:-1]
                 if not prefix:
                     return ""
-        
+
         return prefix
 
     def submit_tags(self):
@@ -639,7 +646,7 @@ class TagDialog:
     def on_cancel(self):
         # Just close the dialog
         self.cancelled = True
-        self.root.destroy()        
+        self.root.destroy()
 
 
 def contains_tag(filename, tagname=False):
@@ -851,6 +858,34 @@ def removing_tag_from_filename(orig_filename, tagname):
             return new_filename + '.lnk'
         else:
             return new_filename
+
+
+def filename_contains_cut_timestamp(filename):
+    """
+    Returns True if the filename has any tag matching the cut-timestamp pattern
+    (e.g., "00h00m00s--00h26m16s").
+    """
+
+    assert(filename.__class__ == str)
+
+    for tag in extract_tags_from_filename(filename):
+        if CUT_TIMESTAMP_REGEX.match(tag):
+            return True
+    return False
+
+
+def removing_cut_timestamps_from_filename(orig_filename):
+    """
+    Returns the filename with all cut-timestamp tags stripped.
+    """
+
+    assert(orig_filename.__class__ == str)
+
+    new_filename = orig_filename
+    for tag in extract_tags_from_filename(orig_filename):
+        if CUT_TIMESTAMP_REGEX.match(tag):
+            new_filename = removing_tag_from_filename(new_filename, tag)
+    return new_filename
 
 
 def extract_tags_from_argument(argument):
@@ -1132,7 +1167,7 @@ def split_up_filename(filename, exception_on_file_not_found=False):
     """
 
     # logging.debug(f"split_up_filename: called with: {filename= } {exception_on_file_not_found= }")
-    
+
     if not os.path.exists(filename):
         # This does make sense for splitting up filenames that are about to be created for example:
         if exception_on_file_not_found:
@@ -1304,7 +1339,7 @@ def create_link(source, destination):
     If the destination file exists, an error is shown unless the --overwrite
     option is used which results in deleting the old file and replacing with
     the new link.
-    
+
     @param source: a file name of the source, an existing file
     @param destination: a file name for the link which is about to be created
 
@@ -1320,7 +1355,7 @@ def create_link(source, destination):
             logging.debug('destination exists and overwrite flag is not set → report error to user')
             error_exit(21, 'Trying to create new link but found an old file with same name. ' +
                        'If you want me to overwrite older files, use the "--overwrite" option. Culprit: ' + destination)
-    
+
     if IS_WINDOWS:
         # do lnk-files instead of symlinks:
         shell = win32com.client.Dispatch('WScript.Shell')
@@ -1388,11 +1423,19 @@ def handle_file(orig_filename, tags, do_remove, do_filter, dryrun):
             if tagname.strip() == '':
                 continue
             if do_remove:
-                new_basename = removing_tag_from_filename(new_basename, tagname)
-                logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
+                if tagname == CUT_TIMESTAMP_PSEUDO_TAG:
+                    new_basename = removing_cut_timestamps_from_filename(new_basename)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] after removing cut time-stamps')
+                else:
+                    new_basename = removing_tag_from_filename(new_basename, tagname)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] when do_remove')
             elif tagname[0] == '-':
-                new_basename = removing_tag_from_filename(new_basename, tagname[1:])
-                logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
+                if tagname[1:] == CUT_TIMESTAMP_PSEUDO_TAG:
+                    new_basename = removing_cut_timestamps_from_filename(new_basename)
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] after removing cut time-stamps via minus prefix')
+                else:
+                    new_basename = removing_tag_from_filename(new_basename, tagname[1:])
+                    logging.debug('handle_file: set new_basename [' + new_basename + '] when tag starts with a minus')
             else:
                 # FIXXME: not performance optimized for large number of unique tags in many lists:
                 tag_in_unique_tags, matching_unique_tag_list = \
@@ -2003,7 +2046,7 @@ def locate_file_in_cwd_and_parent_directories(startfile, filename):
                 os.chdir(original_dir)
                 return filename_to_look_for
             parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-            
+
         os.chdir(original_dir)
         logging.debug('locate_file_in_cwd_and_parent_directories: did NOT find \"%s\" in current directory or any parent directory' %
                       filename)
@@ -2152,7 +2195,7 @@ def get_tag_shortcut_information(tag_list, tags_get_added=True, tags_get_linked=
     @param tags_get_added: True if tags get added, False otherwise
     @param return: -
     """
-    
+
     if tags_get_added:
         if len(tag_list) < 9:
             hint_str = "Previously used tags in this directory:"
@@ -2174,9 +2217,9 @@ def get_tag_shortcut_information(tag_list, tags_get_added=True, tags_get_linked=
     for tag in tag_list:
         list_of_tag_hints.append(tag + ' (' + str(count) + ')')
         count += 1
-        
+
     return hint_str, list_of_tag_hints
-    
+
 def print_tag_shortcut_with_numbers(hint_str, tag_list):
     """A list of tags from the list are printed to stdout. Each tag
     gets a number associated which corresponds to the position in the
@@ -2315,7 +2358,7 @@ def ask_for_tags_text_version(completion_vocabulary, upto9_tags_for_shortcuts, h
     @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
     @param return: list of up to top nine keys according to the rank of their values
     """
-    
+
     completionhint = ''
     if completion_vocabulary and len(completion_vocabulary) > 0:
 
@@ -2383,7 +2426,7 @@ def ask_for_tags_gui_version(completion_vocabulary, controlled_vocabulary, upto9
     @param upto9_tags_for_shortcuts: array of tags which can be used to generate number-shortcuts
     @param return: list of up to top nine keys according to the rank of their values
     """
-    
+
     completionhint = ''
     if completion_vocabulary and len(completion_vocabulary) > 0:
         assert(completion_vocabulary.__class__ == list)
@@ -2396,6 +2439,12 @@ def ask_for_tags_gui_version(completion_vocabulary, controlled_vocabulary, upto9
     # Create the Tkinter window
     root = tk.Tk()
 
+    # Auto DPI scaling
+    dpi = root.winfo_fpixels("1i")
+    root.tk.call("tk", "scaling", dpi / 72)
+    # Font tweak (optional but helps)
+    font.nametofont("TkDefaultFont").configure(size=16)
+    
     # Create an instance of the TagDialog with the vocabulary
     guidialog = TagDialog(root, completion_vocabulary, controlled_vocabulary, upto9_tags_for_shortcuts, tags_for_visual, number_of_files, hint_str, tag_list)
 
@@ -2523,6 +2572,7 @@ def assert_empty_tagfilter_directory(directory):
         if not options.dryrun:
             safe_import('shutil')  # for removing directories with shutil.rmtree()
             shutil.rmtree(directory)
+            force_rmtree(directory)
             logging.debug('re-creating tagfilter directory "%s" ...' % str(directory))
             os.makedirs(directory)
 
@@ -2968,7 +3018,7 @@ def main():
     handle_logging()
 
     logging.debug(f'{options=}')
-    
+
     if options.verbose and options.quiet:
         error_exit(1, "Options \"--verbose\" and \"--quiet\" found. " +
                    "This does not make any sense, you silly fool :-)")
@@ -2984,7 +3034,7 @@ def main():
 
     if not options.interactive and options.gui:
         logging.warning('Found option "--gui" without option "--interactive". Will ignore that.')
-        
+
     if options.list_tags_by_number and options.list_tags_by_alphabet:
         error_exit(6, "Please use only one list-by-option at once.")
 
@@ -3104,6 +3154,7 @@ def main():
         # look out for .filetags file and add readline support for tag completion if found with content
         if options.remove:
             # vocabulary for completing tags is current tags of files
+            any_file_has_cut_timestamp = False
             for currentfile in files:
                 # add tags so that list contains all unique tags:
                 for newtag in extract_tags_from_filename(currentfile):
@@ -3159,11 +3210,16 @@ def main():
 
                 # append current filetags with a prepended '-' in order to allow tag completion for removing tags via '-tagname'
                 tags_from_filenames = set()
+                any_file_has_cut_timestamp = False
                 for currentfile in files:
                     tags_from_filenames = tags_from_filenames.union(set(extract_tags_from_filename(currentfile)))
+                    if not any_file_has_cut_timestamp and filename_contains_cut_timestamp(currentfile):
+                        any_file_has_cut_timestamp = True
                 negative_tags_from_filenames = set()
                 for currenttag in list(tags_from_filenames):
                     negative_tags_from_filenames.add('-' + currenttag)
+                if any_file_has_cut_timestamp:
+                    negative_tags_from_filenames.add('-' + CUT_TIMESTAMP_PSEUDO_TAG)
 
                 completion_vocabulary = list(set(completion_vocabulary).union(negative_tags_from_filenames) -
                                   set(tags_intersection_of_files))
@@ -3278,6 +3334,29 @@ def main():
         start_filebrowser(chosen_tagtrees_dir)
 
     successful_exit()
+
+
+def force_rmtree(path):
+    """Provide a rmtree compatible both for Linux/MacOS and Windows.
+
+    Previous definitions worked well for Linux/MacOS and their tests
+    by `unit_tests.py` launched by `pytest` passed with GitHub's
+    osrunners.  However, the very same tests constantly failed with
+    the osrunner of Windows.  After discussion, this function was
+    provided by Claude AI/Sonnet 4.6."""
+    import stat, tempfile
+    def _remove_readonly(func, fpath, _exc):
+        os.chmod(fpath, stat.S_IWRITE)
+        func(fpath)
+    # Windows locks the CWD; move away before attempting deletion
+    try:
+        cwd = os.getcwd()
+        if os.path.abspath(cwd).startswith(os.path.abspath(path)):
+            os.chdir(tempfile.gettempdir())
+    except Exception:
+        pass
+    if os.path.isdir(path):
+        rmtree(path, onerror=_remove_readonly)
 
 
 if __name__ == "__main__":

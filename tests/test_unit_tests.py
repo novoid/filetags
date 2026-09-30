@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Time-stamp: <2023-08-28 18:16:44 vk>
@@ -5,16 +6,17 @@
 # invoke tests using following command line:
 # ~/src/vktag % PYTHONPATH="~/src/filetags:" tests/unit_tests.py --verbose
 
-import unittest
-import os
-import filetags
-import tempfile
-import os.path
 import logging
+import os
+import os.path
 import platform
+import sys
+import tempfile
 import time  # for sleep()
+import unittest
 from shutil import rmtree
 
+import filetags
 
 # TEMPLATE for debugging:
 #        try:
@@ -94,6 +96,41 @@ class TestMethods(unittest.TestCase):
                          'Some file name -- foo.jpeg.lnk')
         self.assertEqual(filetags.removing_tag_from_filename('Some file name -- bar.jpeg.lnk', 'foo'),
                          'Some file name -- bar.jpeg.lnk')
+
+    def test_filename_contains_cut_timestamp(self):
+
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            '2013-06-23 Some file name -- cut 00h00m00s--00h26m16s foo bar.mpg'))
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            'Other file name -- baz 01h12m45s--02h34m56s.mpg'))
+        self.assertTrue(filetags.filename_contains_cut_timestamp(
+            'Final file -- 02h34m56s-02h34m59s.md'))
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'Yet a different file -- foo bar.txt'))
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'No tags at all.mpg'))
+        # not matching: extra digits or wrong format must not be picked up
+        self.assertFalse(filetags.filename_contains_cut_timestamp(
+            'foo -- 123h00m00s--00h00m00s.mpg'))
+
+    def test_removing_cut_timestamps_from_filename(self):
+
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                '2013-06-23 Some file name -- cut 00h00m00s--00h26m16s foo bar.mpg'),
+            '2013-06-23 Some file name -- cut foo bar.mpg')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Other file name -- baz 01h12m45s--02h34m56s.mpg'),
+            'Other file name -- baz.mpg')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Yet a different file -- foo bar.txt'),
+            'Yet a different file -- foo bar.txt')
+        self.assertEqual(
+            filetags.removing_cut_timestamps_from_filename(
+                'Final file -- 02h34m56s-02h34m59s.md'),
+            'Final file.md')
 
     def test_extract_tags_from_filename(self):
         self.assertEqual(filetags.extract_tags_from_filename('Some file name - bar.jpeg'), [])
@@ -416,8 +453,8 @@ class TestLocateAndParseControlledVocabulary(unittest.TestCase):
 
         # Note: cwd = subdir3
         # Let's create all missing files in all dirs:
-        filetags.create_link(self.subdir2_file, self.subdir1_file)  # create link
-        filetags.create_link(self.subdir2b_file, self.tempdir_file)  # create link
+        filetags.create_link(self.subdir2_file, self.subdir1_file + ".lnk")  # create link
+        filetags.create_link(self.subdir2b_file, self.tempdir_file + ".lnk")  # create link
 
         # prio 1 = .filetag file in startfile directory
         self.assertEqual(filetags.locate_and_parse_controlled_vocabulary(self.subdir1_test_file),
@@ -865,7 +902,7 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         filetags.handle_file(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar.txt'),
                              ['testtag'], do_remove=False, do_filter=False, dryrun=False)
         self.assertEqual(self.file_exists(os.path.join(self.tempdir, 'sub dir 1', 'foo4 -- bar testtag.txt')), True)
-        
+
     def test_tagtrees_with_tagfilter_and_no_filtertag(self):
 
         filetags.generate_tagtrees(directory=self.subdir2,
@@ -878,16 +915,34 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertEqual(len(os.listdir(self.subdir2)), 5)  # 5 entries in this directory
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'bar')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
                          set(['baz', 'foo1 -- bar.txt', 'foo2 -- bar baz.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'bar'))),
+                         set(['baz', 'foo1 -- bar.txt.lnk', 'foo2 -- bar baz.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['bar', 'teststring1', 'foo2 -- bar baz.txt', 'foo3 -- baz teststring1.txt']))
 
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['bar', 'teststring1', 'foo2 -- bar baz.txt.lnk', 'foo3 -- baz teststring1.txt.lnk']))
+
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
                          set(['baz', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
 
@@ -906,12 +961,23 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['teststring1', 'foo3 -- baz teststring1.txt']))
+        elif sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt.lnk']))
+
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
                          set(['baz', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'teststring1'))),
+                         set(['baz', 'foo3 -- baz teststring1.txt.lnk']))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'nontagged_items')))
 
@@ -931,8 +997,13 @@ class TestHierarchyWithFilesAndFolders(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.subdir2, 'bar')))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'baz')))
-        self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+
+        if sys.platform != "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
                          set(['teststring1', 'foo3 -- baz teststring1.txt']))
+        if sys.platform == "win32":
+            self.assertEqual(set(os.listdir(os.path.join(self.subdir2, 'baz'))),
+                         set(['teststring1', 'foo3 -- baz teststring1.txt.lnk']))
 
         self.assertTrue(os.path.isdir(os.path.join(self.subdir2, 'teststring1')))
 
