@@ -680,6 +680,7 @@ In short:
 
 - Alternative implementations of the =filetags= concept:
   - [[https://github.com/beutelma/filetags.el][GitHub - DerBeutlin/filetags.el: Emacs package to manage filetags in the filename]]
+  - [[https://github.com/jwiegley/dired-filetags][GitHub - jwiegley/dired-filetags: Add-on for dired that implements Karl Voit's filetags utility]] by [[https://www.newartisans.com/about-me/][John Wiegley]]
   - With [[https://github.com/protesilaos/denote][denote]], Protesilaos Stavrou implemented a conceptually
     related approach to manage notes within an Emacs buffer. With
     [[https://en.wikipedia.org/wiki/Dired][Emacs/dired]], this method equally may be applied on files, too.
